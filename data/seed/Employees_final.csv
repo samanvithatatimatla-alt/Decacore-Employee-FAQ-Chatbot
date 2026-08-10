@@ -1,0 +1,101 @@
+employee_id,full_name,email,role,department,manager_name,manager_id,hire_date
+1,Alejandra Farryann,alejandra.farryann@gmail.com,Manager,HR,Lynn Parminter,54,2024-12-27
+2,Marietta Baudone,marietta.baudone@gmail.com,Employee,HR,Alejandra Farryann,1,2024-03-05
+3,Aldwin Gotcliffe,aldwin.gotcliffe@gmail.com,Manager,IT,Jehanna Meekings,15,2025-05-04
+4,Mano Buffy,mano.buffy@gmail.com,Manager,Finance,Zedekiah Kember,16,2023-07-02
+5,Adolf Aronin,adolf.aronin@gmail.com,Employee,Finance,Nehemiah Browning,49,2023-06-17
+6,Shandie St. Clair,shandie.st.clair@gmail.com,Manager,HR,Lynn Parminter,54,2023-12-22
+7,Xylina Payton,xylina.payton@gmail.com,Employee,HR,Walker Faughey,98,2025-05-26
+8,Charlotte Freund,charlotte.freund@gmail.com,Employee,HR,Shandie St. Clair,6,2024-07-22
+9,Udell Luchelli,udell.luchelli@gmail.com,Employee,HR,Trace Koppeck,94,2025-08-17
+10,Juliet Bewicke,juliet.bewicke@gmail.com,Employee,Finance,Kingsly Medford,28,2024-06-15
+11,Ev Figiovanni,ev.figiovanni@gmail.com,Employee,Finance,Callida Barnbrook,36,2024-12-25
+12,Trstram Spencook,trstram.spencook@gmail.com,Employee,HR,Tarrance Dureden,89,2024-04-18
+13,Sheilah Goldingay,sheilah.goldingay@gmail.com,Manager,HR,Martita Blazejewski,66,2023-07-04
+14,Tiff Carous,tiff.carous@gmail.com,Employee,HR,Alejandra Farryann,1,2025-04-30
+15,Jehanna Meekings,jehanna.meekings@gmail.com,Executive,IT,,,2025-08-16
+16,Zedekiah Kember,zedekiah.kember@gmail.com,Executive,Finance,,,2025-02-13
+17,Gwendolyn Voysey,gwendolyn.voysey@gmail.com,Employee,HR,Alejandra Farryann,1,2025-11-04
+18,Tammie Ishak,tammie.ishak@gmail.com,Employee,HR,Shandie St. Clair,6,2025-11-23
+19,Gianni Hinchon,gianni.hinchon@gmail.com,Employee,Finance,Nehemiah Browning,49,2024-08-15
+20,Marcile Fishly,marcile.fishly@gmail.com,Manager,HR,Lynn Parminter,54,2024-11-29
+21,Gannie Paquet,gannie.paquet@gmail.com,Employee,HR,Angelo Putten,83,2025-02-23
+22,Walt Culver,walt.culver@gmail.com,Employee,HR,Tarrance Dureden,89,2025-05-25
+23,Elka Dumpleton,elka.dumpleton@gmail.com,Employee,Finance,Mano Buffy,4,2023-09-30
+24,Rodie Gerry,rodie.gerry@gmail.com,Employee,HR,Angelo Putten,83,2025-07-12
+25,Renae Boyall,renae.boyall@gmail.com,Employee,HR,Marcile Fishly,20,2025-11-19
+26,Cassie Dodwell,cassie.dodwell@gmail.com,Employee,IT,Ramona Camplin,99,2024-11-24
+27,Flora Maving,flora.maving@gmail.com,Employee,HR,Trace Koppeck,94,2025-09-27
+28,Kingsly Medford,kingsly.medford@gmail.com,Executive,Finance,,,2023-04-20
+29,Shellysheldon Benwell,shellysheldon.benwell@gmail.com,Employee,HR,Walker Faughey,98,2025-10-25
+30,Aldis Turney,aldis.turney@gmail.com,Employee,Finance,Kingsly Medford,28,2025-02-23
+31,Emylee Yve,emylee.yve@gmail.com,Employee,Finance,Brynn Snelgar,90,2024-06-19
+32,Brad Manning,brad.manning@gmail.com,Employee,HR,Marcile Fishly,20,2024-09-21
+33,Gwyneth Bolingbroke,gwyneth.bolingbroke@gmail.com,Employee,HR,Tarrah Burkwood,75,2023-11-20
+34,Sherwin Basillon,sherwin.basillon@gmail.com,Employee,HR,Tarrance Dureden,89,2023-04-22
+35,Arliene Barensen,arliene.barensen@gmail.com,Employee,IT,Gare Tewes,51,2023-04-30
+36,Callida Barnbrook,callida.barnbrook@gmail.com,Manager,Finance,Zedekiah Kember,16,2025-01-30
+37,Nanci Danbrook,nanci.danbrook@gmail.com,Employee,HR,Lynn Parminter,54,2024-12-05
+38,Kristin Lindblad,kristin.lindblad@gmail.com,Employee,Finance,Padgett Woolway,40,2024-02-02
+39,Kirbie Dignall,kirbie.dignall@gmail.com,Manager,IT,Jehanna Meekings,15,2023-11-15
+40,Padgett Woolway,padgett.woolway@gmail.com,Manager,Finance,Kingsly Medford,28,2023-12-25
+41,Renard Shorrock,renard.shorrock@gmail.com,Employee,HR,Tedie Fearnside,55,2023-02-11
+42,Andie Gladtbach,andie.gladtbach@gmail.com,Employee,Finance,Padgett Woolway,40,2025-11-24
+43,Bria Stebbings,bria.stebbings@gmail.com,Employee,HR,Marcile Fishly,20,2023-07-30
+44,Sunny Winders,sunny.winders@gmail.com,Employee,Finance,Goober De Miranda,85,2023-07-31
+45,Francesca Howatt,francesca.howatt@gmail.com,Employee,Finance,Callida Barnbrook,36,2024-09-03
+46,Rhona Attkins,rhona.attkins@gmail.com,Employee,Finance,Callida Barnbrook,36,2023-08-05
+47,Larisa Champney,larisa.champney@gmail.com,Employee,HR,Haily Rookeby,73,2023-11-06
+48,Babbie Tendahl,babbie.tendahl@gmail.com,Employee,Finance,Callida Barnbrook,36,2024-03-09
+49,Nehemiah Browning,nehemiah.browning@gmail.com,Manager,Finance,Kingsly Medford,28,2024-08-18
+50,Nerta Lealle,nerta.lealle@gmail.com,Employee,IT,Jehanna Meekings,15,2025-08-23
+51,Gare Tewes,gare.tewes@gmail.com,Manager,IT,Jehanna Meekings,15,2024-07-23
+52,Foster FitzGeorge,foster.fitzgeorge@gmail.com,Employee,HR,Tarrance Dureden,89,2024-09-29
+53,Rebbecca Bentzen,rebbecca.bentzen@gmail.com,Employee,Finance,Osborn Elix,70,2025-06-04
+54,Lynn Parminter,lynn.parminter@gmail.com,Executive,HR,,,2025-11-25
+55,Tedie Fearnside,tedie.fearnside@gmail.com,Manager,HR,Lynn Parminter,54,2023-01-20
+56,King Humbert,king.humbert@gmail.com,Employee,Finance,Zedekiah Kember,16,2025-06-12
+57,Daron Ruffle,daron.ruffle@gmail.com,Employee,IT,Wilbert Greenmon,82,2025-06-20
+58,Reidar Humby,reidar.humby@gmail.com,Manager,IT,Jehanna Meekings,15,2023-12-26
+59,Jerome Faircliffe,jerome.faircliffe@gmail.com,Employee,Finance,Brynn Snelgar,90,2024-12-19
+60,Nyssa Fridlington,nyssa.fridlington@gmail.com,Employee,HR,Shandie St. Clair,6,2023-11-26
+61,Merle Copin,merle.copin@gmail.com,Employee,Finance,Kingsly Medford,28,2023-04-18
+62,Boniface Doudney,boniface.doudney@gmail.com,Employee,IT,Gare Tewes,51,2023-09-21
+63,Cal Gabbatiss,cal.gabbatiss@gmail.com,Employee,HR,Martita Blazejewski,66,2023-11-02
+64,Bennie Georgi,bennie.georgi@gmail.com,Employee,Finance,Goober De Miranda,85,2025-04-10
+65,Julee Beyer,julee.beyer@gmail.com,Employee,IT,Wilbert Greenmon,82,2023-06-30
+66,Martita Blazejewski,martita.blazejewski@gmail.com,Executive,HR,,,2025-08-06
+67,Nanette Nund,nanette.nund@gmail.com,Employee,Finance,Nehemiah Browning,49,2025-10-11
+68,Englebert Scattergood,englebert.scattergood@gmail.com,Manager,HR,Lynn Parminter,54,2023-10-25
+69,Cece Bradborne,cece.bradborne@gmail.com,Employee,HR,Alejandra Farryann,1,2024-01-27
+70,Osborn Elix,osborn.elix@gmail.com,Manager,Finance,Zedekiah Kember,16,2025-02-19
+71,Lovell Siveyer,lovell.siveyer@gmail.com,Employee,HR,Lynn Parminter,54,2023-08-27
+72,Judd Semerad,judd.semerad@gmail.com,Employee,HR,Tedie Fearnside,55,2023-09-30
+73,Haily Rookeby,haily.rookeby@gmail.com,Manager,HR,Lynn Parminter,54,2024-07-02
+74,Curtice Cargen,curtice.cargen@gmail.com,Employee,Finance,Nehemiah Browning,49,2024-02-07
+75,Tarrah Burkwood,tarrah.burkwood@gmail.com,Manager,HR,Lynn Parminter,54,2025-08-04
+76,Fay Gillogley,fay.gillogley@gmail.com,Employee,HR,Haily Rookeby,73,2024-03-16
+77,Obediah Berston,obediah.berston@gmail.com,Employee,HR,Tedie Fearnside,55,2025-02-07
+78,Dionisio Girsch,dionisio.girsch@gmail.com,Employee,HR,Tarrah Burkwood,75,2025-05-07
+79,Rudd Alessandrini,rudd.alessandrini@gmail.com,Employee,HR,Trace Koppeck,94,2025-07-22
+80,Corissa Munnion,corissa.munnion@gmail.com,Employee,Finance,Goober De Miranda,85,2024-10-13
+81,Hagen Nutt,hagen.nutt@gmail.com,Employee,IT,Kirbie Dignall,39,2023-08-19
+82,Wilbert Greenmon,wilbert.greenmon@gmail.com,Manager,IT,Jehanna Meekings,15,2023-08-04
+83,Angelo Putten,angelo.putten@gmail.com,Manager,HR,Martita Blazejewski,66,2024-05-24
+84,Erik Chisholm,erik.chisholm@gmail.com,Employee,IT,Kirbie Dignall,39,2025-11-14
+85,Goober De Miranda,goober.de.miranda@gmail.com,Manager,Finance,Kingsly Medford,28,2023-07-22
+86,Gabriello Roscamp,gabriello.roscamp@gmail.com,Employee,Finance,Callida Barnbrook,36,2025-01-25
+87,Drona Shiel,drona.shiel@gmail.com,Employee,HR,Tarrance Dureden,89,2023-07-27
+88,Wolfgang Vidgen,wolfgang.vidgen@gmail.com,Employee,HR,Trace Koppeck,94,2024-03-15
+89,Tarrance Dureden,tarrance.dureden@gmail.com,Manager,HR,Lynn Parminter,54,2024-06-23
+90,Brynn Snelgar,brynn.snelgar@gmail.com,Manager,Finance,Zedekiah Kember,16,2025-02-19
+91,Betti Ausher,betti.ausher@gmail.com,Employee,HR,Sheilah Goldingay,13,2024-10-18
+92,Wilhelmine Jerred,wilhelmine.jerred@gmail.com,Employee,IT,Reidar Humby,58,2025-06-03
+93,Vevay Masser,vevay.masser@gmail.com,Employee,IT,Reidar Humby,58,2024-06-13
+94,Trace Koppeck,trace.koppeck@gmail.com,Manager,HR,Martita Blazejewski,66,2023-09-30
+95,Sam Bumby,sam.bumby@gmail.com,Employee,Finance,Kingsly Medford,28,2023-08-06
+96,Prue Jacobs,prue.jacobs@gmail.com,Employee,Finance,Nehemiah Browning,49,2024-06-08
+97,Shirlee Maas,shirlee.maas@gmail.com,Employee,HR,Trace Koppeck,94,2023-12-11
+98,Walker Faughey,walker.faughey@gmail.com,Manager,HR,Martita Blazejewski,66,2024-07-06
+99,Ramona Camplin,ramona.camplin@gmail.com,Manager,IT,Jehanna Meekings,15,2024-06-15
+100,Dorine Notton,dorine.notton@gmail.com,Employee,IT,Kirbie Dignall,39,2024-09-21
