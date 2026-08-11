@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DecaCore Employee FAQ</title>
+  <!-- Relative paths: this is served by Static Web Apps from the site root now,
+       not mounted at /static by FastAPI. -->
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <!-- Generated at deploy time by .github/workflows/frontend.yml. Absent during
+       local development, where app.js falls back to http://localhost:8000. -->
+  <script src="./config.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

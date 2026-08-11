@@ -1,0 +1,34 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Terraform
+# .terraform.lock.hcl is deliberately NOT ignored — it pins provider versions
+# so everyone on the team resolves identical providers.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Original handoff archive — superseded by backend/
+decacore_backend_with_frontend.zip
