@@ -1,0 +1,70 @@
+# Backend checks — GitHub Actions.
+#
+# This deliberately does NOT deploy. Deployment stays in azure-pipelines.yml,
+# which owns the dev-slot release and the production swap.
+#
+# What this adds on top of that pipeline:
+#   - runs on every branch and PR, not just main, so work on Backend/feature
+#     branches gets feedback before it reaches main
+#   - runs on GitHub, where the repo actually lives, so checks appear on the PR
+#     without needing the Azure DevOps service connection to be wired up
+#   - adds a lint pass, which the Azure pipeline does not do
+#
+# If the Azure pipeline ever becomes the single source of truth for PR checks,
+# delete this file rather than letting the two drift.
+
+name: backend
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Must match the App Service runtime and the Dockerfile. The code uses
+          # 3.12-only syntax (nested same-quote f-strings), so 3.11 will not parse it.
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check .
+
+      # Every adapter runs in local mode: SQLite, local disk, local retrieval,
+      # offline generation. CI therefore needs no Azure credentials and cannot
+      # reach the shared database, storage account, or search index.
+      - name: Test
+        working-directory: backend
+        env:
+          AUTH_MODE: dev
+          DATABASE_URL: sqlite:///./data/ci.db
+          STORAGE_BACKEND: local
+          SEARCH_BACKEND: local
+          LLM_BACKEND: offline
+          NOTIFICATION_BACKEND: log
+        run: python -m pytest tests -q

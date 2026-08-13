@@ -1,0 +1,5 @@
+# Copy to dev.auto.tfvars and fill in. dev.auto.tfvars is gitignored.
+# Find your public IP with: curl https://api.ipify.org
+developer_ips = {
+  yourname = "203.0.113.10"
+}

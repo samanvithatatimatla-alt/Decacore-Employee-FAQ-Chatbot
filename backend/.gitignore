@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+*.db
+.coverage
+htmlcov/
+data/storage/documents/*
+data/storage/receipts/*
+!data/storage/documents/.gitkeep
+!data/storage/receipts/.gitkeep
