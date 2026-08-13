@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
@@ -126,7 +126,7 @@ def approve_request(request_id: str, body: DecisionBody | None = None, db: Sessi
     req.status = "Approved"
     req.manager_comment = body.comment if body else None
     req.decided_by = user.id
-    req.decided_at = datetime.now(timezone.utc)
+    req.decided_at = datetime.now(UTC)
     db.commit()
     db.refresh(req)
     employee = db.get(User, req.employee_id)
@@ -147,7 +147,7 @@ def deny_request(request_id: str, body: DecisionBody, db: Session = Depends(get_
     req.status = "Denied"
     req.manager_comment = body.comment.strip()
     req.decided_by = user.id
-    req.decided_at = datetime.now(timezone.utc)
+    req.decided_at = datetime.now(UTC)
     db.commit()
     db.refresh(req)
     employee = db.get(User, req.employee_id)

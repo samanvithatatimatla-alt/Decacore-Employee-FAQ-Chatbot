@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ def purge_expired(db: Session, triggered_by: str = "timer", batch_size: int = 50
     started = time.perf_counter()
     total_conversations = 0
     total_messages = 0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     while True:
         ids = list(db.scalars(select(Conversation.id).where(Conversation.expires_at < now).limit(batch_size)))
         if not ids:

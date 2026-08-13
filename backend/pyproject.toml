@@ -1,0 +1,52 @@
+# Tooling config only — the app is not packaged/installed, it runs from source.
+# Keeps lint and test settings in one place so local runs and CI agree.
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+exclude = [".venv", "data", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import sorting
+    "B",    # bugbear
+    "UP",   # pyupgrade
+    "SIM",  # simplify
+    "S",    # bandit security checks
+    "BLE",  # blind except
+]
+ignore = [
+    # FastAPI's entire DI model is `param: X = Depends(...)` in the signature.
+    # B008 flags that as a mutable-default bug, which it isn't here.
+    "B008",
+    # Long lines are mostly prompt strings and SQL; the formatter handles the rest.
+    "E501",
+
+    # --- Pre-existing, deliberately not blocking CI ---
+    # These are real findings in code that predates this config. They are muted so
+    # the build is green rather than permanently red, not because they are fine.
+    # Worth clearing when someone next touches the relevant module:
+    #
+    #   BLE001  auth.py:55, documents.py:36, notifications.py:37 catch bare
+    #           Exception. Defensive by intent, but they swallow the cause.
+    #   S110    documents.py:36 is try/except/pass — a failure there is invisible.
+    "BLE001",
+    "S110",
+    #   SIM103  requests.py:44 — permission logic reads better as one explicit
+    #           branch per rule than as a single compound boolean return.
+    "SIM103",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use assert (S101) and bind localhost URLs; neither matters off production paths.
+# E402: tests set env vars before importing the app — the order is deliberate.
+"tests/**" = ["S101", "S104", "S106", "BLE001", "E402"]
+# E402: scripts insert the project root on sys.path before importing app.*
+"scripts/**" = ["S101", "BLE001", "E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

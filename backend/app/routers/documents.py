@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
@@ -115,10 +115,10 @@ def approve_document(document_id: str, db: Session = Depends(get_db), user: User
         raise HTTPException(status_code=409, detail=f"Cannot approve document from state {doc.status}")
     doc.status = "approved"
     doc.approved_by = user.id
-    doc.approved_at = datetime.now(timezone.utc)
+    doc.approved_at = datetime.now(UTC)
     db.commit()
     search_service.index_document(db, doc)
-    doc.indexed_at = datetime.now(timezone.utc)
+    doc.indexed_at = datetime.now(UTC)
     db.commit()
     db.refresh(doc)
     return doc
@@ -134,7 +134,7 @@ def reject_document(document_id: str, body: RejectBody, db: Session = Depends(ge
     search_service.delete_document(db, doc.id)
     doc.status = "rejected"
     doc.rejected_by = user.id
-    doc.rejected_at = datetime.now(timezone.utc)
+    doc.rejected_at = datetime.now(UTC)
     doc.rejection_comment = body.comment
     doc.indexed_at = None
     db.commit()

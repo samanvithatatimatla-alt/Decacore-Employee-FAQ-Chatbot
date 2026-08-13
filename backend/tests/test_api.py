@@ -17,11 +17,8 @@ os.environ["LLM_BACKEND"] = "offline"
 os.environ["NOTIFICATION_BACKEND"] = "log"
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
-from app.database import SessionLocal
 from app.main import app
-from app.models import Document, User
 
 
 def headers(email: str, role: str | None = None):
@@ -87,7 +84,8 @@ def test_escalation_marks_message_and_creates_hr_request():
     with TestClient(app) as client:
         chat = client.post("/api/chat", json={"message": "What is the office dress code?"}, headers=headers("marietta.baudone@gmail.com"))
         assert chat.status_code == 200
-        import re, json
+        import json
+        import re
         meta_match = re.search(r"event: meta\ndata: (\{.*?\})", chat.text)
         assert meta_match
         meta = json.loads(meta_match.group(1))

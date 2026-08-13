@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -69,11 +69,15 @@ class StorageService:
         if settings.storage_backend == "local":
             return None
         from azure.identity import DefaultAzureCredential
-        from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
+        from azure.storage.blob import (
+            BlobSasPermissions,
+            BlobServiceClient,
+            generate_blob_sas,
+        )
 
         container, _, name = blob_path.partition("/")
         service = BlobServiceClient(settings.azure_storage_account_url, credential=DefaultAzureCredential())
-        start = datetime.now(timezone.utc) - timedelta(minutes=5)
+        start = datetime.now(UTC) - timedelta(minutes=5)
         expiry = start + timedelta(minutes=20)
         delegation_key = service.get_user_delegation_key(start, expiry)
         sas = generate_blob_sas(

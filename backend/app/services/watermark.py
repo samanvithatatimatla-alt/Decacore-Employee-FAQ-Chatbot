@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
@@ -26,7 +26,7 @@ def _overlay(width: float, height: float, text: str) -> bytes:
 def watermark_pdf(data: bytes, viewer_identity: str) -> bytes:
     reader = PdfReader(io.BytesIO(data))
     writer = PdfWriter()
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    stamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     label = f"BluePeak Confidential | {viewer_identity} | {stamp}"
     for page in reader.pages:
         width = float(page.mediabox.width)

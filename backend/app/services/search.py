@@ -14,7 +14,6 @@ from .ingestion import chunk_pdf
 from .llm import llm_service
 from .storage import storage_service
 
-
 STOP = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "is", "are", "my", "i", "do", "does", "can", "how", "what", "when", "with"}
 
 QUERY_EXPANSIONS = {
@@ -176,10 +175,10 @@ class SearchService:
         from azure.search.documents.indexes import SearchIndexClient
         from azure.search.documents.indexes.models import (
             HnswAlgorithmConfiguration,
+            SearchableField,
             SearchField,
             SearchFieldDataType,
             SearchIndex,
-            SearchableField,
             SimpleField,
             VectorSearch,
             VectorSearchProfile,
@@ -222,7 +221,11 @@ class SearchService:
             return
         embeddings = llm_service.embed([r.content for r in rows])
         docs = []
-        for row, emb in zip(rows, embeddings):
+        # strict=True: if the embedding call returns fewer vectors than chunks,
+        # a lenient zip silently drops the remainder and those chunks never make
+        # it into the index — the policy text is then simply missing from answers,
+        # with nothing in the logs. Better to fail the upsert loudly.
+        for row, emb in zip(rows, embeddings, strict=True):
             docs.append({
                 "id": row.id,
                 "document_id": row.document_id,

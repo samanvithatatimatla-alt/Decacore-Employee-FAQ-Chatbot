@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def uuid4str() -> str:
@@ -30,7 +40,7 @@ class User(Base):
     hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
-    manager: Mapped["User | None"] = relationship(remote_side=[id], backref="direct_reports")
+    manager: Mapped[User | None] = relationship(remote_side=[id], backref="direct_reports")
 
     @property
     def manager_name(self) -> str | None:
@@ -74,7 +84,7 @@ class Conversation(Base):
     last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
-    messages: Mapped[list["Message"]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
+    messages: Mapped[list[Message]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
 
 
 class Message(Base):

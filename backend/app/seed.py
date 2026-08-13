@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from sqlalchemy import func, select
@@ -87,7 +87,7 @@ def seed_documents(db: Session, force_reindex: bool = False) -> int:
     db.commit()
     for doc in to_index:
         search_service.index_document(db, doc)
-        doc.indexed_at = datetime.now(timezone.utc)
+        doc.indexed_at = datetime.now(UTC)
         db.commit()
     return count
 

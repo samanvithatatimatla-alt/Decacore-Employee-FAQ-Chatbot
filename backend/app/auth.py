@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from .config import settings
 from .database import get_db
 from .models import User
-
 
 ROLE_ORDER = ["HRAdmin", "Manager", "Executive", "Employee"]
 

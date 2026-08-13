@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -28,7 +28,7 @@ def sse(event: str, data: dict | str) -> str:
 @router.post("/chat")
 def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     chat_rate_limiter.check(str(user.id))
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if payload.conversation_id:
         conv = db.scalar(select(Conversation).where(Conversation.id == payload.conversation_id, Conversation.user_id == user.id))
         if not conv:
@@ -46,8 +46,9 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
     db.add(Message(conversation_id=conv.id, role="user", content=payload.message, citations=[]))
     conv.last_message_at = now
     db.commit()
+    # Copied out while the request session is still open — the generator below
+    # runs after it closes, so touching ORM attributes there would raise.
     conversation_id = conv.id
-    user_id = user.id
     user_role = user.role
     question = payload.message
 
@@ -65,7 +66,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             worker_db.add(assistant)
             conv2 = worker_db.get(Conversation, conversation_id)
             if conv2:
-                conv2.last_message_at = datetime.now(timezone.utc)
+                conv2.last_message_at = datetime.now(UTC)
             worker_db.commit()
             worker_db.refresh(assistant)
 

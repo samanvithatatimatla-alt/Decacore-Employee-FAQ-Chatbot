@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import math
 import re
-from collections import Counter
 
 from ..config import settings
-
 
 CATEGORIES = ["Benefits", "Leave", "Payroll", "Travel", "Insurance", "Reimbursements"]
 SYSTEM_PROMPT = """You are the HR assistant for BluePeak Technologies.

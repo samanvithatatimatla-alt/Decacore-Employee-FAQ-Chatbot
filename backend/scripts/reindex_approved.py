@@ -1,10 +1,10 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -17,7 +17,7 @@ with SessionLocal() as db:
     total = 0
     for doc in docs:
         count = search_service.index_document(db, doc)
-        doc.indexed_at = datetime.now(timezone.utc)
+        doc.indexed_at = datetime.now(UTC)
         db.commit()
         total += count
         print(f"{doc.title}: {count} chunks")
