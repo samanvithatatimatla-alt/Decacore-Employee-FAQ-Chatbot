@@ -761,3 +761,19 @@ a:hover{color:#b79cff}
 .tag-progress{background:rgba(242,176,77,.18);color:#f2b04d}
 .tag-resolved{background:rgba(127,217,154,.18);color:#7fd99a}
 .tag-neutral{background:rgba(255,255,255,.09);color:rgba(244,242,249,.6)}
+
+/* ---------------------------------------------------------------------------
+   Not from the prototype.
+
+   The prototype signalled everything with window.alert and never streamed, so it
+   needed neither of these. Both are written in the prototype's own tokens.
+   --------------------------------------------------------------------------- */
+
+.toast-wrap{position:fixed;right:20px;bottom:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{width:min(360px,calc(100vw - 40px));padding:12px 14px;background:#241f31;border:1px solid rgba(255,255,255,.09);border-radius:11px;font-family:"Hanken Grotesk",system-ui,sans-serif;font-size:13px;color:#f4f2f9;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.error{border-color:rgba(255,123,131,.35)}
+.toast.success{border-color:rgba(94,203,143,.35)}
+
+/* Caret shown while an answer is still streaming in from the SSE endpoint. */
+.stream-caret{display:inline-block;width:2px;height:1em;margin-left:2px;background:currentColor;vertical-align:-2px;animation:stream-blink 1s steps(2,start) infinite}
+@keyframes stream-blink{to{visibility:hidden}}

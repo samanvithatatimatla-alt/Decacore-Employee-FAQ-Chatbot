@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DecaCore Employee FAQ</title>
+  <title>HR Bot — Employee FAQ Assistant</title>
+  <link rel="icon" href="./img/bot-avatar.png" />
   <!-- Relative paths: this is served by Static Web Apps from the site root now,
        not mounted at /static by FastAPI. -->
   <link rel="stylesheet" href="./styles.css" />
@@ -11,8 +12,8 @@
 <body>
   <div id="app"></div>
   <!-- Generated at deploy time by .github/workflows/frontend.yml. Absent during
-       local development, where app.js falls back to http://localhost:8000. -->
+       local development, where api.js falls back to http://localhost:8000. -->
   <script src="./config.js"></script>
-  <script src="./app.js" defer></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
