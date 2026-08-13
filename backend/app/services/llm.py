@@ -103,10 +103,16 @@ class LLMService:
             #   temperature  -> 400 "Only the default (1) value is supported"
             # Grounding is enforced by SYSTEM_PROMPT and the supplied excerpts rather
             # than by a low temperature, so losing that knob costs little here.
+            #
+            # The budget is generous because gpt-5 is a reasoning model and
+            # max_completion_tokens covers *reasoning plus* visible output. Reasoning
+            # scales with how much context is supplied, and with five policy chunks it
+            # alone exceeded 500 — the request then succeeds with finish_reason "length"
+            # and an empty string, so the bot silently answers nothing.
             response = self._client().chat.completions.create(
                 model=settings.azure_openai_chat_deployment,
                 messages=messages,
-                max_completion_tokens=500,
+                max_completion_tokens=4000,
             )
             return (response.choices[0].message.content or "").strip()
 
