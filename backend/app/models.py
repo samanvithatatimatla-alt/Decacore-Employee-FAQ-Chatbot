@@ -10,9 +10,11 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,8 +32,24 @@ def uuid4str() -> str:
 class User(Base):
     __tablename__ = "users"
 
+    # entra_object_id is unique only among rows that actually have one. A plain
+    # UNIQUE constraint cannot express that on SQL Server, which treats NULLs as
+    # equal and so permits exactly one NULL — seeding 100 users with no Entra
+    # object id yet fails on the second row. SQLite and Postgres allow many NULLs,
+    # so this only shows up against Azure SQL.
+    __table_args__ = (
+        Index(
+            "uq_users_entra_object_id",
+            "entra_object_id",
+            unique=True,
+            mssql_where=text("entra_object_id IS NOT NULL"),
+            sqlite_where=text("entra_object_id IS NOT NULL"),
+            postgresql_where=text("entra_object_id IS NOT NULL"),
+        ),
+    )
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    entra_object_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    entra_object_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     display_name: Mapped[str] = mapped_column(String(200))
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     role: Mapped[str] = mapped_column(String(40), index=True)

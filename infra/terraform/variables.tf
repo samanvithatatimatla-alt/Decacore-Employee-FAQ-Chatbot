@@ -72,9 +72,16 @@ variable "azure_openai_endpoint" {
 }
 
 variable "developer_ips" {
-  description = "name => public IP, for SQL firewall access during local development. Set in dev.auto.tfvars (gitignored)."
-  type        = map(string)
-  default     = {}
+  description = <<-EOT
+    name => { start, end } public IP range for SQL firewall access during local
+    development. A range rather than a single address because carrier-NAT / mobile
+    connections move the client IP between sessions. Set in dev.auto.tfvars (gitignored).
+  EOT
+  type = map(object({
+    start = string
+    end   = string
+  }))
+  default = {}
 }
 
 variable "devops_federation" {

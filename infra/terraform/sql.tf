@@ -53,6 +53,6 @@ resource "azurerm_mssql_firewall_rule" "developers" {
 
   name             = each.key
   server_id        = data.azurerm_mssql_server.main.id
-  start_ip_address = each.value
-  end_ip_address   = each.value
+  start_ip_address = each.value.start
+  end_ip_address   = each.value.end
 }
