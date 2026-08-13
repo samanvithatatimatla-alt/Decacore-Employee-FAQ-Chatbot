@@ -86,7 +86,12 @@ class SearchService:
         for chunk in chunks:
             rows.append(
                 SearchChunk(
-                    id=f"{document.id}:{chunk.chunk_index}",
+                    # Underscore, not colon: this id is also the Azure AI Search
+                    # document key, and keys may only contain letters, digits,
+                    # underscore, dash or equals. A colon is rejected at upload
+                    # with InvalidDocumentKey, so every chunk silently fails to
+                    # index and the bot answers from nothing.
+                    id=f"{document.id}_{chunk.chunk_index}",
                     document_id=document.id,
                     external_document_id=document.external_document_id,
                     chunk_index=chunk.chunk_index,

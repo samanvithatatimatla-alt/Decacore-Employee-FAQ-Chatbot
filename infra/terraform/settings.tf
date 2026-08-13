@@ -48,14 +48,14 @@ locals {
     AZURE_STORAGE_DOCUMENTS_CONTAINER = "documents"
     AZURE_STORAGE_RECEIPTS_CONTAINER  = "receipts"
 
-    # local until the index exists — scripts/create_search_index.py has to run first.
-    SEARCH_BACKEND        = "local"
+    # Index created and populated: 175 chunks, 1536-dim vectors.
+    SEARCH_BACKEND        = "azure"
     AZURE_SEARCH_ENDPOINT = var.azure_search_endpoint
     AZURE_SEARCH_INDEX    = "decacore-hr-policies"
     AZURE_SEARCH_API_KEY  = "@Microsoft.KeyVault(SecretUri=${local.kv_secret_uri.search_key})"
 
-    # offline until the Foundry endpoint is verified from inside App Service.
-    LLM_BACKEND           = "offline"
+    # Foundry endpoint verified reachable; gpt-5 and text-embedding-3-large confirmed.
+    LLM_BACKEND           = "azure"
     AZURE_OPENAI_ENDPOINT = var.azure_openai_endpoint
     AZURE_OPENAI_API_KEY  = "@Microsoft.KeyVault(SecretUri=${local.kv_secret_uri.openai_key})"
     # Deployment names, discovered by probing the endpoint — Azure serves models under

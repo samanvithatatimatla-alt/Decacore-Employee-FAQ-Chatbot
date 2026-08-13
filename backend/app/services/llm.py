@@ -97,11 +97,16 @@ class LLMService:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"Question: {question}\n\nContext:\n" + "\n\n".join(excerpts)},
             ]
+            # No `temperature`, and `max_completion_tokens` rather than `max_tokens`.
+            # The gpt-5 family rejects both of the older forms outright:
+            #   max_tokens   -> 400 "Use 'max_completion_tokens' instead"
+            #   temperature  -> 400 "Only the default (1) value is supported"
+            # Grounding is enforced by SYSTEM_PROMPT and the supplied excerpts rather
+            # than by a low temperature, so losing that knob costs little here.
             response = self._client().chat.completions.create(
                 model=settings.azure_openai_chat_deployment,
                 messages=messages,
-                temperature=0.1,
-                max_tokens=500,
+                max_completion_tokens=500,
             )
             return (response.choices[0].message.content or "").strip()
 

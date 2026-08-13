@@ -1,0 +1,68 @@
+# Queues the Azure DevOps backend pipeline on push to main.
+#
+# This exists because Azure DevOps normally registers a GitHub webhook when you link
+# a pipeline, and creating webhooks requires *admin* on the repository. This repo is
+# owned by a personal account, and personal repos cannot grant admin to collaborators
+# at all — there is no role to ask for. So the trigger is inverted: GitHub tells
+# DevOps to run, rather than DevOps subscribing to GitHub.
+#
+# If this repo ever moves into a GitHub organization, grant admin, let DevOps create
+# a real webhook, and delete this file — it is a workaround, not the intended design.
+#
+# Requires the AZURE_DEVOPS_PAT secret. PATs expire; when deploys silently stop
+# firing, check that first.
+
+name: trigger backend deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'azure-pipelines.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  queue:
+    name: Queue Azure Pipelines run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Queue build
+        env:
+          PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ORG: Intern2026
+          PROJECT: DecaCore
+          DEFINITION_ID: '9'
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PAT}" ]; then
+            echo "AZURE_DEVOPS_PAT is not set — cannot queue the deploy." >&2
+            exit 1
+          fi
+
+          AUTH=$(printf ':%s' "$PAT" | base64 -w0)
+
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: Basic ${AUTH}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"definition\":{\"id\":${DEFINITION_ID}},\"sourceBranch\":\"${GITHUB_REF}\"}" \
+            "https://dev.azure.com/${ORG}/${PROJECT}/_apis/build/builds?api-version=7.1")
+
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+
+          if [ "$code" != "200" ]; then
+            # A 203 means Azure DevOps returned its sign-in page, which is what an
+            # expired or wrongly-scoped PAT looks like — it is not a 401.
+            echo "Failed to queue build (HTTP $code):" >&2
+            echo "$body" | head -c 500 >&2
+            exit 1
+          fi
+
+          build_id=$(echo "$body" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          echo "Queued Azure Pipelines build ${build_id}"
+          echo "https://dev.azure.com/${ORG}/${PROJECT}/_build/results?buildId=${build_id}" >> "$GITHUB_STEP_SUMMARY"
