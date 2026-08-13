@@ -109,9 +109,16 @@ class LLMService:
             # scales with how much context is supplied, and with five policy chunks it
             # alone exceeded 500 — the request then succeeds with finish_reason "length"
             # and an empty string, so the bot silently answers nothing.
+            # reasoning_effort="minimal" takes a grounded answer from ~120s to a few
+            # seconds. The task is extraction and citation from excerpts already
+            # supplied, not open-ended problem solving, so the reasoning pass buys
+            # nothing and costs the entire response time.
+            # Note: this parameter is specific to reasoning models. A non-reasoning
+            # deployment (gpt-4o and similar) rejects it.
             response = self._client().chat.completions.create(
                 model=settings.azure_openai_chat_deployment,
                 messages=messages,
+                reasoning_effort="minimal",
                 max_completion_tokens=4000,
             )
             return (response.choices[0].message.content or "").strip()
