@@ -1,37 +1,38 @@
 // Employee-facing views: chat home, the message thread, chat history, resources
-// and the Connect to HR screen, plus the secure document viewer modal.
+// and Connect to HR, plus the document viewer modal.
 
+import { shortDate } from './api.js';
 import { icon } from './icons.js';
-import { HOME_SUGGESTIONS, POLICY_UPDATES, RECENTLY_VIEWED_FALLBACK, RESOURCE_FORMS, WATERMARK_ROWS } from './seed.js';
-import { esc, state, userFirstName, userName, userTitle } from './store.js';
-import { AVATAR, newsBanner } from './views-shell.js';
+import { esc, state, userFirstName, userTitle } from './store.js';
+import { AVATAR } from './views-shell.js';
+
+const FALLBACK_SUGGESTIONS = [
+  'Can I work from home on Fridays?',
+  'How do I get reimbursed for travel expenses?',
+  'How many weeks of parental leave do I get?',
+];
 
 // ---------------------------------------------------------------------------
 // Chat
 // ---------------------------------------------------------------------------
 
 export function chatHome() {
-  const suggestions = state.suggestions.length ? state.suggestions : HOME_SUGGESTIONS;
+  const suggestions = (state.suggestions.length ? state.suggestions : FALLBACK_SUGGESTIONS).slice(0, 3);
   return `
 <div class="chat-home">
-  ${newsBanner()}
-  <div class="avatar-lg"><img src="${AVATAR}" alt="HR Bot"></div>
+  <div class="avatar-lg"><img src="${AVATAR}" alt="QBot"></div>
   <h2 class="home-greeting">Welcome, ${esc(userFirstName())}. How can I help you today?</h2>
   <p class="personalized-note">Answers and resources are personalized for your role — ${esc(userTitle())}.</p>
-  <button class="feature-badge" data-act="goPolicyUpdates" style="cursor:pointer;font-family:'Hanken Grotesk',system-ui,sans-serif">${POLICY_UPDATES.length} policy updates →</button>
   <div class="home-composer">
-    <input class="input" placeholder="Ask about vacation, expenses, leave…" value="${esc(state.homeDraft)}"
-           data-model="homeDraft" data-focus-key="homeComposer" data-act-enter="sendHome">
-    <button class="send" data-act="sendHome">Send</button>
+    <input class="input" placeholder="Ask about vacation, expenses, leave…" value="${esc(state.draft)}"
+           data-model="draft" data-focus-key="composer" data-act-enter="send">
+    <button class="send" data-act="send">Send</button>
   </div>
   <div style="display:flex;flex-direction:column;gap:22px;width:100%;max-width:680px;align-items:stretch">
     <div>
       <p class="faq-label">Top 3 Frequently Asked Questions</p>
       <div class="suggestions" style="max-width:none">
-        ${suggestions
-          .slice(0, 3)
-          .map((q) => `<button class="chip" data-act="ask" data-arg="${esc(q)}">${esc(q)}</button>`)
-          .join('')}
+        ${suggestions.map((q) => `<button class="chip" data-act="ask" data-arg="${esc(q)}">${esc(q)}</button>`).join('')}
       </div>
     </div>
   </div>
@@ -43,38 +44,26 @@ function botCard(m) {
   const tags = m.tags || [];
   const showToggle = tags.length > 2;
   const visibleTags = m.sourcesExpanded || !showToggle ? tags : tags.slice(0, 2);
-  const toggleLabel = m.sourcesExpanded ? 'Show less' : `+${tags.length - 2} more sources`;
-  const steps = m.steps || [];
   const followUps = (m.followUps || []).slice(0, 3);
   const canEscalate = m.kind === 'warn' || m.kind === 'refuse';
 
   return `
 <div class="bot-row">
-  <div class="avatar"><img src="${AVATAR}" alt="HR Bot bot"></div>
+  <div class="avatar"><img src="${AVATAR}" alt="QBot bot"></div>
   <div class="bot-col">
     <div class="bot-card ${cardClass}">
       <div class="card-kicker">${esc(m.kicker || 'Answer')}</div>
-      ${steps.length ? '' : `<p class="card-body">${esc(m.body)}${m.streaming ? '<span class="stream-caret"></span>' : ''}</p>`}
-      ${
-        steps.length
-          ? `<div style="display:flex;flex-direction:column;gap:10px;margin:2px 0 4px">
-        ${steps
-          .map(
-            (t, i) => `<div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="flex:none;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;line-height:1">${i + 1}</span>
-          <span style="flex:1;min-width:0;color:#fff;font-size:14px;line-height:1.55">${esc(t)}</span>
-        </div>`,
-          )
-          .join('')}
-      </div>`
-          : ''
-      }
+      <p class="card-body">${esc(m.body)}${m.streaming ? '<span class="stream-caret"></span>' : ''}</p>
       ${
         tags.length
-          ? `<div class="tags">${visibleTags
-              .map((t) => `<span class="tag">${esc(t)}</span>`)
-              .join('')}</div>
-        ${showToggle ? `<button class="sources-more-link" data-act="toggleSources" data-arg="${m.id}">${toggleLabel}</button>` : ''}`
+          ? `<div class="tags">${visibleTags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+        ${
+          showToggle
+            ? `<button class="sources-more-link" data-act="toggleSources" data-arg="${m.id}">${
+                m.sourcesExpanded ? 'Show less' : `+${tags.length - 2} more sources`
+              }</button>`
+            : ''
+        }`
           : ''
       }
       ${
@@ -113,7 +102,6 @@ export function chatThread() {
   return `
 <div class="thread">
   <div class="thread-inner">
-    ${newsBanner()}
     ${state.messages
       .map((m) =>
         m.role === 'user'
@@ -124,7 +112,7 @@ export function chatThread() {
     ${
       state.isTyping
         ? `<div class="bot-row">
-      <div class="avatar"><img src="${AVATAR}" alt="HR Bot bot"></div>
+      <div class="avatar"><img src="${AVATAR}" alt="QBot bot"></div>
       <div class="typing-card"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
     </div>`
         : ''
@@ -132,9 +120,9 @@ export function chatThread() {
   </div>
 </div>
 <div class="composer">
-  <input class="input" placeholder="Ask about vacation, expenses, leave…" value="${esc(state.homeDraft)}"
-         data-model="homeDraft" data-focus-key="composer" data-act-enter="sendHome">
-  <button class="send" data-act="sendHome">Send</button>
+  <input class="input" placeholder="Ask about vacation, expenses, leave…" value="${esc(state.draft)}"
+         data-model="draft" data-focus-key="composer" data-act-enter="send">
+  <button class="send" data-act="send">Send</button>
 </div>
 <p class="disclaimer">AI responses may be inaccurate. Please verify with official policy documents.</p>`;
 }
@@ -145,12 +133,12 @@ export function chatThread() {
 
 export function historyView() {
   const q = state.historyQuery.trim().toLowerCase();
-  const groups = state.historyMode === 'empty'
+  const isEmpty = state.historyMode === 'empty' || !state.historyGroups.some((g) => g.items.length);
+  const groups = isEmpty
     ? []
     : state.historyGroups
         .map((g) => ({ ...g, items: g.items.filter((h) => !q || h.label.toLowerCase().includes(q)) }))
         .filter((g) => g.items.length);
-  const isEmpty = state.historyMode === 'empty' || !state.historyGroups.some((g) => g.items.length);
 
   return `
 <div class="panel">
@@ -167,7 +155,7 @@ export function historyView() {
       : `<div class="history-search-wrap">
     <span class="history-search-icon">${icon('search', 15)}</span>
     <input class="input history-search" placeholder="Search conversations…" value="${esc(state.historyQuery)}"
-           data-model="historyQuery" data-focus-key="historySearch">
+           data-model="historyQuery" data-focus-key="historySearch" data-live>
   </div>
   ${groups
     .map(
@@ -211,7 +199,7 @@ export function contactView() {
       <p class="rail-desc">Reach the team directly.</p>
       <div class="contact-actions">
         <a class="contact-btn-primary" href="mailto:hr@hrbot.com">Email HR</a>
-        <a class="contact-btn-secondary" href="#" data-act="demo">Message on Teams</a>
+        <a class="contact-btn-secondary" href="https://teams.microsoft.com/l/chat/0/0?users=hr@hrbot.com" target="_blank" rel="noopener">Message on Teams</a>
       </div>
       <div style="width:100%;border-top:1px solid rgba(255,255,255,.09);margin-top:16px;padding-top:14px;display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap">
         ${contactChip('envelope', 'hr@hrbot.com')}
@@ -227,47 +215,75 @@ export function contactView() {
 // Resources
 // ---------------------------------------------------------------------------
 
-function favButton(key, extraClass = '') {
-  const on = !!state.favorites[key];
-  return `<button class="fav-btn ${on ? 'on' : ''} ${extraClass}" data-act="toggleFav" data-arg="${esc(key)}" title="Favorite" aria-label="Favorite">
+function favButton(act, id, on) {
+  return `<button class="fav-btn ${on ? 'on' : ''}" data-act="${act}" data-arg="${esc(id)}" title="Favorite" aria-label="Favorite">
     ${on ? icon('starFilled', 15) : icon('star', 15)}
   </button>`;
 }
 
+const matchesSearch = (haystack) => {
+  const q = state.resourceSearch.trim().toLowerCase();
+  return !q || haystack.toLowerCase().includes(q);
+};
+
 function updatesList() {
+  if (!state.updates.length) {
+    return `<p class="panel-sub" style="margin:0 0 14px">AI-generated summaries of what changed.</p>
+      <p class="panel-sub" style="margin:0">No policies have been revised yet. Updates appear here when HR publishes a new version of a document.</p>`;
+  }
   return `
 <p class="panel-sub" style="margin:0 0 14px">AI-generated summaries of what changed.</p>
 <div class="updates" style="max-width:none">
-  ${POLICY_UPDATES.map(
-    (u) => `<div class="update-card">
+  ${state.updates
+    .map(
+      (u) => `<div class="update-card">
     <div class="update-card-head">
       <p class="update-card-name">${esc(u.name)}</p>
-      <span class="update-card-date">Updated ${esc(u.date)}</span>
+      <span class="update-card-date">Updated ${esc(shortDate(u.updated_at))}</span>
     </div>
-    <p class="update-card-summary">${esc(u.summary)}</p>
+    <p class="update-card-summary">${esc(u.summary || 'No summary was provided for this revision.')}</p>
     <div class="update-card-actions">
-      <button class="update-link" data-act="ask" data-arg="${esc(u.question)}">Ask about this →</button>
-      <button class="update-link" data-act="compareUpdate" data-arg="${u.id}">Compare versions →</button>
+      <button class="update-link" data-act="ask" data-arg="What changed in the ${esc(u.title)}?">Ask about this →</button>
+      ${
+        u.previous_version_number
+          ? `<button class="update-link" data-act="compareUpdate" data-arg="${esc(u.document_id)}">Compare versions →</button>`
+          : ''
+      }
     </div>
   </div>`,
-  ).join('')}
+    )
+    .join('')}
 </div>`;
 }
 
 export function resourcesView() {
   const filter = state.resourceFilter;
+  const search = state.resourceSearch.trim();
   const tab = (key, label) =>
     `<button class="filter-tab ${filter === key ? 'active' : ''}" data-act="setResFilter" data-arg="${key}">${label}</button>`;
 
-  const policies = state.policies.filter((p) => filter === 'all' || state.favorites[`policy-${p.id}`]);
-  const forms = RESOURCE_FORMS.filter((f) => filter === 'all' || state.favorites[`form-${f.id}`]);
-  const recents = state.recentlyViewed.length ? state.recentlyViewed : RECENTLY_VIEWED_FALLBACK;
+  const policies = state.policies.filter(
+    (p) => (filter === 'all' || state.favorites[p.id]) && matchesSearch(`${p.name} ${p.category}`),
+  );
+  const forms = state.forms.filter(
+    (f) => (filter === 'all' || state.formFavorites[f.id]) && matchesSearch(`${f.title} ${f.category || ''}`),
+  );
+
+  const showRecentlyViewed = filter === 'all' && !search;
+  const showPolicies = policies.length > 0 || (!search && filter === 'favorites');
+  const showForms = forms.length > 0 || (!search && filter === 'favorites');
+  const noResults = !!search && !policies.length && !forms.length;
 
   return `
 <div class="panel">
   <h1 class="admin-title">Resources</h1>
   <p class="panel-sub" style="margin:4px 0 0">Documents shown are scoped to your role and access permissions.</p>
-  <div class="filter-tabs" style="margin:18px 0 14px">
+  <div class="res-search">
+    ${icon('search', 15)}
+    <input type="text" placeholder="Search policies and forms..." value="${esc(state.resourceSearch)}"
+           data-model="resourceSearch" data-focus-key="resourceSearch" data-live aria-label="Search policies and forms">
+  </div>
+  <div class="filter-tabs" style="margin:14px 0 14px">
     ${tab('all', 'All')}
     ${tab('favorites', 'Favorites')}
     ${tab('updates', 'Recently Updated Policies')}
@@ -277,26 +293,28 @@ export function resourcesView() {
       ? updatesList()
       : `
   ${
-    filter === 'all'
+    showRecentlyViewed && state.recentlyViewed.length
       ? `<p class="section-label">Recently viewed</p>
   <div class="recent-viewed-grid">
-    ${recents
+    ${state.recentlyViewed
       .map(
-        (rv) => `<button class="recent-viewed-card" ${rv.id ? `data-act="openPolicy" data-arg="${esc(rv.id)}"` : 'data-act="demo"'}>
-      <span class="recent-viewed-name">${esc(rv.name)}</span>
-      <span class="recent-viewed-time">${esc(rv.time)}</span>
+        (rv) => `<button class="recent-viewed-card" data-act="openPolicy" data-arg="${esc(rv.document_id)}">
+      <span class="recent-viewed-name">${esc(rv.filename)}</span>
+      <span class="recent-viewed-time">${esc(rv.viewedLabel)}</span>
     </button>`,
       )
       .join('')}
   </div>`
       : ''
   }
-  <p class="section-label">Policies</p>
+  ${
+    showPolicies
+      ? `<p class="section-label">Policies</p>
   <div class="policy-list" style="flex:none">
     ${policies
       .map(
         (p) => `<div class="policy-row">
-      ${favButton(`policy-${p.id}`)}
+      ${favButton('toggleFav', p.id, !!state.favorites[p.id])}
       <div class="policy-info">
         <div class="policy-name">${esc(p.name)}</div>
         <div class="policy-meta">${esc(p.category)} · Updated ${esc(p.uploadedOn)}</div>
@@ -305,54 +323,52 @@ export function resourcesView() {
     </div>`,
       )
       .join('')}
-    ${
-      !policies.length
-        ? `<p class="panel-sub" style="margin:0">${
-            filter === 'favorites' ? 'No favorited policies yet' : 'No policies are visible to your role yet.'
-          }</p>`
-        : ''
-    }
-  </div>
-  <p class="section-label">Forms</p>
+    ${!policies.length ? '<p class="panel-sub" style="margin:0">No favorited policies yet</p>' : ''}
+  </div>`
+      : ''
+  }
+  ${
+    showForms
+      ? `<p class="section-label">Forms</p>
   <div class="policy-list" style="flex:none">
     ${forms
       .map(
-        (f) => `<div class="policy-row ${state.highlightFormId === f.id ? 'form-hl' : ''}">
-      ${favButton(`form-${f.id}`)}
+        (f) => `<div class="policy-row">
+      ${favButton('toggleFormFav', f.id, !!state.formFavorites[f.id])}
       <div class="policy-info">
-        <div class="policy-name">${esc(f.name)}</div>
-        <div class="policy-meta">${esc(f.meta)}</div>
+        <div class="policy-name">${esc(f.filename)}</div>
+        <div class="policy-meta">${esc(f.category || 'HR Forms')} · PDF${f.available ? '' : ' · not yet uploaded'}</div>
       </div>
-      <a class="ghost" href="#" data-act="demo" style="padding:6px 10px">Download ↓</a>
+      ${
+        f.available
+          ? `<button class="ghost" data-act="downloadForm" data-arg="${esc(f.id)}" style="padding:6px 10px">Download ↓</button>`
+          : '<span class="ghost" style="padding:6px 10px;opacity:.45">Download ↓</span>'
+      }
     </div>`,
       )
       .join('')}
     ${!forms.length ? '<p class="panel-sub" style="margin:0">No favorited forms yet</p>' : ''}
   </div>`
+      : ''
+  }
+  ${noResults ? '<p class="panel-sub" style="margin:8px 0 0">No policies or forms match your search.</p>' : ''}`
   }
 </div>`;
 }
 
 // ---------------------------------------------------------------------------
-// Secure document viewer
+// Document viewer
 // ---------------------------------------------------------------------------
 
 export function empDocModal() {
   if (!state.empDocOpen || !state.empSelectedDoc) return '';
   const doc = state.empSelectedDoc;
-  const compare = state.empDocCompare ? POLICY_UPDATES.find((u) => u.id === doc.updateId) : null;
-  const showingPrev = state.empDocCompare && state.empDocVersion === 'prev';
-  const favKey = `policy-${doc.id}`;
+  const compare = state.empDocCompare ? doc.compare : null;
 
-  // A real document renders its PDF; the compare view and the seeded updates fall
-  // back to the prototype's text page, which is all they ever had.
-  const page = showingPrev
-    ? `<div class="pdf-preview-title">${esc(compare?.previewTitle || doc.name)}</div>
-       <p class="pdf-preview-body">${esc(compare?.prevBody || '')}</p>`
-    : state.empDocBlobUrl
-      ? `<iframe src="${state.empDocBlobUrl}" title="${esc(doc.name)}" style="width:100%;height:100%;border:0;background:#fff"></iframe>`
-      : `<div class="pdf-preview-title">${esc(doc.previewTitle || doc.name)}</div>
-         <p class="pdf-preview-body">${esc(doc.previewBody || 'Loading document…')}</p>`;
+  const page = state.empDocBlobUrl
+    ? `<iframe src="${state.empDocBlobUrl}" title="${esc(doc.name)}" style="width:100%;height:100%;border:0;background:#fff"></iframe>`
+    : `<div class="pdf-preview-title">${esc(doc.previewTitle || doc.name)}</div>
+       <p class="pdf-preview-body">Loading document…</p>`;
 
   return `
 <div class="modal-backdrop" data-act="closeEmpDoc">
@@ -365,33 +381,25 @@ export function empDocModal() {
       compare
         ? `<div class="changed-strip">
       <p class="changed-strip-label">What changed</p>
-      <p class="changed-strip-text">${esc(compare.summary)}</p>
+      <p class="changed-strip-text">${esc(compare.summary || 'No summary was provided for this revision.')}</p>
     </div>
     <div class="version-pills">
-      <button class="version-pill ${state.empDocVersion === 'current' ? 'active' : ''}" data-act="showVersion" data-arg="current">Current — ${esc(compare.date)}</button>
-      <button class="version-pill ${state.empDocVersion === 'prev' ? 'active' : ''}" data-act="showVersion" data-arg="prev">Previous — ${esc(compare.prevDate)}</button>
+      <button class="version-pill ${state.empDocVersion === 'current' ? 'active' : ''}" data-act="showVersion" data-arg="current">Current — ${esc(shortDate(compare.updated_at))}</button>
+      <button class="version-pill ${state.empDocVersion === 'prev' ? 'active' : ''}" data-act="showVersion" data-arg="prev">Previous — ${esc(shortDate(compare.previous_updated_at))}</button>
     </div>`
         : ''
     }
-    <div class="secure-badge">${icon('lock', 12)}Watermarked · access limited to your role · sharing disabled</div>
     <div class="doc-viewer ${state.empDocFullscreen ? 'fullscreen' : ''}">
       <div class="doc-viewer-toolbar">
         <span class="doc-viewer-filename">${icon('docSmall', 14)}${esc(doc.name)}</span>
         <span class="doc-viewer-toolbar-actions">
-          ${favButton(favKey)}
+          ${favButton('toggleFav', doc.id, !!state.favorites[doc.id])}
           <button class="doc-viewer-download" data-act="toggleEmpFullscreen" title="Toggle full screen" aria-label="Toggle full screen">
             ${state.empDocFullscreen ? icon('collapse', 15) : icon('expand', 15)}
           </button>
         </span>
       </div>
-      <div class="doc-viewer-page">
-        <div class="doc-watermark">
-          ${WATERMARK_ROWS.map(
-            (w) => `<span style="top:${w.top};left:${w.left}">CONFIDENTIAL — ${esc(userName())}</span>`,
-          ).join('')}
-        </div>
-        ${page}
-      </div>
+      <div class="doc-viewer-page">${page}</div>
     </div>
   </div>
 </div>`;

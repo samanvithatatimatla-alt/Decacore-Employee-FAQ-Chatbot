@@ -36,4 +36,4 @@ decacore_backend_with_frontend.zip
 # Source material and design prototypes — kept locally, not in the repo.
 # These were swept in accidentally by a `git add -A`; ignored so it can't recur.
 Documents/
-DecaCore HR Bot - Prototype*.html
+DecaCore*Prototype*.html

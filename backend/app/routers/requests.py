@@ -7,11 +7,11 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user
+from ..auth import get_current_user, require_roles
 from ..config import settings
 from ..database import get_db
 from ..models import EmployeeRequest, User
-from ..schemas import DecisionBody, RequestOut
+from ..schemas import DecisionBody, HRResponseBody, InboxStatusBody, RequestOut
 from ..services.notifications import notification_service
 from ..services.storage import storage_service
 
@@ -94,6 +94,129 @@ def list_requests(status: str | None = None, db: Session = Depends(get_db), user
     if status:
         reqs = [r for r in reqs if r.status.lower() == status.lower()]
     return {"items": [request_out(r, db) for r in reqs], "total": len(reqs)}
+
+
+# ---------------------------------------------------------------------------
+# HR inbox
+#
+# Escalations are ordinary EmployeeRequest rows tagged with ESCALATION_CATEGORY.
+# The inbox tracks them through New -> In Progress -> Resolved, which are stored
+# straight into the existing free-text `status` column, and keeps HR's reply in
+# `manager_comment`. Both columns already exist, so none of this needs a schema
+# migration — which matters because the app has no migration step and creates
+# tables with Base.metadata.create_all at startup.
+# ---------------------------------------------------------------------------
+
+ESCALATION_CATEGORY = "Chat Escalation"
+INBOX_STATUSES = ("New", "In Progress", "Resolved")
+
+
+def inbox_status(req: EmployeeRequest) -> str:
+    """Escalations are created as Pending by the chat endpoint; show that as New."""
+    return "New" if req.status == "Pending" else req.status
+
+
+def inbox_out(req: EmployeeRequest, db: Session) -> dict:
+    data = request_out(req, db)
+    data["status"] = inbox_status(req)
+    data["hr_response"] = req.manager_comment
+    # The chat escalation packs question, note and AI answer into one message body;
+    # split it back out so the Request Context modal can show them separately.
+    data.update(_split_escalation(req.message))
+    return data
+
+
+def _split_escalation(message: str) -> dict:
+    parts = {"question": "", "employee_note": "", "ai_response": ""}
+    current = None
+    for line in message.splitlines():
+        if line.startswith("Question:"):
+            current, line = "question", line[len("Question:") :]
+        elif line.startswith("Employee note:"):
+            current, line = "employee_note", line[len("Employee note:") :]
+        elif line.startswith("Chatbot response:"):
+            current, line = "ai_response", line[len("Chatbot response:") :]
+        elif current is None:
+            continue
+        parts[current] = (parts[current] + "\n" + line).strip() if parts[current] else line.strip()
+    if parts["employee_note"] == "(none)":
+        parts["employee_note"] = ""
+    return parts
+
+
+@router.get("/inbox")
+def inbox(
+    status: str | None = None,
+    q: str | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("HRAdmin")),
+):
+    reqs = db.scalars(
+        select(EmployeeRequest)
+        .where(EmployeeRequest.category == ESCALATION_CATEGORY)
+        .order_by(EmployeeRequest.created_at.desc())
+    ).all()
+    items = [inbox_out(r, db) for r in reqs]
+    if status and status.lower() != "all":
+        items = [r for r in items if r["status"].lower() == status.lower()]
+    if q and q.strip():
+        needle = q.strip().lower()
+        items = [
+            r
+            for r in items
+            if needle in (r.get("employee_name") or "").lower() or needle in (r.get("question") or "").lower()
+        ]
+    return {"items": items, "total": len(items)}
+
+
+@router.post("/{request_id}/status")
+def set_inbox_status(
+    request_id: str,
+    body: InboxStatusBody,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("HRAdmin")),
+):
+    req = db.get(EmployeeRequest, request_id)
+    if not req or req.category != ESCALATION_CATEGORY:
+        raise HTTPException(status_code=404, detail="Escalation not found")
+    req.status = body.status
+    if body.status == "Resolved":
+        req.decided_by = user.id
+        req.decided_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(req)
+    return inbox_out(req, db)
+
+
+@router.post("/{request_id}/respond")
+def respond_to_escalation(
+    request_id: str,
+    body: HRResponseBody,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("HRAdmin")),
+):
+    req = db.get(EmployeeRequest, request_id)
+    if not req or req.category != ESCALATION_CATEGORY:
+        raise HTTPException(status_code=404, detail="Escalation not found")
+    req.manager_comment = body.response.strip()
+    req.status = "Resolved" if body.resolve else "In Progress"
+    if body.resolve:
+        req.decided_by = user.id
+        req.decided_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(req)
+
+    employee = db.get(User, req.employee_id)
+    if employee:
+        # Delivery failures are logged, never raised — HR's reply is already saved
+        # and the request must not roll back because a mailbox was unreachable.
+        notification_service.send(
+            db,
+            employee.email,
+            "HR responded to your question",
+            req.manager_comment,
+        )
+    return inbox_out(req, db)
 
 
 @router.get("/{request_id}", response_model=RequestOut)

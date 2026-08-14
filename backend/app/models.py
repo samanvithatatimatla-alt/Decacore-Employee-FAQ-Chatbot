@@ -254,6 +254,48 @@ class Favorite(Base):
     last_viewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class HRForm(Base):
+    """Fillable HR forms, listed separately from policies in Resources.
+
+    A form is not a Document: it is never chunked, never indexed, and never cited
+    in an answer. Keeping it in its own table means the search corpus cannot pick
+    up a blank leave-request form and offer it as a policy source.
+
+    `blob_path` is nullable because the seed knows which forms HR publishes before
+    anyone has uploaded the files; the download endpoint 404s until one is.
+    """
+
+    __tablename__ = "hr_forms"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid4str)
+    title: Mapped[str] = mapped_column(String(300))
+    filename: Mapped[str] = mapped_column(String(255))
+    blob_path: Mapped[str | None] = mapped_column(String(700), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    allowed_roles: Mapped[list[str]] = mapped_column(JSON, default=list)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class FormFavorite(Base):
+    """Favourited HR forms.
+
+    Separate from Favorite because that table foreign-keys to documents, and a form
+    is not a document. Adding a nullable form_id column to Favorite would have been
+    tidier, but the app creates tables with Base.metadata.create_all and has no
+    migration step — create_all adds missing tables and never alters existing ones,
+    so a new column would silently not appear on a database that has already booted.
+    """
+
+    __tablename__ = "form_favorites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid4str)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    form_id: Mapped[str] = mapped_column(ForeignKey("hr_forms.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class MissingPolicyFlag(Base):
     """Questions the corpus could not answer, grouped so repeat topics surface to HR."""
 

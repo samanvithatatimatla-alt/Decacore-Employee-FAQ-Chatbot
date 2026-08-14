@@ -5,12 +5,21 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select
 
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .models import User
-from .routers import admin, chat, conversations, dashboard, documents, me, requests
+from .routers import (
+    admin,
+    announcements,
+    chat,
+    conversations,
+    dashboard,
+    documents,
+    favorites,
+    forms,
+    me,
+    requests,
+)
 from .seed import seed_all
 
 logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
@@ -21,9 +30,15 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     if settings.auto_seed:
         with SessionLocal() as db:
-            if (db.scalar(select(func.count(User.id))) or 0) == 0:
-                result = seed_all(db)
-                logger.info("Seeded local demo data: %s", result)
+            # Run every seeder on each boot, not just on an empty database. Each one
+            # guards on its own table's row count and returns 0 if it has nothing to
+            # do, so this is idempotent — and it means tables added after a database
+            # was first created still get populated. Gating the whole thing on "no
+            # users yet" left announcements, forms and version history permanently
+            # empty on any environment that had already booted once.
+            result = seed_all(db)
+            if any(result.values()):
+                logger.info("Seeded demo data: %s", result)
     yield
 
 
@@ -43,6 +58,9 @@ app.include_router(documents.router)
 app.include_router(requests.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
+app.include_router(announcements.router)
+app.include_router(forms.router)
+app.include_router(favorites.router)
 
 
 # The frontend used to be served from here. It now lives in the repo's top-level

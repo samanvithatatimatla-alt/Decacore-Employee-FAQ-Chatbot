@@ -13,7 +13,10 @@ FastAPI backend for the BluePeak/DecaCore employee FAQ project. It is intentiona
 - PDF ingestion/chunking and local searchable chunk store
 - Azure AI Search adapter with hybrid vector + keyword search and pre-filtered role authorization
 - Azure OpenAI/Foundry v1 adapter for embeddings, categorization, and grounded answers
-- HR document upload, AI categorization, category override, approval, rejection, indexing, secure read URLs, and optional per-user dynamic PDF watermarking
+- HR document upload, which approves and indexes in one step so a new policy is answerable immediately, plus AI categorization, deletion, secure read URLs, and optional per-user dynamic PDF watermarking
+- Per-document version history and new-version upload, with the change summary that drives the employee-facing "Recently Updated Policies" list and version compare
+- Company news announcements for the ticker, HR forms, and per-user favourites and recently-viewed
+- HR inbox for escalated chat questions: status filters, search, New/In Progress/Resolved transitions, and an HR reply that emails the employee
 - Employee request submission with receipt upload, manager routing, priority, approve/deny, self-approval block, required denial comment
 - HR dashboard metrics/charts
 - Top 3 FAQs
@@ -42,9 +45,7 @@ uvicorn app.main:app --reload --port 8000
 
 Open Swagger at `http://localhost:8000/docs`.
 
-Open the integrated frontend at `http://localhost:8000/`.
-
-The frontend is included in the `frontend/` folder and is served by FastAPI, so local development does **not** require Node.js, npm, or a separate frontend server. It includes local demo-user switching for Employee, Manager, and HR Admin; streaming chat and citations; history; resources; employee requests; manager approvals/denials; HR dashboard; and policy upload/approval.
+The frontend lives in the repo's top-level `frontend/` folder and deploys separately to Azure Static Web Apps, so it is no longer served by FastAPI — run it with any static server and point `config.js` at this API. It is plain ES modules with no build step.
 
 Local mode requires no Azure keys. On first startup it seeds the database and indexes the approved PDF corpus into SQLite.
 
@@ -73,13 +74,35 @@ GET    /api/conversations/{id}
 DELETE /api/conversations/{id}
 GET    /api/faq/top
 
-POST   /api/documents                    multipart: file, permissions, title?
+POST   /api/documents                    multipart: file, permissions, title?  -> approved + indexed
 GET    /api/documents
-GET    /api/documents/pending
+GET    /api/documents/updates            recently revised policies
+DELETE /api/documents/{id}
 GET    /api/documents/{id}/url
-PATCH  /api/documents/{id}/category      { "category": "Leave" }
-POST   /api/documents/{id}/approve
-POST   /api/documents/{id}/reject        { "comment": "..." }
+GET    /api/documents/{id}/content
+GET    /api/documents/{id}/versions
+POST   /api/documents/{id}/versions      multipart: file, change_summary?
+GET    /api/documents/{id}/versions/{n}/content
+PATCH  /api/documents/{id}/category      { "category": "Leave" }   (pending docs only)
+POST   /api/documents/{id}/approve                                  (pending docs only)
+POST   /api/documents/{id}/reject        { "comment": "..." }       (pending docs only)
+
+GET    /api/announcements
+POST   /api/announcements                { title, body, allowed_roles?, expires_at? }
+DELETE /api/announcements/{id}
+
+GET    /api/forms
+POST   /api/forms                        multipart: file, title?, category?
+GET    /api/forms/{id}/content
+GET    /api/forms/favorites
+PUT    /api/forms/{id}/favorite
+DELETE /api/forms/{id}/favorite
+
+GET    /api/favorites
+PUT    /api/favorites/{document_id}
+DELETE /api/favorites/{document_id}
+GET    /api/recently-viewed
+POST   /api/recently-viewed/{document_id}
 
 POST   /api/requests                     multipart: type, category?, amount?, message, attachment?
 GET    /api/requests
@@ -87,6 +110,9 @@ GET    /api/requests/{id}
 GET    /api/requests/{id}/attachment
 POST   /api/requests/{id}/approve        { "comment": "..." }
 POST   /api/requests/{id}/deny           { "comment": "required" }
+GET    /api/requests/inbox?status=&q=    HR inbox of escalated questions
+POST   /api/requests/{id}/status         { "status": "In Progress" }
+POST   /api/requests/{id}/respond        { "response": "...", "resolve": false }
 
 GET    /api/dashboard/metrics
 GET    /api/dashboard/charts
@@ -208,11 +234,20 @@ Run the supplied retrieval benchmark with:
 python scripts/evaluate_retrieval.py
 ```
 
+## Approval model
+
+Upload approves and indexes in one step. The QBot design states that a document
+"becomes available to all employees immediately upon upload", and only HRAdmins can
+reach the upload endpoint, so the upload itself is the approval. The recovery path
+for a bad document is `DELETE /api/documents/{id}`, which drops its search chunks as
+well — `/approve` and `/reject` remain for the seeded pending/rejected documents and
+return 409 for anything already approved.
+
 ## Important design notes
 
 - The supplied policy dataset has two versions using the external ID `BPT-HR-PTO-001`. The database therefore uses a UUID as the true document primary key and stores the policy ID separately as `external_document_id`.
 - `Compensation and Payroll Guide` and `Onboarding and Offboarding Handbook` are manager/executive-only in the supplied seed data, so employee search and Resources will not expose them.
-- Document 14 (Bereavement) is intentionally pending and should not answer questions until HR approves it.
+- Document 14 (Bereavement) is seeded as pending and stays out of answers until approved. The QBot UI has no approval screen, so it is reachable only through `POST /api/documents/{id}/approve` — new uploads bypass this entirely and go live immediately.
 - Document 15 is intentionally rejected and is never indexed.
 
 ## Secure viewer note

@@ -6,15 +6,16 @@ policy documents and carry citations back to the source. HR administrators use
 the same app with extra tools for managing the document set behind it.
 
 Answers are produced with retrieval-augmented generation, so the model can only
-speak from documents HR has uploaded and approved — and only from the subset the
-asking employee is cleared to see.
+speak from documents HR has uploaded — and only from the subset the asking
+employee is cleared to see. Uploading a policy publishes and indexes it in one
+step, so it is answerable straight away.
 
 ## Repository layout
 
 | Path | What it is |
 |---|---|
 | `backend/` | FastAPI service — the API, RAG pipeline, and all business logic |
-| `frontend/` | Static reference client used to exercise the API |
+| `frontend/` | QBot web client — plain ES modules, no build step |
 | `infra/` | Terraform for App Service, SQL, Key Vault, and the static site |
 | `.github/workflows/` | GitHub checks: backend lint/test, frontend deploy |
 | `azure-pipelines.yml` | Azure DevOps: backend test and dev-slot deploy |

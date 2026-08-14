@@ -1,16 +1,17 @@
-// Welcome screen, sign-in screen, top nav and sidebar.
+// Welcome screen, sign-in screen, news ticker, top nav and sidebar.
 
+import { shortDate } from './api.js';
 import { icon } from './icons.js';
-import { ANNOUNCEMENTS } from './seed.js';
 import { esc, isHrAdmin, state, userInitials, userName, userTitle } from './store.js';
 
 const AVATAR = './img/bot-avatar.png';
+export { AVATAR };
 
 export function welcomeScreen() {
   return `
 <div class="screen-center welcome-screen">
-  <div class="hero-avatar"><div class="avatar-lg"><img src="${AVATAR}" alt="HR Bot bot"></div></div>
-  <h1 class="brand-lg">HR Bot</h1>
+  <div class="hero-avatar"><div class="avatar-lg"><img src="${AVATAR}" alt="QBot bot"></div></div>
+  <h1 class="brand-lg">QBot</h1>
   <p class="tagline">Employee FAQ Assistant</p>
   <p class="desc">Ask about vacation, expenses, leave, and other policies — get instant answers with citations to the source document.</p>
   <div class="feature-badges">
@@ -27,8 +28,8 @@ export function signinScreen() {
   return `
 <div class="screen-center signin-screen">
   <div class="signin-card">
-    <div class="avatar-md"><img src="${AVATAR}" alt="HR Bot bot"></div>
-    <h2 class="signin-title">Sign in to HR Bot</h2>
+    <div class="avatar-md"><img src="${AVATAR}" alt="QBot bot"></div>
+    <h2 class="signin-title">Sign in to QBot</h2>
     <p class="signin-sub">Use your company account to continue</p>
     <button class="ms-btn" data-act="signin" ${busy ? 'disabled' : ''}>
       <span class="ms-logo"><span></span><span></span><span></span><span></span></span>
@@ -43,7 +44,7 @@ export function signinScreen() {
     <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
       <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:rgba(244,242,249,.62)">Email
         <input type="email" placeholder="you@company.com" value="${esc(state.signinEmail)}"
-               data-model="signinEmail" data-focus-key="signinEmail"
+               data-model="signinEmail" data-focus-key="signinEmail" data-act-enter="signin"
                style="font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:13.5px;color:#f4f2f9;background:#241f30;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px 12px;box-sizing:border-box;width:100%;outline:none">
       </label>
       <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:rgba(244,242,249,.62)">Password
@@ -57,11 +58,28 @@ export function signinScreen() {
 </div>`;
 }
 
+// The ticker sits above the nav and runs on every screen inside the app. The CSS
+// animates .ticker-track, and the items are duplicated so the loop has no visible
+// seam when it wraps.
+export function ticker() {
+  if (!state.announcements.length) return '';
+  const item = (a) =>
+    `<span class="ticker-item"><span class="ticker-item-date">${esc(shortDate(a.published_at))}</span><strong>${esc(a.title)}</strong>${esc(a.body)}<span class="ticker-bullet"></span></span>`;
+  const items = state.announcements.map(item).join('');
+  return `
+<div class="ticker">
+  <span class="ticker-tag"><span class="ticker-dot"></span>BluePeak News</span>
+  <div class="ticker-viewport">
+    <div class="ticker-track">${items}${items}</div>
+  </div>
+</div>`;
+}
+
 export function topNav() {
   return `
 <nav class="nav">
   <button class="burger" data-act="toggleSidebar" aria-label="Toggle sidebar"><span></span><span></span><span></span></button>
-  <span class="brand">HR Bot</span>
+  <span class="brand">QBot</span>
   <div class="dev-toggle">
     <span class="dev-toggle-label">Dev only</span>
     <select data-act="setRole" aria-label="Preview role (dev only)">
@@ -86,10 +104,7 @@ function navItem(view, label, iconName) {
 
 function collapsedItem(view, label, iconName) {
   const active = state.view === view ? 'active' : '';
-  return `<button class="icon-btn ghost-icon ${active}" data-act="go" data-arg="${view}" title="${label}" aria-label="${label}">${icon(
-    iconName,
-    16,
-  )}</button>`;
+  return `<button class="icon-btn ghost-icon ${active}" data-act="go" data-arg="${view}" title="${label}" aria-label="${label}">${icon(iconName, 16)}</button>`;
 }
 
 function recentsBlock() {
@@ -103,7 +118,7 @@ function recentsBlock() {
   ${top2
     .map(
       (r) => `<div class="recent">
-    <a class="recent-label" href="#" data-act="openConversation" data-arg="${esc(r.id)}">${esc(r.label)}</a>
+    <span class="recent-label" data-act="openConversation" data-arg="${esc(r.id)}" role="button">${esc(r.label)}</span>
   </div>`,
     )
     .join('')}
@@ -112,9 +127,7 @@ function recentsBlock() {
 }
 
 function userFooter(collapsed) {
-  const menu = state.userMenuOpen
-    ? `<div class="user-menu"><button data-act="signOut">Sign out</button></div>`
-    : '';
+  const menu = state.userMenuOpen ? '<div class="user-menu"><button data-act="signOut">Sign out</button></div>' : '';
   if (collapsed) {
     return `<div class="sidebar-footer">${menu}
       <button class="icon-btn" style="font-size:12px" data-act="toggleUserMenu" title="${esc(userName())}" aria-label="Account menu">${esc(userInitials())}</button>
@@ -130,8 +143,7 @@ function userFooter(collapsed) {
 
 export function sidebar() {
   const open = state.sidebarOpen;
-  const width = open ? '250px' : '64px';
-  const align = open ? 'stretch' : 'center';
+  const hrTools = isHrAdmin();
 
   const body = open
     ? `
@@ -143,64 +155,33 @@ export function sidebar() {
         ${navItem('resources', 'Resources', 'folder')}
       </div>
       ${
-        isHrAdmin()
+        hrTools
           ? `<div class="side-nav" style="border-top:1px solid rgba(255,255,255,.08);padding-top:8px;margin-top:6px">
         <p class="nav-section-label">HR Tools</p>
         ${navItem('documents', 'Document Management', 'doc')}
+        ${navItem('inbox', 'Employee Requests', 'mail')}
         ${navItem('dashboard', 'Dashboard', 'dashboard')}
       </div>`
           : ''
       }
       ${recentsBlock()}
     </div>
-    <button class="side-nav-item connect-hr" style="border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:auto" data-act="go" data-arg="contact"><span class="side-nav-icon">${icon(
-      'mail',
-      14,
-    )}</span>Connect to HR</button>
+    <button class="side-nav-item connect-hr" style="border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:auto" data-act="go" data-arg="contact"><span class="side-nav-icon">${icon('mail', 14)}</span>Connect to HR</button>
     ${userFooter(false)}`
     : `
     <button class="icon-btn" data-act="newChat" title="New chat" aria-label="New chat">+</button>
     ${collapsedItem('history', 'Chat History', 'chat')}
     ${collapsedItem('resources', 'Resources', 'folder')}
-    ${isHrAdmin() ? collapsedItem('documents', 'Document Management', 'doc') + collapsedItem('dashboard', 'Dashboard', 'dashboard') : ''}
+    ${
+      hrTools
+        ? collapsedItem('documents', 'Document Management', 'doc') +
+          collapsedItem('inbox', 'Employee Requests', 'mail') +
+          collapsedItem('dashboard', 'Dashboard', 'dashboard')
+        : ''
+    }
     <div class="spacer"></div>
-    <button class="icon-btn ghost-icon connect-hr" data-act="go" data-arg="contact" title="Connect to HR" aria-label="Connect to HR">${icon(
-      'mail',
-      16,
-    )}</button>
+    <button class="icon-btn ghost-icon connect-hr" data-act="go" data-arg="contact" title="Connect to HR" aria-label="Connect to HR">${icon('mail', 16)}</button>
     ${userFooter(true)}`;
 
-  return `<aside class="sidebar" style="width:${width};align-items:${align}">${body}</aside>`;
+  return `<aside class="sidebar" style="width:${open ? '250px' : '64px'};align-items:${open ? 'stretch' : 'center'}">${body}</aside>`;
 }
-
-// The announcements strip, shown above both the chat home and the thread.
-export function newsBanner() {
-  if (state.newsDismissed) {
-    return `<button class="news-pill" data-act="restoreNews">
-      <span class="news-pill-icon">${icon('megaphone', 13)}</span>${ANNOUNCEMENTS.length} updates
-    </button>`;
-  }
-  const body = state.newsExpanded
-    ? `${ANNOUNCEMENTS.map(
-        (a) => `<div class="news-item">
-        <p class="news-item-date">${esc(a.date)}</p>
-        <p class="news-banner-text"><strong>${esc(a.headline)}</strong> ${esc(a.detail)}</p>
-      </div>`,
-      ).join('')}
-      <button class="news-banner-link" data-act="collapseNews">Collapse</button>`
-    : `<p class="news-banner-text"><strong>${esc(ANNOUNCEMENTS[0].headline)}</strong> ${esc(ANNOUNCEMENTS[0].detail)}</p>
-       ${
-         ANNOUNCEMENTS.length > 1
-           ? `<button class="news-banner-link" data-act="expandNews">+${ANNOUNCEMENTS.length - 1} more updates</button>`
-           : ''
-       }`;
-
-  return `
-<div class="news-banner">
-  <span class="news-banner-icon">${icon('megaphone', 16)}</span>
-  <div class="news-banner-main">${body}</div>
-  <button class="news-banner-dismiss" data-act="dismissNews" title="Dismiss" aria-label="Dismiss">${icon('close', 14)}</button>
-</div>`;
-}
-
-export { AVATAR };

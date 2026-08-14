@@ -4,28 +4,6 @@
 // the same shape without the dependency — setState patches the object and schedules
 // one repaint per frame, so a burst of updates during SSE streaming costs one render.
 
-import { ACCESS_DEPARTMENTS, ACCESS_GROUPS } from './seed.js';
-
-const FAVORITES_KEY = 'hrbot.favorites';
-const RECENTS_KEY = 'hrbot.recentlyViewed';
-
-function loadJSON(key, fallback) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function freshAccess() {
-  return {
-    accessGroups: Object.fromEntries(ACCESS_GROUPS.map((g, i) => [g, i === 0])),
-    accessDepts: Object.fromEntries(ACCESS_DEPARTMENTS.map((d) => [d, false])),
-    accessPeople: [],
-    peopleQuery: '',
-  };
-}
-
 export const state = {
   screen: 'welcome', // welcome | signin | app
   role: 'employee', // employee | hr_admin — the prototype's "Dev only" switch
@@ -35,7 +13,7 @@ export const state = {
 
   sidebarOpen: true,
   userMenuOpen: false,
-  view: 'chat', // chat | history | resources | contact | dashboard | documents | review
+  view: 'chat', // chat | history | resources | contact | dashboard | documents | review | inbox
 
   // Chat
   chatStarted: false,
@@ -45,12 +23,11 @@ export const state = {
   isTyping: false,
   chatBusy: false,
   copiedMessageId: null,
-  homeDraft: '',
+  draft: '',
   suggestions: [],
 
-  // Announcements banner
-  newsExpanded: false,
-  newsDismissed: false,
+  // News ticker
+  announcements: [],
 
   // History
   historyGroups: [],
@@ -61,10 +38,13 @@ export const state = {
 
   // Resources
   resourceFilter: 'all', // all | favorites | updates
-  favorites: loadJSON(FAVORITES_KEY, {}),
-  recentlyViewed: loadJSON(RECENTS_KEY, []),
-  highlightFormId: null,
+  resourceSearch: '',
+  favorites: {}, // document_id -> true, mirrored from the API
+  formFavorites: {}, // form_id -> true
+  recentlyViewed: [],
   policies: [],
+  forms: [],
+  updates: [],
 
   // Employee document viewer
   empDocOpen: false,
@@ -76,28 +56,33 @@ export const state = {
 
   // HR admin
   documents: [],
-  docFilter: 'all', // all | Pending | Approved | Rejected
+  docNameSearch: '',
   docMenuId: null,
   selectedDocId: null,
   reviewBlobUrl: null,
   docViewerFullscreen: false,
   versionHistoryDocId: null,
+  versionRows: [],
   newVersionDocId: null,
   newVersionName: '',
   newVersionSummary: '',
   uploadModalOpen: false,
   uploadName: '',
   uploadFile: null,
-  uploadCategory: 'Leave',
   uploadBusy: false,
-  reviewPeopleQuery: '',
-  ...freshAccess(),
+
+  // HR inbox
+  inbox: [],
+  inboxFilter: 'all', // all | New | In Progress | Resolved
+  inboxSearch: '',
+  requestDetailId: null,
+  hrResponseDraft: '',
+  hrResponseSending: false,
+  hrResponseJustSentId: null,
 
   // Dashboard
   metrics: null,
   charts: null,
-
-  busy: false,
 };
 
 let renderFn = () => {};
@@ -117,31 +102,8 @@ export function setState(patch) {
   });
 }
 
-export function persistFavorites() {
-  try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(state.favorites));
-  } catch {
-    /* private browsing — favourites just do not survive the session */
-  }
-}
-
-// Keeps the three most recently opened documents, newest first.
-export function noteRecentlyViewed(doc) {
-  const entry = { id: doc.id, name: doc.name, time: 'Viewed just now' };
-  const rest = state.recentlyViewed.filter((r) => r.id !== doc.id);
-  state.recentlyViewed = [entry, ...rest].slice(0, 3);
-  try {
-    localStorage.setItem(RECENTS_KEY, JSON.stringify(state.recentlyViewed));
-  } catch {
-    /* ignore */
-  }
-}
-
 export const esc = (v) =>
   String(v ?? '').replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
-
-// Conditional class helper, so templates read like the prototype's {{ navChatActive }}.
-export const cls = (...parts) => parts.filter(Boolean).join(' ');
 
 export function toast(message, type = '') {
   let wrap = document.querySelector('.toast-wrap');
@@ -175,7 +137,7 @@ export const userInitials = () =>
 export const userTitle = () => {
   if (state.role === 'hr_admin') return 'HR Administrator, People Operations';
   const dept = state.me?.department;
-  return dept ? `${state.me.role}, ${dept}` : 'Software Engineer, Engineering';
+  return dept ? `${state.me.role}, ${dept}` : 'Employee';
 };
 
 export const isHrAdmin = () => state.role === 'hr_admin';

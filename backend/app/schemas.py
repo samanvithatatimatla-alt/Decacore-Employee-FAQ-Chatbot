@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -120,3 +120,87 @@ class DecisionBody(BaseModel):
 class ListEnvelope(BaseModel):
     items: list[Any]
     total: int
+
+
+# ---------------------------------------------------------------------------
+# News ticker
+# ---------------------------------------------------------------------------
+
+
+class AnnouncementOut(ORMModel):
+    id: str
+    title: str
+    body: str
+    allowed_roles: list[str]
+    department: str | None = None
+    published_at: datetime | None = None
+    expires_at: datetime | None = None
+
+
+class AnnouncementIn(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1, max_length=2000)
+    allowed_roles: list[str] = Field(default_factory=list)
+    department: str | None = None
+    expires_at: datetime | None = None
+    published: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Document versions
+# ---------------------------------------------------------------------------
+
+
+class DocumentVersionOut(ORMModel):
+    id: str
+    document_id: str
+    version_number: int
+    filename: str
+    title: str
+    change_summary: str | None = None
+    is_current: bool
+    effective_date: date | None = None
+    uploaded_at: datetime
+    uploaded_by_name: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# HR forms
+# ---------------------------------------------------------------------------
+
+
+class HRFormOut(ORMModel):
+    id: str
+    title: str
+    filename: str
+    category: str | None = None
+    allowed_roles: list[str]
+    available: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Favourites and recently viewed
+# ---------------------------------------------------------------------------
+
+
+class FavoriteOut(BaseModel):
+    document_id: str
+    title: str
+    filename: str
+    kind: str
+    last_viewed_at: datetime | None = None
+
+
+# ---------------------------------------------------------------------------
+# HR inbox
+# ---------------------------------------------------------------------------
+
+
+class InboxStatusBody(BaseModel):
+    # Free-form on the column, but only these three are reachable through the API.
+    status: Literal["New", "In Progress", "Resolved"]
+
+
+class HRResponseBody(BaseModel):
+    response: str = Field(min_length=1, max_length=4000)
+    resolve: bool = False

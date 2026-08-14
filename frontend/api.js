@@ -1,6 +1,5 @@
-// API client and the translation layer between backend shapes and the vocabulary
-// the prototype's markup expects (Pending/Approved/Rejected, "All Employees",
-// "Remote Work Policy — Sec. 3.2, p.7", and so on).
+// API client and the translation between backend shapes and the vocabulary the
+// QBot markup expects.
 
 // The API is a different origin now that this app deploys to Static Web Apps rather
 // than being served by FastAPI. config.js is generated at deploy time; the fallback
@@ -8,8 +7,8 @@
 const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.apiBase) || 'http://localhost:8000';
 export const apiUrl = (path) => `${API_BASE}${path}`;
 
-// The prototype's "Dev only" role switch offers exactly these two identities, so the
-// port keeps two. Both are seeded users; AUTH_MODE=dev accepts them by header.
+// The "Dev only" role switch offers exactly these two identities, matching the
+// prototype. Both are seeded users; AUTH_MODE=dev accepts them by header.
 export const PERSONAS = {
   employee: { label: 'Employee', email: 'marietta.baudone@gmail.com' },
   hr_admin: { label: 'HR Admin', email: 'hr.admin@bluepeak.example' },
@@ -17,12 +16,9 @@ export const PERSONAS = {
 
 let identity = PERSONAS.employee.email;
 
-export function setIdentity(email) {
+export const setIdentity = (email) => {
   identity = email;
-}
-export function getIdentity() {
-  return identity;
-}
+};
 
 export function authHeaders(extra = {}) {
   // When AUTH_MODE flips to entra this becomes an Authorization: Bearer header and
@@ -39,32 +35,15 @@ export async function api(path, options = {}) {
   return res.status === 204 ? null : res.json();
 }
 
+const json = (method, body) => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+});
+
 // ---------------------------------------------------------------------------
-// Documents
+// Formatting
 // ---------------------------------------------------------------------------
-
-// Category values the backend will accept on PATCH /category. The prototype offered
-// its own list ('General', 'Uncategorized'); those would be rejected with a 400, so
-// the real vocabulary wins here.
-export const CATEGORIES = ['Benefits', 'Leave', 'Payroll', 'Travel', 'Insurance', 'Reimbursements'];
-
-const ROLE_TO_GROUP = { Employee: 'All Employees', Manager: 'Managers', Executive: 'Executive Team' };
-const GROUP_TO_ROLE = { 'All Employees': 'Employee', Managers: 'Manager', 'Executive Team': 'Executive' };
-
-export const roleToGroup = (role) => ROLE_TO_GROUP[role] || role;
-export const groupToRole = (group) => GROUP_TO_ROLE[group] || null;
-
-export function statusLabel(status) {
-  if (status === 'approved') return 'Approved';
-  if (status === 'rejected') return 'Rejected';
-  return 'Pending';
-}
-
-export function statusTagClass(label) {
-  if (label === 'Approved') return 'tag-approved';
-  if (label === 'Rejected') return 'tag-rejected';
-  return 'tag-pending';
-}
 
 export function shortDate(value) {
   if (!value) return '—';
@@ -74,37 +53,79 @@ export function shortDate(value) {
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// Shapes a DocumentOut into the record the prototype's document table and review
-// screen read from.
+const DAY = 86400000;
+
+function relativeDay(value) {
+  const at = new Date(value);
+  const midnight = new Date(at);
+  midnight.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysAgo = Math.round((today - midnight) / DAY);
+  if (daysAgo <= 0) return at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (daysAgo === 1) return 'Yesterday';
+  if (daysAgo < 7) return `${daysAgo} days ago`;
+  return at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function relativeViewed(value) {
+  if (!value) return 'Viewed recently';
+  const at = new Date(value);
+  const mins = Math.round((Date.now() - at) / 60000);
+  if (mins < 1) return 'Viewed just now';
+  if (mins < 60) return `Viewed ${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `Viewed ${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'Viewed yesterday' : `Viewed ${days} days ago`;
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+// Every upload is readable by all three employee-facing roles: the final design
+// dropped the access picker, and the upload modal promises the document is
+// "available to all employees immediately".
+export const DEFAULT_PERMISSIONS = 'Employee,Manager,Executive';
+
 export function toDocRecord(d) {
-  const status = statusLabel(d.status);
-  const groups = (d.allowed_roles || []).map(roleToGroup);
   return {
     id: d.id,
     name: d.filename || `${d.title}.pdf`,
     title: d.title,
     category: d.category || 'Uncategorized',
-    status,
-    tagClass: statusTagClass(status),
+    status: d.status,
     uploadedOn: shortDate(d.uploaded_at),
-    decidedOn: shortDate(d.approved_at || d.uploaded_at),
-    audience: groups,
-    audienceLabel: groups.join(', ') || '—',
-    confidence: d.ai_confidence != null ? Math.round(d.ai_confidence * 100) : null,
-    allowedRoles: d.allowed_roles || [],
-    rejectionComment: d.rejection_comment || '',
     version: d.version || null,
-    // The viewer renders the real PDF; these are the fallback headings the
-    // prototype's mock page used.
     previewTitle: (d.title || 'Policy').toUpperCase(),
-    previewBody: 'Loading document…',
   };
 }
 
-export async function documentContentUrl(id) {
-  // /content honours role checks and applies the dynamic watermark when it is
-  // enabled, so the viewer fetches it as a blob rather than linking straight out.
-  const res = await fetch(apiUrl(`/api/documents/${id}/content`), { headers: authHeaders() });
+export const listDocuments = () => api('/api/documents');
+export const listUpdates = () => api('/api/documents/updates');
+export const listVersions = (id) => api(`/api/documents/${id}/versions`);
+export const deleteDocument = (id) => api(`/api/documents/${id}`, { method: 'DELETE' });
+
+export function uploadDocument(file, title) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('permissions', DEFAULT_PERMISSIONS);
+  if (title) fd.append('title', title);
+  return api('/api/documents', { method: 'POST', body: fd });
+}
+
+export function uploadVersion(id, file, changeSummary) {
+  const fd = new FormData();
+  fd.append('file', file);
+  if (changeSummary) fd.append('change_summary', changeSummary);
+  return api(`/api/documents/${id}/versions`, { method: 'POST', body: fd });
+}
+
+// /content honours role checks and applies the dynamic watermark when it is
+// enabled, so the viewer fetches it as a blob rather than linking straight out.
+async function blobUrl(path) {
+  const res = await fetch(apiUrl(path), { headers: authHeaders() });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'Unable to open document');
@@ -112,15 +133,49 @@ export async function documentContentUrl(id) {
   return URL.createObjectURL(await res.blob());
 }
 
+export const documentContentUrl = (id) => blobUrl(`/api/documents/${id}/content`);
+export const versionContentUrl = (id, n) => blobUrl(`/api/documents/${id}/versions/${n}/content`);
+export const formContentUrl = (id) => blobUrl(`/api/forms/${id}/content`);
+
+// ---------------------------------------------------------------------------
+// Announcements, forms, favourites
+// ---------------------------------------------------------------------------
+
+export const listAnnouncements = () => api('/api/announcements');
+export const listForms = () => api('/api/forms');
+export const listFavorites = () => api('/api/favorites');
+export const addFavorite = (id) => api(`/api/favorites/${id}`, { method: 'PUT' });
+export const removeFavorite = (id) => api(`/api/favorites/${id}`, { method: 'DELETE' });
+export const listRecentlyViewed = () => api('/api/recently-viewed');
+export const noteViewed = (id) => api(`/api/recently-viewed/${id}`, { method: 'POST' });
+
+// ---------------------------------------------------------------------------
+// HR inbox
+// ---------------------------------------------------------------------------
+
+export function listInbox({ status, q } = {}) {
+  const params = new URLSearchParams();
+  if (status && status !== 'all') params.set('status', status);
+  if (q) params.set('q', q);
+  const query = params.toString();
+  return api(`/api/requests/inbox${query ? `?${query}` : ''}`);
+}
+
+export const setInboxStatus = (id, status) => api(`/api/requests/${id}/status`, json('POST', { status }));
+export const respondToRequest = (id, response, resolve = false) =>
+  api(`/api/requests/${id}/respond`, json('POST', { response, resolve }));
+
+export const inboxTagClass = (status) =>
+  status === 'New' ? 'tag-new' : status === 'In Progress' ? 'tag-progress' : 'tag-resolved';
+
 // ---------------------------------------------------------------------------
 // Chat
 // ---------------------------------------------------------------------------
 
-// Target shape is the prototype's "Remote Work Policy — Sec. 3.2, p.7".
-// The local retriever does not always find a real section heading: it falls back to
-// the document title or to "Page 3", both of which would render as
-// "Policy — Sec. Policy, p.1". Those are dropped so only the page number shows.
 export function citationLabel(c) {
+  // Target shape is "Remote Work Policy — Sec. 3.2, p.7". The local retriever does
+  // not always find a real section heading: it falls back to the document title or
+  // to "Page 3", both of which would render as "Policy — Sec. Policy, p.1".
   const hasSection = c.section && c.section !== c.title && !/^page\s+\d+$/i.test(c.section);
   const parts = [];
   if (hasSection) parts.push(`Sec. ${c.section}`);
@@ -130,14 +185,13 @@ export function citationLabel(c) {
 
 // The prototype styles three answer states. The backend reports confidence plus a
 // should_escalate flag rather than a state, so derive one: no sources at all reads
-// as "not covered", several sources it could not reconcile reads as a conflict.
+// as "not covered", several it could not reconcile reads as a conflict.
 export function botKind(citations, escalationOffered) {
   if (!escalationOffered) return { kind: 'answer', kicker: 'Answer' };
   if (!citations || citations.length === 0) return { kind: 'refuse', kicker: 'Not Covered by Policy' };
   return { kind: 'warn', kicker: 'Policy Conflict Detected' };
 }
 
-// Streams POST /api/chat, invoking handlers as each SSE frame arrives.
 export async function streamChat({ message, conversationId }, handlers) {
   const body = { message };
   if (conversationId) body.conversation_id = conversationId;
@@ -171,16 +225,24 @@ export async function streamChat({ message, conversationId }, handlers) {
   }
 }
 
+export const escalateChat = (conversationId, assistantMessageId, note) =>
+  api('/api/chat/escalate', json('POST', {
+    conversation_id: conversationId,
+    assistant_message_id: assistantMessageId || null,
+    note: note || null,
+  }));
+
 // ---------------------------------------------------------------------------
-// History
+// Conversations
 // ---------------------------------------------------------------------------
 
-const DAY = 86400000;
+export const listConversations = () => api('/api/conversations');
+export const getConversation = (id) => api(`/api/conversations/${id}`);
 
 // The prototype groups history under Today / Yesterday / This week / Earlier.
 export function groupConversations(items) {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const buckets = [
     { label: 'Today', items: [] },
     { label: 'Yesterday', items: [] },
@@ -189,24 +251,16 @@ export function groupConversations(items) {
   ];
   for (const c of items) {
     const at = new Date(c.last_message_at);
-    // Compare calendar days, not elapsed hours — a conversation at 11pm last night
-    // is "Yesterday" even though it is only two hours old.
-    const atMidnight = new Date(at);
-    atMidnight.setHours(0, 0, 0, 0);
-    const daysAgo = Math.round((startOfToday - atMidnight) / DAY);
+    const midnight = new Date(at);
+    midnight.setHours(0, 0, 0, 0);
+    const daysAgo = Math.round((today - midnight) / DAY);
     const bucket = daysAgo <= 0 ? 0 : daysAgo === 1 ? 1 : daysAgo < 7 ? 2 : 3;
-    buckets[bucket].items.push({
-      id: c.id,
-      label: c.title,
-      time: relativeTime(at, daysAgo),
-    });
+    buckets[bucket].items.push({ id: c.id, label: c.title, time: relativeDay(c.last_message_at) });
   }
   return buckets.filter((b) => b.items.length);
 }
 
-function relativeTime(at, daysAgo) {
-  if (daysAgo <= 0) return at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  if (daysAgo === 1) return 'Yesterday';
-  if (daysAgo < 7) return `${daysAgo} days ago`;
-  return at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+export const listFaq = () => api('/api/faq/top');
+export const getMe = () => api('/api/me');
+export const getMetrics = () => api('/api/dashboard/metrics');
+export const getCharts = () => api('/api/dashboard/charts');
