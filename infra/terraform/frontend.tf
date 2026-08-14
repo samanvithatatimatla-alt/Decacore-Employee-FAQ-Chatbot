@@ -13,4 +13,11 @@ resource "azurerm_static_web_app" "frontend" {
 
   sku_tier = "Free"
   sku_size = "Free"
+
+  lifecycle {
+    # The deploy action stamps the linked repo onto the resource. Terraform doesn't
+    # manage those fields, so without this every apply clears them and every deploy
+    # sets them again — endless churn over values neither side really owns.
+    ignore_changes = [repository_branch, repository_url]
+  }
 }

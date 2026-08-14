@@ -33,17 +33,11 @@ resource "azurerm_role_assignment" "kv_admin" {
   principal_type       = "User"
 }
 
-# Both app identities need to resolve Key Vault references at startup. A slot does
-# not inherit the production slot's identity, so this is granted twice.
+# The app resolves Key Vault references at startup, so it needs read access.
 resource "azurerm_role_assignment" "kv_reader" {
-  for_each = {
-    prod = azurerm_linux_web_app.backend.identity[0].principal_id
-    dev  = azurerm_linux_web_app_slot.dev.identity[0].principal_id
-  }
-
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = each.value
+  principal_id         = azurerm_linux_web_app.backend.identity[0].principal_id
   principal_type       = "ServicePrincipal"
 }
 

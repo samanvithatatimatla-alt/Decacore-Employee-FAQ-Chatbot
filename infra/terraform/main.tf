@@ -86,57 +86,11 @@ resource "azurerm_linux_web_app" "backend" {
   }
 }
 
-# Deploy target for CI. The production slot is what gets demoed, and is only ever
-# deployed to deliberately — "never demo from the slot people are pushing to".
-resource "azurerm_linux_web_app_slot" "dev" {
-  name           = "dev"
-  app_service_id = azurerm_linux_web_app.backend.id
-  https_only     = true
-
-  ftp_publish_basic_authentication_enabled       = false
-  webdeploy_publish_basic_authentication_enabled = false
-  client_affinity_enabled                        = false
-
-  site_config {
-    ftps_state       = "Disabled"
-    app_command_line = "gunicorn -w 2 -k uvicorn.workers.UvicornWorker --timeout 120 app.main:app"
-
-    application_stack {
-      python_version = "3.12"
-    }
-
-    always_on = true
-  }
-
-  # Its own identity — a slot does not inherit the production slot's.
-  # Anything granted to the app must be granted to this principal too.
-  identity {
-    type = "SystemAssigned"
-  }
-
-  app_settings = local.app_settings
-
-  lifecycle {
-    # Secrets are Key Vault references now — the value in state is a URI, not a
-    # secret, so Terraform can own them outright. Only the Graph secret is still
-    # a literal, and it is empty until admin consent lands.
-    ignore_changes = [
-      app_settings["GRAPH_CLIENT_SECRET"],
-    ]
-  }
-}
-
 # Contributor, not Reader — the document upload and receipt endpoints write blobs.
-# Granted to both identities: a slot does not inherit the production slot's.
 resource "azurerm_role_assignment" "blob_contributor" {
-  for_each = {
-    prod = azurerm_linux_web_app.backend.identity[0].principal_id
-    dev  = azurerm_linux_web_app_slot.dev.identity[0].principal_id
-  }
-
   scope                = azurerm_storage_account.policy_docs.id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = each.value
+  principal_id         = azurerm_linux_web_app.backend.identity[0].principal_id
   principal_type       = "ServicePrincipal"
 }
 
@@ -156,4 +110,14 @@ resource "azurerm_storage_container" "app" {
 
 locals {
   rg_id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}"
+}
+
+# Developers need data-plane access to seed and inspect blobs. Resource-group
+# Contributor does not grant it — the data plane is a separate permission surface
+# from the management plane, which is a common and confusing gap.
+resource "azurerm_role_assignment" "developer_blob_access" {
+  scope                = azurerm_storage_account.policy_docs.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = data.azurerm_client_config.current.object_id
+  principal_type       = "User"
 }

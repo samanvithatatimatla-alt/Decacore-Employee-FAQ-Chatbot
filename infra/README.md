@@ -186,16 +186,16 @@ Two pipelines, split by what they deploy:
 
 | | Built by | Deploys to |
 |---|---|---|
-| `backend/` | Azure Pipelines — `azure-pipelines.yml` | App Service **`dev` slot** |
+| `backend/` | Azure Pipelines — `azure-pipelines.yml` | App Service **production** |
 | `frontend/` | GitHub Actions — `.github/workflows/frontend.yml` | Static Web App |
 
 Both filter on paths, so a frontend push doesn't trigger a backend deploy.
 
-**Production is never deployed to by CI.** The dev slot is verified, then swapped:
-
-```bash
-az webapp deployment slot swap -g DecaCore -n qthr-faq-api --slot dev --target-slot production
-```
+**CI deploys straight to production.** The dev slot and swap step were removed — with
+one team and one environment the extra hop only meant every change needed a manual
+swap before anyone could see it. The tradeoff is real: a bad deploy now reaches
+production directly, and the pipeline's `/health` smoke test is the only gate. Tests
+run before the deploy stage, so a failing test never reaches the deploy.
 
 ### Backend — Azure DevOps setup
 
