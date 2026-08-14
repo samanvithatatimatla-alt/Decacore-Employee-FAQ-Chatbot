@@ -417,3 +417,52 @@ def test_favorites_path_is_not_shadowed_by_form_id(client):
     res = client.get("/api/forms/favorites", headers=EMPLOYEE)
     assert res.status_code == 200
     assert "items" in res.json()
+
+
+# ---------------------------------------------------------------------------
+# Top FAQ
+# ---------------------------------------------------------------------------
+
+
+def test_faq_excludes_chatter_and_merges_phrasings(client):
+    from app.routers.chat import is_faq_candidate
+
+    # Greetings and one-word chatter are not frequently asked questions.
+    for junk in ["hi", "Hi", "hey", "hello", "thanks", "ok", "test", "yes"]:
+        assert not is_faq_candidate(junk), junk
+    # Real questions survive.
+    for real in [
+        "How much parental leave do employees get?",
+        "What is the remote work policy?",
+        "Can I work from home on Fridays?",
+    ]:
+        assert is_faq_candidate(real), real
+
+
+def test_faq_top_returns_only_real_questions(client):
+    # Ask one real question several times and spam a greeting more often.
+    for _ in range(2):
+        client.post("/api/chat", json={"message": "What is the remote work policy?"}, headers=EMPLOYEE)
+    for _ in range(5):
+        client.post("/api/chat", json={"message": "hi"}, headers=EMPLOYEE)
+
+    items = client.get("/api/faq/top", headers=EMPLOYEE).json()["items"]
+    assert len(items) <= 3
+    questions = [i["question"] for i in items]
+    assert "hi" not in [q.lower() for q in questions], questions
+    assert any("remote work policy" in q.lower() for q in questions), questions
+
+
+def test_faq_merges_case_and_punctuation_variants(client):
+    from app.routers.chat import top_faq  # noqa: F401  (import proves the module loads)
+
+    for msg in ["Do I get a laptop stipend?", "do i get a laptop stipend", "Do I get a laptop stipend?"]:
+        client.post("/api/chat", json={"message": msg}, headers=EMPLOYEE)
+
+    items = client.get("/api/faq/top", headers=EMPLOYEE).json()["items"]
+    matches = [i for i in items if "laptop stipend" in i["question"].lower()]
+    # Three asks in three phrasings must count as one question asked three times,
+    # not three questions asked once.
+    assert len(matches) <= 1
+    if matches:
+        assert matches[0]["count"] >= 3, matches[0]

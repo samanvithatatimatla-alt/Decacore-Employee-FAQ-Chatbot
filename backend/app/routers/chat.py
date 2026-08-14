@@ -85,17 +85,50 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
     return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+# Chatter that is not a question. Grouping raw message text put "hi" in the top
+# three, which the home screen presents to every employee as a frequently asked
+# question.
+FAQ_MIN_CHARS = 12
+FAQ_MIN_WORDS = 3
+FAQ_STOPWORDS = {"hi", "hey", "hello", "thanks", "thank you", "test", "testing", "ok", "okay", "yes", "no"}
+
+
+def is_faq_candidate(text: str) -> bool:
+    stripped = text.strip().lower().rstrip("?.!")
+    if stripped in FAQ_STOPWORDS:
+        return False
+    return len(text) >= FAQ_MIN_CHARS and len(text.split()) >= FAQ_MIN_WORDS
+
+
 @router.get("/faq/top")
 def top_faq(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Group in SQL over a wider window, then merge and filter in Python: the same
+    # question asked with different capitalisation or trailing punctuation is one
+    # question, and SQL grouping alone would count them separately.
     rows = db.execute(
         select(Message.content, func.count(Message.id).label("count"))
         .join(Conversation, Conversation.id == Message.conversation_id)
         .where(Message.role == "user")
         .group_by(Message.content)
         .order_by(func.count(Message.id).desc())
-        .limit(3)
+        .limit(100)
     ).all()
-    items = [{"question": content, "count": count} for content, count in rows]
+
+    merged: dict[str, tuple[str, int]] = {}
+    for content, count in rows:
+        text = " ".join((content or "").split())
+        if not is_faq_candidate(text):
+            continue
+        key = text.lower().rstrip("?.! ")
+        if key in merged:
+            kept, total = merged[key]
+            # Keep the most-asked phrasing as the label.
+            merged[key] = (kept, total + count)
+        else:
+            merged[key] = (text, count)
+
+    top = sorted(merged.values(), key=lambda pair: -pair[1])[:3]
+    items = [{"question": text, "count": count} for text, count in top]
     return {"items": items, "total": len(items)}
 
 
