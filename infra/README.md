@@ -15,9 +15,8 @@ cd terraform && terraform init && terraform plan
 
 | Resource | Name | Region | Notes |
 |---|---|---|---|
-| App Service plan | `qthr-faq-plan` | westus | **S1** — lowest tier with deployment slots |
+| App Service plan | `qthr-faq-plan` | westus | **S1** |
 | Web app | `qthr-faq-api` | westus | Python 3.12, HTTPS-only, always-on |
-| Slot | `qthr-faq-api/dev` | westus | CI deploy target |
 | Static Web App | `qthr-faq-web` | westus2 | Frontend, Free tier |
 | Storage | `qthrpolicypdfs` | eastus | Containers `documents`, `receipts`, `watermarked` — all private |
 | Storage | `qthrtfstate` | eastus | Terraform state only — **not** Terraform-managed |
@@ -28,8 +27,7 @@ cd terraform && terraform init && terraform plan
 
 | | URL |
 |---|---|
-| Backend (demo) | https://qthr-faq-api.azurewebsites.net |
-| Backend (dev slot) | https://qthr-faq-api-dev.azurewebsites.net |
+| Backend | https://qthr-faq-api.azurewebsites.net |
 | Frontend | https://delightful-tree-02eef901e.7.azurestaticapps.net |
 
 ## Regions
@@ -46,16 +44,13 @@ We hold **Contributor + User Access Administrator on the `DecaCore` resource gro
 not at subscription scope. So: no creating resource groups, no visibility outside the
 group, and Terraform must treat the resource group as a `data` source.
 
-The web app and its `dev` slot each have their **own** system-assigned managed identity —
-a slot does not inherit the production slot's. Every grant must be made twice:
+The web app has a system-assigned managed identity, principal
+`a1ca8540-54a3-454d-a0be-057c46743a96`. It holds `Storage Blob Data Contributor` on
+`qthrpolicypdfs` (Contributor, not Reader — the upload endpoints write) and
+`Key Vault Secrets User` on `qthr-decacore-kv`.
 
-| Identity | Principal ID |
-|---|---|
-| `qthr-faq-api` (production / demo) | `a1ca8540-54a3-454d-a0be-057c46743a96` |
-| `qthr-faq-api/dev` | `51d6bdbe-cfb9-45fa-a00d-1a098eb8cd61` |
-
-Both hold `Storage Blob Data Contributor` on `qthrpolicypdfs` (Contributor, not Reader —
-the upload endpoints write) and `Key Vault Secrets User` on `qthr-decacore-kv`.
+Note that a deployment slot would get its **own** identity rather than inheriting this
+one, so every grant would need making twice. That caught us once already.
 
 ## Terraform state
 
@@ -106,7 +101,7 @@ az keyvault secret set --vault-name qthr-decacore-kv --name azure-openai-api-key
 Watch for trailing newlines when writing from a file — a newline inside `database-url`
 corrupts the connection string in a way that is awkward to debug.
 
-Rotation is a vault update: no redeploy, and both slots pick it up.
+Rotation is a vault update: no redeploy needed.
 
 Bootstrapping from scratch takes **two applies** — the vault and its role assignments must
 exist before app settings can reference them, and the role assignment depends on the app's
@@ -128,8 +123,12 @@ and is promoted only once its dependency is verified:
 |---|---|---|
 | `AUTH_MODE` | `dev` | Entra app roles + "Expose an API" are configured |
 | `STORAGE_BACKEND` | `azure` | — already on |
-| `SEARCH_BACKEND` | `local` | `scripts/create_search_index.py` has run |
-| `LLM_BACKEND` | `offline` | a deploy has proven the Foundry endpoint reachable |
+
+Seed PDFs must be uploaded to the `documents` container as well as seeded into SQL.
+Running the seed with `STORAGE_BACKEND=local` writes them to a laptop instead, and every
+Resources download then 404s while the metadata looks perfectly fine.
+| `SEARCH_BACKEND` | `azure` | — index created, 175 chunks loaded |
+| `LLM_BACKEND` | `azure` | — verified against `gpt-5` |
 | `NOTIFICATION_BACKEND` | `log` | Graph `Mail.Send` admin consent lands |
 
 Deployment names are `gpt-5` (chat) and `text-embedding-3-large` (embeddings) — discovered
