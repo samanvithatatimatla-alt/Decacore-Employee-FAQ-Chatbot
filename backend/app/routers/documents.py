@@ -337,7 +337,7 @@ def recently_updated(db: Session = Depends(get_db), user: User = Depends(get_cur
     """
     current = db.scalars(
         select(DocumentVersion)
-        .where(DocumentVersion.is_current.is_(True), DocumentVersion.version_number > 1)
+        .where(DocumentVersion.is_current, DocumentVersion.version_number > 1)
         .order_by(DocumentVersion.uploaded_at.desc())
     ).all()
     items = []

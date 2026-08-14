@@ -27,7 +27,7 @@ def list_announcements(db: Session = Depends(get_db), user: User = Depends(get_c
     rows = db.scalars(
         select(NewsAnnouncement)
         .where(
-            NewsAnnouncement.published.is_(True),
+            NewsAnnouncement.published,
             # Expiry is optional; a NULL means the item runs until it is unpublished.
             or_(NewsAnnouncement.expires_at.is_(None), NewsAnnouncement.expires_at > now),
         )

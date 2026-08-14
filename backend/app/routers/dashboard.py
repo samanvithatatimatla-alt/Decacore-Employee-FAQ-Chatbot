@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 def metrics(db: Session = Depends(get_db), user: User = Depends(require_roles("HRAdmin"))):
     return {
         "chat_messages": db.scalar(select(func.count(Message.id)).where(Message.role == "user")) or 0,
-        "escalated_messages": db.scalar(select(func.count(Message.id)).where(Message.escalated.is_(True))) or 0,
+        "escalated_messages": db.scalar(select(func.count(Message.id)).where(Message.escalated)) or 0,
         "pending_requests": db.scalar(select(func.count(EmployeeRequest.id)).where(EmployeeRequest.status == "Pending")) or 0,
         "approved_documents": db.scalar(select(func.count(Document.id)).where(Document.status == "approved")) or 0,
     }

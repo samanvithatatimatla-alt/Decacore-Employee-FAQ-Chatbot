@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
@@ -51,7 +51,7 @@ def _list(db: Session, user: User, kind: str, limit: int | None = None):
     rows = db.scalars(
         select(Favorite)
         .where(Favorite.user_id == user.id, Favorite.kind == kind)
-        .order_by(Favorite.last_viewed_at.desc().nullslast(), Favorite.created_at.desc())
+        .order_by(func.coalesce(Favorite.last_viewed_at, Favorite.created_at).desc())
     ).all()
     items = []
     for fav in rows:
@@ -107,7 +107,7 @@ def note_viewed(document_id: str, db: Session = Depends(get_db), user: User = De
     stale = db.scalars(
         select(Favorite)
         .where(Favorite.user_id == user.id, Favorite.kind == "recent")
-        .order_by(Favorite.last_viewed_at.desc().nullslast())
+        .order_by(func.coalesce(Favorite.last_viewed_at, Favorite.created_at).desc())
         .offset(RECENTLY_VIEWED_LIMIT)
     ).all()
     for row in stale:
