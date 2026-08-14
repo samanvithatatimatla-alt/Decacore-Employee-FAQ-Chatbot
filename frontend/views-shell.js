@@ -1,6 +1,7 @@
 // Welcome screen, sign-in screen, news ticker, top nav and sidebar.
 
 import { shortDate } from './api.js';
+import { entraEnabled } from './auth.js';
 import { icon } from './icons.js';
 import { esc, isHrAdmin, state, userInitials, userName, userTitle } from './store.js';
 
@@ -36,6 +37,7 @@ export function signinScreen() {
       ${busy ? 'Signing in…' : 'Sign in with Microsoft'}
     </button>
     <p class="ms-caption">Secure sign-in with Microsoft Entra ID</p>
+    ${entraEnabled() ? '' : `
     <div style="display:flex;align-items:center;gap:12px;margin:14px 0 6px">
       <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
       <span style="font-family:'Instrument Sans',system-ui,sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(244,242,249,.4)">OR</span>
@@ -52,7 +54,7 @@ export function signinScreen() {
                style="font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:13.5px;color:#f4f2f9;background:#241f30;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px 12px;box-sizing:border-box;width:100%;outline:none">
       </label>
       <button class="cta" style="margin:4px 0 0;width:100%;padding:12px 0;font-size:14px" data-act="signin" ${busy ? 'disabled' : ''}>Sign in</button>
-    </div>
+    </div>`}
     <button class="back-link" data-act="goWelcome">← Back to welcome</button>
   </div>
 </div>`;
@@ -80,7 +82,14 @@ export function topNav() {
 <nav class="nav">
   <button class="burger" data-act="toggleSidebar" aria-label="Toggle sidebar"><span></span><span></span><span></span></button>
   <span class="brand">QBot</span>
-  <div class="dev-toggle">
+  ${
+    // The prototype ships this switch, and it is genuinely useful for demoing both
+    // roles against AUTH_MODE=dev. Under real Entra sign-in the role comes from the
+    // token's `roles` claim, so a client-side switch would be both meaningless and
+    // misleading — it disappears.
+    entraEnabled()
+      ? ''
+      : `<div class="dev-toggle">
     <span class="dev-toggle-label">Dev only</span>
     <select data-act="setRole" aria-label="Preview role (dev only)">
       <option value="employee"${state.role === 'employee' ? ' selected' : ''}>Employee</option>
@@ -91,7 +100,8 @@ export function topNav() {
       <option value="populated"${state.historyMode === 'populated' ? ' selected' : ''}>History: Populated</option>
       <option value="empty"${state.historyMode === 'empty' ? ' selected' : ''}>History: Empty</option>
     </select>
-  </div>
+  </div>`
+  }
 </nav>`;
 }
 

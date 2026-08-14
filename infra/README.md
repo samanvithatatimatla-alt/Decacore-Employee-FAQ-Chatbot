@@ -171,6 +171,11 @@ resource exists despite the error — verify with `az resource list` rather than
 
 - Entra: app roles (`Employee`, `Manager`, `Executive`, `HRAdmin`), "Expose an API"
   application ID URI, and redirect URIs — all still unset on `DecaCore-HR-Chatbot`.
+  The application code is finished and shipped behind a flag; only the registration
+  work is left, and it needs an owner of that registration (currently Nihitha only)
+  plus a tenant admin for role assignment. Step-by-step in `docs/ENTRA_SETUP.md`.
+  **Until this lands, `AUTH_MODE=dev` is live on a public URL, which means any caller
+  can act as HR Admin by sending an `X-Dev-User-Email` header.**
 - Graph `Mail.Send` admin consent — needs a tenant admin.
 - Azure DevOps parallel jobs grant, if it reads 0.
 - Rotate the SQL password before handover.

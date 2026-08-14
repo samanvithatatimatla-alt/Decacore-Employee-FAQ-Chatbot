@@ -4,6 +4,8 @@
 // The API is a different origin now that this app deploys to Static Web Apps rather
 // than being served by FastAPI. config.js is generated at deploy time; the fallback
 // keeps `python -m http.server` style local development working against a local API.
+import { accessToken, entraEnabled } from './auth.js';
+
 const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.apiBase) || 'http://localhost:8000';
 export const apiUrl = (path) => `${API_BASE}${path}`;
 
@@ -20,14 +22,19 @@ export const setIdentity = (email) => {
   identity = email;
 };
 
-export function authHeaders(extra = {}) {
-  // When AUTH_MODE flips to entra this becomes an Authorization: Bearer header and
-  // the dev switch in the nav goes away; nothing else in the app changes.
+export async function authHeaders(extra = {}) {
+  // With Entra configured every request carries a real access token. Without it the
+  // dev header is used, which is what AUTH_MODE=dev on the backend expects. This is
+  // the only place the two modes differ.
+  if (entraEnabled()) {
+    const token = await accessToken();
+    if (token) return new Headers({ Authorization: `Bearer ${token}`, ...extra });
+  }
   return new Headers({ 'X-Dev-User-Email': identity, ...extra });
 }
 
 export async function api(path, options = {}) {
-  const res = await fetch(apiUrl(path), { ...options, headers: authHeaders(options.headers || {}) });
+  const res = await fetch(apiUrl(path), { ...options, headers: await authHeaders(options.headers || {}) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Request failed (${res.status})`);
@@ -125,7 +132,7 @@ export function uploadVersion(id, file, changeSummary) {
 // /content honours role checks and applies the dynamic watermark when it is
 // enabled, so the viewer fetches it as a blob rather than linking straight out.
 async function blobUrl(path) {
-  const res = await fetch(apiUrl(path), { headers: authHeaders() });
+  const res = await fetch(apiUrl(path), { headers: await authHeaders() });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'Unable to open document');
@@ -197,7 +204,7 @@ export async function streamChat({ message, conversationId }, handlers) {
   if (conversationId) body.conversation_id = conversationId;
   const res = await fetch(apiUrl('/api/chat'), {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {

@@ -6,6 +6,7 @@
 // restored around it.
 
 import * as API from './api.js';
+import * as Auth from './auth.js';
 import { onRender, setState, state, toast } from './store.js';
 import { chatHome, chatThread, contactView, empDocModal, historyView, resourcesView } from './views-employee.js';
 import {
@@ -424,10 +425,15 @@ const actions = {
   goSignin: () => setState({ screen: 'signin' }),
 
   signin: async () => {
-    const typed = state.signinEmail.trim();
-    API.setIdentity(typed || API.PERSONAS[state.role].email);
     setState({ signingIn: true });
     try {
+      if (Auth.entraEnabled()) {
+        // The popup throws if the user closes it; that is a cancellation, not an error.
+        await Auth.signIn();
+      } else {
+        const typed = state.signinEmail.trim();
+        API.setIdentity(typed || API.PERSONAS[state.role].email);
+      }
       const me = await API.getMe();
       setState({
         me,
@@ -443,7 +449,8 @@ const actions = {
     }
   },
 
-  signOut: () =>
+  signOut: async () => {
+    await Auth.signOut();
     setState({
       screen: 'welcome',
       me: null,
@@ -451,9 +458,13 @@ const actions = {
       messages: [],
       conversationId: null,
       chatStarted: false,
-    }),
+    });
+  },
 
   setRole: async (value) => {
+    // Dev-mode only; under Entra the role comes from the token and the switch is
+    // not rendered at all.
+    if (Auth.entraEnabled()) return;
     API.setIdentity(API.PERSONAS[value].email);
     const hrOnly = ['dashboard', 'documents', 'review', 'inbox'];
     setState({ role: value, view: hrOnly.includes(state.view) && value === 'employee' ? 'chat' : state.view });
@@ -710,4 +721,25 @@ document.addEventListener('click', (e) => {
   if (state.userMenuOpen && !e.target.closest('.sidebar-footer')) setState({ userMenuOpen: false });
 });
 
-render();
+// An existing MSAL session survives a reload, so pick it up and go straight in
+// rather than showing a sign-in screen to someone already signed in.
+async function boot() {
+  render();
+  if (!Auth.entraEnabled()) return;
+  try {
+    const account = await Auth.restore();
+    if (!account) return;
+    const me = await API.getMe();
+    setState({
+      me,
+      screen: 'app',
+      role: me.role === 'HRAdmin' ? 'hr_admin' : 'employee',
+      view: me.role === 'HRAdmin' ? 'dashboard' : 'chat',
+    });
+    await Promise.all([loadForView(state.view), refreshRecents(), loadTicker(), loadFavorites()]);
+  } catch {
+    // Session no longer valid — fall through to the welcome screen.
+  }
+}
+
+boot();

@@ -26,6 +26,15 @@ env:
   # Production slot. Point at qthr-faq-api-dev.azurewebsites.net to test against the dev slot.
   API_BASE: https://qthr-faq-api.azurewebsites.net
 
+  # Entra sign-in. While these are empty the app uses the dev-header identity that
+  # AUTH_MODE=dev expects, and the "Dev only" role switch stays visible. Fill all
+  # three at the same time as flipping AUTH_MODE=entra on the backend — set them
+  # earlier and the frontend will send tokens the API is not yet configured to
+  # accept. See docs/ENTRA_SETUP.md; the values are not secrets.
+  ENTRA_CLIENT_ID: ''
+  ENTRA_TENANT_ID: ''
+  ENTRA_API_SCOPE: ''
+
 jobs:
   build_and_deploy:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
@@ -39,7 +48,14 @@ jobs:
       - name: Generate config.js
         run: |
           cat > frontend/config.js <<EOF
-          window.APP_CONFIG = { apiBase: "${API_BASE}" };
+          window.APP_CONFIG = {
+            apiBase: "${API_BASE}",
+            entra: {
+              clientId: "${ENTRA_CLIENT_ID}",
+              tenantId: "${ENTRA_TENANT_ID}",
+              scope: "${ENTRA_API_SCOPE}"
+            }
+          };
           EOF
           cat frontend/config.js
 
