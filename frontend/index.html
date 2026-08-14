@@ -1,19 +1,22 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>QBot — Employee FAQ Assistant</title>
-  <link rel="icon" href="./img/bot-avatar.png" />
-  <!-- Relative paths: this is served by Static Web Apps from the site root now,
-       not mounted at /static by FastAPI. -->
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <div id="app"></div>
-  <!-- Generated at deploy time by .github/workflows/frontend.yml. Absent during
-       local development, where api.js falls back to http://localhost:8000. -->
-  <script src="./config.js"></script>
-  <script type="module" src="./app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/mascot-avatar.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>QBot — Employee FAQ Assistant</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Generated at deploy time into public/config.js and copied to the site root
+         by Vite. Loaded before the bundle so API_BASE is set on first render.
+         Absent locally, where the client falls back to http://localhost:8000. -->
+    <script src="/config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

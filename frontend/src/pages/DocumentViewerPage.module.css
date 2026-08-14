@@ -1,0 +1,119 @@
+.backLink {
+  font-size: 13px;
+  color: var(--text-dimmer);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.backLink:hover {
+  color: var(--text);
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-hairline);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0;
+}
+.meta {
+  font-size: 12px;
+  color: var(--text-dimmer);
+  margin-top: 2px;
+}
+
+.viewer {
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 420px;
+}
+.viewer.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  min-height: 0;
+  border-radius: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-hairline);
+  flex: none;
+}
+.filename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toolbarBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbarBtn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.page {
+  flex: 1;
+  background: var(--paper-bg);
+  overflow: auto;
+  padding: 32px 40px;
+}
+.pageTitle {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--paper-text);
+  text-align: center;
+  margin: 0 0 20px;
+}
+.pageBody {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--paper-text-muted);
+  white-space: pre-wrap;
+  max-width: 640px;
+  margin: 0 auto;
+}

@@ -1,0 +1,26 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  color: var(--text);
+  font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--bg-chrome);
+}
+.bodyRow {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: auto;
+  background: var(--bg-page);
+}

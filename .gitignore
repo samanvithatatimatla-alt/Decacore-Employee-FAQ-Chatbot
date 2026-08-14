@@ -37,3 +37,6 @@ decacore_backend_with_frontend.zip
 # These were swept in accidentally by a `git add -A`; ignored so it can't recur.
 Documents/
 DecaCore*Prototype*.html
+
+# Frontend handoff archive — source lives in frontend/
+Qbot Frontend.zip

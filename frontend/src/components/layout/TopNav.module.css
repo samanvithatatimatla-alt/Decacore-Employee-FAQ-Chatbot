@@ -1,0 +1,37 @@
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+  flex: none;
+}
+.burger {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.burger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.burger span {
+  width: 16px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+}
+.brand {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 18px;
+  margin-right: auto;
+  letter-spacing: -0.01em;
+}

@@ -1,0 +1,23 @@
+.row {
+  display: flex;
+  justify-content: flex-end;
+}
+.bubble {
+  max-width: 72%;
+  background: var(--surface);
+  padding: 11px 15px;
+  border-radius: 14px 14px 4px 14px;
+  font-size: 14px;
+  animation: msgIn 0.3s ease both;
+}
+
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
