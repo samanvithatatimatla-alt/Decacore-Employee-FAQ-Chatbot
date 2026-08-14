@@ -65,41 +65,41 @@ stages:
     dependsOn: Test
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - deployment: deployProduction
+      # A plain job, not a `deployment` job. Deployment jobs require an Azure DevOps
+      # Environment to exist and be authorized, and ours only ever held a name — no
+      # approval gates, no checks. Creating one needs a PAT scope we do not have, so
+      # it was pure ceremony standing between a push and a deploy.
+      - job: deployProduction
         pool:
           vmImage: 'ubuntu-latest'
-        environment: 'decacore-production'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - checkout: self
+        steps:
+          - checkout: self
 
-                # Only backend/ is packaged, and its contents become the deploy root
-                # so `app.main:app` resolves against the configured startup command.
-                - task: ArchiveFiles@2
-                  inputs:
-                    rootFolderOrFile: '$(Build.SourcesDirectory)/backend'
-                    includeRootFolder: false
-                    archiveType: zip
-                    archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
-                    replaceExistingArchive: true
+          # Only backend/ is packaged, and its contents become the deploy root
+          # so `app.main:app` resolves against the configured startup command.
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: '$(Build.SourcesDirectory)/backend'
+              includeRootFolder: false
+              archiveType: zip
+              archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
+              replaceExistingArchive: true
 
-                # SCM_DO_BUILD_DURING_DEPLOYMENT=true is set on the app, so App Service
-                # installs requirements.txt server-side after the zip lands.
-                - task: AzureWebApp@1
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    appType: 'webAppLinux'
-                    appName: '$(webAppName)'
-                    package: '$(Build.ArtifactStagingDirectory)/backend.zip'
-                    runtimeStack: 'PYTHON|3.12'
+          # SCM_DO_BUILD_DURING_DEPLOYMENT=true is set on the app, so App Service
+          # installs requirements.txt server-side after the zip lands.
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppLinux'
+              appName: '$(webAppName)'
+              package: '$(Build.ArtifactStagingDirectory)/backend.zip'
+              runtimeStack: 'PYTHON|3.12'
 
-                - script: |
-                    for i in $(seq 1 30); do
-                      code=$(curl -s -o /dev/null -w '%{http_code}' https://qthr-faq-api.azurewebsites.net/health)
-                      if [ "$code" = "200" ]; then echo "healthy"; exit 0; fi
-                      echo "attempt $i: HTTP $code"; sleep 10
-                    done
-                    echo "health check never returned 200"; exit 1
-                  displayName: Smoke test /health
+          - script: |
+              for i in $(seq 1 30); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' https://qthr-faq-api.azurewebsites.net/health)
+                if [ "$code" = "200" ]; then echo "healthy"; exit 0; fi
+                echo "attempt $i: HTTP $code"; sleep 10
+              done
+              echo "health check never returned 200"; exit 1
+            displayName: Smoke test /health
