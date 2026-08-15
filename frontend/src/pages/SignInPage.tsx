@@ -6,7 +6,10 @@ import styles from './SignInPage.module.css';
 
 export default function SignInPage() {
   const navigate = useNavigate();
-  const { signIn, signingIn, error } = useAuth();
+  // Entra sign-in returns via a full page load, so the navigate() in the click handler
+  // never runs — this component no longer exists by then. App's useLandAfterSignIn
+  // handles that case for both pre-auth routes.
+  const { signIn, signInWithMicrosoft, signingIn, entraEnabled, restoring, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -22,8 +25,19 @@ export default function SignInPage() {
     }
   };
 
-  const handleMicrosoftSignIn = () => {
-    void completeSignIn('sam@bluepeak.com');
+  const handleMicrosoftSignIn = async () => {
+    if (!entraEnabled) {
+      // Dev mode: no registration to sign in against, so fall back to a seeded identity
+      // rather than leaving the button dead.
+      void completeSignIn('sam@bluepeak.com');
+      return;
+    }
+    try {
+      await signInWithMicrosoft();
+      navigate('/chat');
+    } catch {
+      // Message is surfaced from context below.
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,24 +52,43 @@ export default function SignInPage() {
         <h2 className={styles.title}>Sign in to QBot</h2>
         <p className={styles.sub}>Use your company account to continue</p>
 
-        <button className={styles.msBtn} onClick={handleMicrosoftSignIn} type="button" disabled={signingIn}>
+        <button
+          className={styles.msBtn}
+          onClick={() => void handleMicrosoftSignIn()}
+          type="button"
+          disabled={signingIn || restoring}
+        >
           <span className={styles.msLogo}>
             <span />
             <span />
             <span />
             <span />
           </span>
-          Sign in with Microsoft
+          {entraEnabled && (signingIn || restoring) ? 'Signing in…' : 'Sign in with Microsoft'}
         </button>
         <p className={styles.msCaption}>Secure sign-in with Microsoft Entra ID</p>
 
-        <div className={styles.dividerRow}>
-          <div className={styles.line} />
-          <span>OR</span>
-          <div className={styles.line} />
-        </div>
+        {/*
+          The email/password form and the role hint below it are dev-mode affordances.
+          Under Entra the role comes from the token's `roles` claim, so a client-side
+          way to pick an identity would be misleading — and the backend rejects the dev
+          header outright, so the form could not work even if it were shown.
+        */}
+        {entraEnabled ? (
+          error && (
+            <p className={styles.hint} style={{ color: '#b42318' }} role="alert">
+              {error}
+            </p>
+          )
+        ) : (
+          <>
+            <div className={styles.dividerRow}>
+              <div className={styles.line} />
+              <span>OR</span>
+              <div className={styles.line} />
+            </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+            <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.fieldLabel}>
             Email
             <input type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -72,8 +105,10 @@ export default function SignInPage() {
               {error}
             </p>
           )}
-          <p className={styles.hint}>Demo: use an email containing "admin" to preview the HR admin experience.</p>
-        </form>
+              <p className={styles.hint}>Demo: use an email containing "admin" to preview the HR admin experience.</p>
+            </form>
+          </>
+        )}
 
         <button className={styles.backLink} onClick={() => navigate('/')}>
           ← Back to welcome

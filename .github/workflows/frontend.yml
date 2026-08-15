@@ -32,9 +32,16 @@ env:
   # three at the same time as flipping AUTH_MODE=entra on the backend — set them
   # earlier and the frontend will send tokens the API is not yet configured to
   # accept. See docs/ENTRA_SETUP.md; the values are not secrets.
-  ENTRA_CLIENT_ID: ''
-  ENTRA_TENANT_ID: ''
-  ENTRA_API_SCOPE: ''
+  #
+  # The scope is the exposed `access_as_user` delegated permission, NOT `.default`.
+  # The SPA and the API are one registration, and `.default` on your own app with no
+  # granted client permissions fails at token acquisition rather than at sign-in —
+  # the popup succeeds and the first API call is what breaks, which is a confusing
+  # way to find out. The registration pre-authorizes itself for this scope, so there
+  # is no consent prompt.
+  ENTRA_CLIENT_ID: 'efccb481-74ba-45b8-940a-fed5dfbec74e'
+  ENTRA_TENANT_ID: '0eadb77e-42dc-47f8-bbe3-ec2395e0712c'
+  ENTRA_API_SCOPE: 'api://efccb481-74ba-45b8-940a-fed5dfbec74e/access_as_user'
 
 jobs:
   build_and_deploy:

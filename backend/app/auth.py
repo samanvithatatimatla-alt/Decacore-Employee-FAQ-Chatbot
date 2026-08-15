@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import lru_cache
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -32,10 +33,35 @@ def _best_role(roles: Iterable[str]) -> str:
     return "Employee"
 
 
+@lru_cache(maxsize=1)
+def _jwk_client() -> PyJWKClient:
+    """One client for the process, so Microsoft's signing keys are fetched once, not per request.
+
+    PyJWKClient caches keys internally, but only for the lifetime of the instance —
+    building a new one per request threw that away and put an HTTPS round trip to
+    login.microsoftonline.com in front of every authenticated call.
+    """
+    tenant = settings.entra_tenant_id
+    return PyJWKClient(
+        f"https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys",
+        cache_keys=True,
+        lifespan=3600,
+    )
+
+
 def _decode_entra_token(token: str) -> TokenIdentity:
     tenant = settings.entra_tenant_id
-    jwks_url = f"https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys"
-    signing_key = PyJWKClient(jwks_url).get_signing_key_from_jwt(token).key
+    try:
+        signing_key = _jwk_client().get_signing_key_from_jwt(token).key
+    except Exception as exc:
+        # A malformed token fails here rather than in jwt.decode below, and an
+        # uncaught error surfaces as a 500. A bad token is the client's problem:
+        # it must read as 401 so the frontend re-authenticates instead of treating
+        # it as a server outage.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not verify the access token's signing key",
+        ) from exc
     audiences = [a for a in {settings.entra_audience, settings.entra_client_id} if a]
     issuers = [f"https://login.microsoftonline.com/{tenant}/v2.0", f"https://sts.windows.net/{tenant}/"]
     last_error: Exception | None = None

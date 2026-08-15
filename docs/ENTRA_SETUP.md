@@ -1,47 +1,71 @@
 # Turning on Microsoft Entra sign-in
 
-Everything on the code side is done and shipped, switched off behind a flag. What
-remains cannot be done from this repo: it needs write access to the
-`DecaCore-HR-Chatbot` app registration, and role assignment needs a tenant admin.
+The app registration is fully configured and users are assigned to roles (steps 1–4).
+The **backend** validates Entra tokens correctly and was verified on 2026-08-15.
 
-**Do not flip `AUTH_MODE` until steps 1–4 are finished and step 5 has passed.** The
-backend rejects any token whose audience does not match `ENTRA_AUDIENCE`, so turning
-it on early locks every user out of the deployed app.
+> ## ⚠️ The frontend Entra integration no longer exists
+>
+> It was shipped in commit `c9e9ec3` against the old vanilla-JS frontend, and **lost
+> when the frontend was rewritten as Vite + React**. As of 2026-08-15:
+>
+> - `@azure/msal-browser` is **not** in `frontend/package.json` and not installed;
+>   the vendored `frontend/vendor/msal-browser.min.js` was deleted with the old tree
+> - `src/api/client.ts` declares `APP_CONFIG` as `{ apiBase?: string }` — the `entra`
+>   block is not read, so `config.js` entra values are silently ignored
+> - `authHeaders()` in `src/api/client.ts` unconditionally sets `X-Dev-User-Email`;
+>   nothing anywhere sets `Authorization: Bearer`
+> - "Sign in with Microsoft" on `src/pages/SignInPage.tsx` is **cosmetic** — it calls
+>   the same dev-header path as the email form
+>
+> So flipping `AUTH_MODE=entra` today locks everyone out: the backend correctly
+> rejects the dev header and the frontend has no token to send. Step 6 is blocked on
+> rebuilding the client-side flow, not on anything in Entra.
+
+**Do not flip `AUTH_MODE` until step 5 has passed.** The backend rejects any token
+whose audience does not match `ENTRA_AUDIENCE`, and there is no staging slot to catch
+a mistake, so turning it on early locks every user out of the deployed app.
 
 ## Where things stand
 
-Re-checked against Microsoft Graph on **2026-08-14** — nothing has moved since the
-code landed:
+**Steps 1–4 were completed on 2026-08-15.** Only step 5 (verification) and step 6 (the switch) remain.
 
 | | |
 |---|---|
 | App registration | `DecaCore-HR-Chatbot` — client `efccb481-74ba-45b8-940a-fed5dfbec74e` |
 | Tenant | `0eadb77e-42dc-47f8-bbe3-ec2395e0712c` (Quadrant Technologies LLC) |
-| Sole owner | Nihitha Datla (`i-nihitha.d@quadranttechnologies.com`) |
-| Application ID URI | **not set** (`identifierUris: []`) |
-| App roles | **none defined** |
-| Redirect URIs | **none set** (neither `spa` nor `web`) |
-| Exposed API scopes | **none** |
-| Archit's directory roles | **none** — group memberships only, so no Application Administrator |
+| Registration owners | Nihitha Datla, Archit Jaiswal |
+| Application ID URI | ✅ `api://efccb481-74ba-45b8-940a-fed5dfbec74e` |
+| App roles | ✅ `Employee`, `Manager`, `Executive`, `HRAdmin` |
+| Redirect URIs (`spa`) | ✅ Static Web App origin + `http://localhost:5173` |
+| Exposed scope | ✅ `access_as_user`, self-pre-authorized (no consent prompt) |
+| Users assigned to roles | ✅ Archit + Nihitha `HRAdmin`, Samanvitha `Manager`, Sanaa `Executive` |
+| Enterprise app owners | Nihitha, Archit |
+
+Being an owner of the *app registration* is not enough to assign users to roles.
+Assignments live on the **enterprise application** (the service principal), which has
+its own separate owners list. `POST /servicePrincipals/{id}/appRoleAssignedTo`
+returns `Authorization_RequestDenied` for anyone who is not an owner *of the service
+principal* or a tenant admin.
+
+Note `appRoleAssignmentRequired` is **false**, so anyone in the tenant can sign in
+even without an assignment — they simply arrive with an empty `roles` claim and the
+backend defaults them to `Employee`. That is a usable demo posture, but it means
+**nobody reaches the HR tools until at least one person is assigned `HRAdmin`**.
 
 To re-check at any time:
 
 ```bash
 az rest --method get \
   --uri "https://graph.microsoft.com/v1.0/applications(appId='efccb481-74ba-45b8-940a-fed5dfbec74e')" \
-  --query "{uri:identifierUris, roles:appRoles[].value, spa:spa.redirectUris}"
+  --query "{uri:identifierUris, roles:appRoles[].value, spa:spa.redirectUris, scopes:api.oauth2PermissionScopes[].value}"
+
+# who is assigned to a role
+az rest --method get \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/6f8a11fa-4eb7-4832-a330-64b9b905febd/appRoleAssignedTo" \
+  --query "value[].{who:principalDisplayName, role:appRoleId}"
 ```
 
-Archit is not an owner and holds no directory role, so `az ad app update` returns
-*Insufficient privileges*. Steps 1–3 must be run by Nihitha, or by anyone holding
-Application Administrator, or Archit must first be added as an owner:
-
-```bash
-az ad app owner add --id efccb481-74ba-45b8-940a-fed5dfbec74e \
-  --owner-object-id 374605c8-6563-4dfa-a1e6-c6d90890e78d   # Archit
-```
-
-## 1. Expose the API
+## 1. Expose the API — done 2026-08-15
 
 ```bash
 APP=efccb481-74ba-45b8-940a-fed5dfbec74e
@@ -51,7 +75,7 @@ az ad app update --id $APP --identifier-uris "api://$APP"
 This is what makes `ENTRA_AUDIENCE=api://efccb481-...` — already set in the App
 Service configuration — a valid audience.
 
-## 2. Define the app roles
+## 2. Define the app roles — done 2026-08-15
 
 The values must match exactly; the backend reads the `roles` claim and maps it
 through `ROLE_ORDER` in `backend/app/auth.py`.
@@ -72,7 +96,7 @@ az ad app update --id $APP --app-roles @/tmp/approles.json
 Replace the placeholder ids with fresh GUIDs (`uuidgen`) if you prefer; they only
 need to be unique and stable.
 
-## 3. Register the SPA redirect URI
+## 3. Register the SPA redirect URI — done 2026-08-15
 
 The frontend signs in with a popup from the Static Web App origin, so it must be
 registered as a **single-page application** redirect URI, not a web one — the SPA
@@ -91,14 +115,42 @@ az rest --method PATCH \
 
 Keep `http://localhost:5173` so local development keeps working.
 
-## 4. Assign users to roles
+## 4. Assign users to roles — done 2026-08-15
 
-Needs a tenant admin. In the portal: **Enterprise applications →
-DecaCore-HR-Chatbot → Users and groups → Add user/group**, then pick the role.
-Everyone who will use the demo needs an assignment — a user with no app role gets
-an empty `roles` claim and the backend defaults them to `Employee`.
+Portal: **Entra ID → Enterprise applications → DecaCore-HR-Chatbot → Users and
+groups → + Add user/group**, pick the person, pick the role.
 
-At minimum, assign one person to `HRAdmin` or nobody can reach the HR tools.
+Note the menu is *Enterprise applications*, not *App registrations* — they are two
+views of the same app and role assignment only exists on the enterprise side.
+
+**At minimum, assign one person to `HRAdmin`** or nobody can reach the HR tools.
+
+Whoever does it needs to be an owner of the enterprise application or a tenant
+admin. The cheapest unblock is adding Archit as an owner there, which is a different
+list from the registration owners he was already added to:
+
+```bash
+az rest --method POST \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/6f8a11fa-4eb7-4832-a330-64b9b905febd/owners/\$ref" \
+  --headers 'Content-Type=application/json' \
+  --body '{"@odata.id":"https://graph.microsoft.com/v1.0/directoryObjects/374605c8-6563-4dfa-a1e6-c6d90890e78d"}'
+```
+
+With that, assignments can be scripted. The role ids as created:
+
+| Role | appRoleId |
+|---|---|
+| `HRAdmin` | `ada12aa4-ddda-4746-aba2-23dddf53430c` |
+| `Executive` | `7474c9cb-d200-414b-9461-b659ef24d7d5` |
+| `Manager` | `a631f924-e029-4d4f-b17f-e98f3d756ed8` |
+| `Employee` | `511dce4e-d02e-47fd-99e9-285fa9a4aca7` |
+
+```bash
+SP=6f8a11fa-4eb7-4832-a330-64b9b905febd
+az rest --method POST --uri "https://graph.microsoft.com/v1.0/servicePrincipals/$SP/appRoleAssignedTo" \
+  --headers 'Content-Type=application/json' \
+  --body '{"principalId":"<user object id>","resourceId":"'"$SP"'","appRoleId":"ada12aa4-ddda-4746-aba2-23dddf53430c"}'
+```
 
 ## 5. Verify before switching over
 
@@ -120,7 +172,7 @@ Two changes, made together:
 ```yaml
   ENTRA_CLIENT_ID: 'efccb481-74ba-45b8-940a-fed5dfbec74e'
   ENTRA_TENANT_ID: '0eadb77e-42dc-47f8-bbe3-ec2395e0712c'
-  ENTRA_API_SCOPE: 'api://efccb481-74ba-45b8-940a-fed5dfbec74e/.default'
+  ENTRA_API_SCOPE: 'api://efccb481-74ba-45b8-940a-fed5dfbec74e/access_as_user'
 ```
 
 **Backend** — in `infra/terraform/settings.tf`, change `AUTH_MODE` from `"dev"` to
@@ -166,11 +218,11 @@ Two changes, made together:
 Clear the three frontend env vars and set `AUTH_MODE=dev`. The app returns to the
 dev-header identity with no code change.
 
-## Appendix — steps 1–3 as one block to hand over
+## Appendix — steps 1–3 as one block
 
-Everything below must run as Nihitha, or as someone holding Application
-Administrator. It is steps 1–3 with nothing to fill in, so it can be pasted as-is.
-Step 4 (assigning users to roles) still needs a tenant admin in the portal.
+**Already applied on 2026-08-15**; kept as a record of what was done, and to rebuild
+the registration from scratch if it is ever lost. Requires ownership of the app
+registration or Application Administrator.
 
 ```bash
 APP=efccb481-74ba-45b8-940a-fed5dfbec74e

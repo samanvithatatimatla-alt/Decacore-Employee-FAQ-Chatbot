@@ -1,16 +1,19 @@
 /**
  * Thin typed wrapper over the FastAPI backend.
  *
- * Identity: while the API runs with AUTH_MODE=dev it takes the caller's identity from
- * an X-Dev-User-Email header rather than a token. Every request goes through here so
- * that swapping to Entra bearer tokens later is a change to one function.
+ * Identity: with Entra configured every request carries `Authorization: Bearer`.
+ * Without it the API is running AUTH_MODE=dev and takes the caller's identity from an
+ * X-Dev-User-Email header instead. Both paths go through `authHeaders`, so the app
+ * never has to know which mode it is in.
  */
 
 import type { Role } from '../types';
+import { accessToken, entraEnabled } from '../auth/entra';
+import type { EntraConfig } from '../auth/entra';
 
 declare global {
   interface Window {
-    APP_CONFIG?: { apiBase?: string };
+    APP_CONFIG?: { apiBase?: string; entra?: Partial<EntraConfig> };
   }
 }
 
@@ -31,8 +34,19 @@ export function setIdentity(role: Role) {
   currentEmail = DEV_EMAILS[role];
 }
 
-function authHeaders(extra: HeadersInit = {}): Headers {
+async function authHeaders(extra: HeadersInit = {}): Promise<Headers> {
   const h = new Headers(extra);
+  if (entraEnabled()) {
+    const token = await accessToken();
+    if (token) {
+      h.set('Authorization', `Bearer ${token}`);
+      return h;
+    }
+    // Entra is configured but no token yet — send neither header. The dev header would
+    // be rejected by an entra-mode backend anyway, and sending it would turn a clear
+    // 401 into a confusing one.
+    return h;
+  }
   h.set('X-Dev-User-Email', currentEmail);
   return h;
 }
@@ -47,7 +61,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: authHeaders(init.headers) });
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: await authHeaders(init.headers) });
   if (!res.ok) {
     // FastAPI puts the human-readable reason in `detail`; falling back to the status
     // text alone produces "Bad Request" and hides the actual validation message.
@@ -292,7 +306,7 @@ export async function streamChat(
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ message, ...(conversationId ? { conversation_id: conversationId } : {}) }),
     signal,
   });

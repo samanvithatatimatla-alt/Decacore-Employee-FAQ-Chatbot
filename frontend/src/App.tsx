@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
 import AppShell from './components/layout/AppShell';
 import WelcomePage from './pages/WelcomePage';
@@ -11,7 +13,25 @@ import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentViewerPage from './pages/DocumentViewerPage';
 
+/**
+ * Entra's redirect flow always returns to the app root, which renders the welcome page.
+ * Without this a user who has just signed in lands back on a "get started" screen with
+ * no sign of having signed in at all. Only redirects away from the two pre-auth routes,
+ * so it never fights normal navigation.
+ */
+function useLandAfterSignIn() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (user && (pathname === '/' || pathname === '/signin')) {
+      navigate('/chat', { replace: true });
+    }
+  }, [user, pathname, navigate]);
+}
+
 export default function App() {
+  useLandAfterSignIn();
   return (
     <Routes>
       <Route path="/" element={<WelcomePage />} />

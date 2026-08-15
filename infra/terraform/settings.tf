@@ -14,9 +14,15 @@ locals {
     ENV       = "prod"
     LOG_LEVEL = "INFO"
 
-    # dev until Entra "Expose an API" and app roles are confirmed. Flipping this
-    # before the token audience is right locks everyone out of the deployed app.
-    AUTH_MODE      = "dev"
+    # entra since 2026-08-15. The registration exposes api://<client-id>, defines the
+    # four app roles, and has the SPA redirect URIs registered; the full sign-in flow
+    # was verified against a locally run backend first. See docs/ENTRA_SETUP.md.
+    #
+    # Deploy the frontend BEFORE applying this. In between, a dev-mode backend simply
+    # ignores the bearer token and falls back to DEV_USER_EMAIL — degraded but usable.
+    # The other order breaks the app outright: an entra-mode backend rejects the dev
+    # header that an undeployed frontend is still sending.
+    AUTH_MODE      = "entra"
     DEV_USER_EMAIL = "marietta.baudone@gmail.com"
     AUTO_SEED      = "true"
     RETENTION_DAYS = "7"
