@@ -11,7 +11,7 @@ import type {
   RecentlyViewedDoc,
   TopQuestion,
 } from '../types';
-import { api, streamChat } from '../api/client';
+import { api, streamChat, type ApiCharts } from '../api/client';
 import {
   mapAdminDoc,
   mapAnnouncement,
@@ -333,7 +333,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const loadAdminData = useCallback(async () => {
     const [docsRes, chartsRes] = await Promise.all([
       api.documents().catch(() => ({ items: [], total: 0 })),
-      api.charts().catch(() => ({ requests_by_status: [], documents_by_category: [], top_questions: [] })),
+      api.charts().catch(
+        (): ApiCharts => ({ requests_by_status: [], documents_by_category: [], top_questions: [], most_referenced: [] }),
+      ),
     ]);
 
     // Version history is per-document, so it is fetched alongside rather than in a
@@ -349,9 +351,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       type: 'HYDRATE',
       data: {
         adminDocuments: withVersions,
-        mostReferenced: chartsRes.documents_by_category
-          .slice(0, 5)
-          .map((c, i) => ({ rank: i + 1, name: c.label, citations: c.value })),
+        // Real citation counts per document. documents_by_category was only ever a
+        // stand-in — it counted documents per category, which is a different thing
+        // wearing the same label.
+        mostReferenced: (chartsRes.most_referenced ?? []).slice(0, 5).map((m) => ({
+          rank: m.rank,
+          name: m.title || m.name,
+          citations: m.citations,
+        })),
       },
     });
   }, []);

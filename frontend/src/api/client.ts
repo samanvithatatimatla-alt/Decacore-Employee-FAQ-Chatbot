@@ -180,10 +180,21 @@ export interface ApiMetrics {
   approved_documents: number;
 }
 
+export interface ApiMostReferenced {
+  document_id: string;
+  rank: number;
+  name: string;
+  title: string;
+  citations: number;
+}
+
 export interface ApiCharts {
   requests_by_status: { label: string; value: number }[];
   documents_by_category: { label: string; value: number }[];
   top_questions: { label: string; value: number }[];
+  /** Added after the first integration pass; treated as optional so an older
+   *  backend still renders rather than throwing. */
+  most_referenced?: ApiMostReferenced[];
 }
 
 export interface ApiInboxRequest {
