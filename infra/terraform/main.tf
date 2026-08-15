@@ -34,9 +34,12 @@ resource "azurerm_service_plan" "main" {
   location            = var.app_location
   os_type             = "Linux"
 
-  # S1 is the lowest tier with deployment slots, which the build plan requires
-  # ("push to main -> dev slot, demo stays manual"). F1 and B1 have none.
-  sku_name = "S1"
+  # B1, not S1. S1 was chosen for deployment slots, but CI now deploys straight to
+  # production and the dev slot is gone, so the only thing the extra tier bought is
+  # unused. B1 has the same 1 core / 1.75 GB as S1 and still supports always_on;
+  # what it gives up is slots, autoscale, and daily backups. S1 was $69/mo, B1 is
+  # ~$13/mo, and the plan is far and away the largest line on the bill.
+  sku_name = "B1"
 }
 
 resource "azurerm_linux_web_app" "backend" {
@@ -66,7 +69,7 @@ resource "azurerm_linux_web_app" "backend" {
       python_version = "3.12"
     }
 
-    # S1 supports always_on — no cold start when the demo begins.
+    # B1 supports always_on — no cold start when the demo begins.
     always_on = true
   }
 

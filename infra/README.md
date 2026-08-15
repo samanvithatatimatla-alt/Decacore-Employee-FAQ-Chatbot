@@ -15,14 +15,14 @@ cd terraform && terraform init && terraform plan
 
 | Resource | Name | Region | Notes |
 |---|---|---|---|
-| App Service plan | `qthr-faq-plan` | westus | **S1** |
+| App Service plan | `qthr-faq-plan` | westus | **B1** — same 1 core / 1.75 GB as S1, no slots or autoscale |
 | Web app | `qthr-faq-api` | westus | Python 3.12, HTTPS-only, always-on |
 | Static Web App | `qthr-faq-web` | westus2 | Frontend, Free tier |
 | Storage | `qthrpolicypdfs` | eastus | Containers `documents`, `receipts`, `watermarked` — all private |
 | Storage | `qthrtfstate` | eastus | Terraform state only — **not** Terraform-managed |
 | Key Vault | `qthr-decacore-kv` | westus | Our secrets, RBAC mode |
 | SQL Server | `decacore-sql-server` | westus2 | Referenced, not managed (see `sql.tf`) |
-| SQL Database | `decacore-db` | westus2 | S0 |
+| SQL Database | `decacore-db` | westus2 | S0 — Standard, 10 DTU |
 | Azure OpenAI / AI Search | *external* | westus | Manager's — `sharedfoundry`, `internaisearch` |
 
 | | URL |
@@ -123,13 +123,13 @@ and is promoted only once its dependency is verified:
 |---|---|---|
 | `AUTH_MODE` | `dev` | Entra app roles + "Expose an API" are configured |
 | `STORAGE_BACKEND` | `azure` | — already on |
+| `SEARCH_BACKEND` | `azure` | — index created, 175 chunks loaded |
+| `LLM_BACKEND` | `azure` | — verified against `gpt-5` |
+| `NOTIFICATION_BACKEND` | `log` | Graph `Mail.Send` admin consent lands |
 
 Seed PDFs must be uploaded to the `documents` container as well as seeded into SQL.
 Running the seed with `STORAGE_BACKEND=local` writes them to a laptop instead, and every
 Resources download then 404s while the metadata looks perfectly fine.
-| `SEARCH_BACKEND` | `azure` | — index created, 175 chunks loaded |
-| `LLM_BACKEND` | `azure` | — verified against `gpt-5` |
-| `NOTIFICATION_BACKEND` | `log` | Graph `Mail.Send` admin consent lands |
 
 Deployment names are `gpt-5` (chat) and `text-embedding-3-large` (embeddings) — discovered
 by probing the endpoint, since Azure serves models under a deployment name chosen at deploy

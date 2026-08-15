@@ -18,7 +18,7 @@ step, so it is answerable straight away.
 | `frontend/` | QBot web client — plain ES modules, no build step |
 | `infra/` | Terraform for App Service, SQL, Key Vault, and the static site |
 | `.github/workflows/` | GitHub checks: backend lint/test, frontend deploy |
-| `azure-pipelines.yml` | Azure DevOps: backend test and dev-slot deploy |
+| `azure-pipelines.yml` | Azure DevOps: backend test and deploy to production |
 
 ## Running it
 

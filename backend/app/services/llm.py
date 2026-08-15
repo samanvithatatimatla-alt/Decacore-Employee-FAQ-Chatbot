@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import math
 import re
+import threading
+from functools import lru_cache
 
 from ..config import settings
 
@@ -27,8 +29,40 @@ def _sentence_score(sentence: str, query_tokens: set[str]) -> float:
     return overlap / math.sqrt(len(tokens))
 
 
+def normalize_query(text: str) -> str:
+    """Collapse the differences that should not produce a different embedding."""
+    return " ".join(text.split()).lower().rstrip("?.! ")
+
+
+@lru_cache(maxsize=512)
+def _embed_query_cached(normalized: str) -> tuple[float, ...]:
+    # Returns a tuple, not a list: the value is handed to every future caller, and one
+    # caller mutating a shared list would poison the cache for everyone after it.
+    return tuple(llm_service.embed([normalized])[0])
+
+
 class LLMService:
+    def __init__(self):
+        self._client_instance = None
+        self._client_lock = threading.Lock()
+
     def _client(self):
+        # Built once per process. Each OpenAI() carries its own connection pool, so
+        # rebuilding it per call threw away every keep-alive connection and paid a
+        # fresh TLS handshake on every chat; in the managed-identity path it also
+        # re-ran DefaultAzureCredential discovery each time.
+        if self._client_instance is None:
+            with self._client_lock:
+                if self._client_instance is None:
+                    self._client_instance = self._build_client()
+        return self._client_instance
+
+    def reset_client(self) -> None:
+        """Drop the cached client. For tests that switch backends mid-process."""
+        with self._client_lock:
+            self._client_instance = None
+
+    def _build_client(self):
         from openai import OpenAI
 
         if not settings.azure_openai_endpoint or not settings.azure_openai_chat_deployment:
@@ -57,6 +91,17 @@ class LLMService:
             dimensions=settings.azure_openai_embedding_dimensions,
         )
         return [x.embedding for x in response.data]
+
+    def embed_query(self, text: str) -> list[float]:
+        """Embed a single search query, reusing the vector for questions already asked.
+
+        Only for queries. Indexing goes through `embed` directly: those texts are large
+        and each is seen once, so caching them would evict the queries that do repeat.
+
+        The normalized form is what gets embedded, not just what gets keyed on, so the
+        vector for a given question is the same no matter which phrasing arrived first.
+        """
+        return list(_embed_query_cached(normalize_query(text)))
 
     def categorize(self, title: str, text: str) -> tuple[str, float]:
         if settings.llm_backend == "azure":

@@ -13,6 +13,7 @@ from ..config import settings
 from ..database import SessionLocal, get_db
 from ..models import Conversation, EmployeeRequest, Message, User
 from ..schemas import ChatIn, EscalationIn
+from ..services.cache import dashboard_cache
 from ..services.notifications import notification_service
 from ..services.rag import rag_service
 from ..services.rate_limit import chat_rate_limiter
@@ -102,34 +103,40 @@ def is_faq_candidate(text: str) -> bool:
 
 @router.get("/faq/top")
 def top_faq(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    # Group in SQL over a wider window, then merge and filter in Python: the same
-    # question asked with different capitalisation or trailing punctuation is one
-    # question, and SQL grouping alone would count them separately.
-    rows = db.execute(
-        select(Message.content, func.count(Message.id).label("count"))
-        .join(Conversation, Conversation.id == Message.conversation_id)
-        .where(Message.role == "user")
-        .group_by(Message.content)
-        .order_by(func.count(Message.id).desc())
-        .limit(100)
-    ).all()
+    # Cached: every employee hits this on the home screen and the answer is the same
+    # global top three for all of them, so without a cache the busiest endpoint in the
+    # app runs a full GROUP BY over every message once per page load.
+    def compute():
+        # Group in SQL over a wider window, then merge and filter in Python: the same
+        # question asked with different capitalisation or trailing punctuation is one
+        # question, and SQL grouping alone would count them separately.
+        rows = db.execute(
+            select(Message.content, func.count(Message.id).label("count"))
+            .join(Conversation, Conversation.id == Message.conversation_id)
+            .where(Message.role == "user")
+            .group_by(Message.content)
+            .order_by(func.count(Message.id).desc())
+            .limit(100)
+        ).all()
 
-    merged: dict[str, tuple[str, int]] = {}
-    for content, count in rows:
-        text = " ".join((content or "").split())
-        if not is_faq_candidate(text):
-            continue
-        key = text.lower().rstrip("?.! ")
-        if key in merged:
-            kept, total = merged[key]
-            # Keep the most-asked phrasing as the label.
-            merged[key] = (kept, total + count)
-        else:
-            merged[key] = (text, count)
+        merged: dict[str, tuple[str, int]] = {}
+        for content, count in rows:
+            text = " ".join((content or "").split())
+            if not is_faq_candidate(text):
+                continue
+            key = text.lower().rstrip("?.! ")
+            if key in merged:
+                kept, total = merged[key]
+                # Keep the most-asked phrasing as the label.
+                merged[key] = (kept, total + count)
+            else:
+                merged[key] = (text, count)
 
-    top = sorted(merged.values(), key=lambda pair: -pair[1])[:3]
-    items = [{"question": text, "count": count} for text, count in top]
-    return {"items": items, "total": len(items)}
+        top = sorted(merged.values(), key=lambda pair: -pair[1])[:3]
+        items = [{"question": text, "count": count} for text, count in top]
+        return {"items": items, "total": len(items)}
+
+    return dashboard_cache.get_or_set("faq:top", compute)
 
 
 @router.post("/chat/escalate")

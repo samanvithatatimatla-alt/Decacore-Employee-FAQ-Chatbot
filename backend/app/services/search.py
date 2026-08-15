@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+import threading
 from collections import Counter
 from datetime import date
 
@@ -78,6 +79,10 @@ def local_score(query: str, content: str) -> float:
 
 
 class SearchService:
+    def __init__(self):
+        self._client_instance = None
+        self._client_lock = threading.Lock()
+
     def index_document(self, db: Session, document: Document) -> int:
         data = storage_service.read_bytes(document.blob_path)
         chunks = chunk_pdf(data)
@@ -170,6 +175,21 @@ class SearchService:
         return DefaultAzureCredential()
 
     def _azure_client(self):
+        # One client per process. SearchClient owns an HTTP connection pool, so building
+        # a new one per search meant a new TLS handshake on every question instead of
+        # reusing a warm connection.
+        if self._client_instance is None:
+            with self._client_lock:
+                if self._client_instance is None:
+                    self._client_instance = self._build_azure_client()
+        return self._client_instance
+
+    def reset_client(self) -> None:
+        """Drop the cached client. For tests that switch backends mid-process."""
+        with self._client_lock:
+            self._client_instance = None
+
+    def _build_azure_client(self):
         from azure.search.documents import SearchClient
 
         if not settings.azure_search_endpoint:
@@ -251,7 +271,10 @@ class SearchService:
     def _azure_search(self, query: str, role: str, top_k: int) -> list[dict]:
         from azure.search.documents.models import VectorizedQuery
 
-        vector = llm_service.embed([query])[0]
+        # embed_query, not embed: repeat questions reuse the vector instead of paying a
+        # round trip to Azure OpenAI. The FAQ list on the home screen makes this common —
+        # those questions are clicked, so they arrive byte-identical every time.
+        vector = llm_service.embed_query(query)
         vector_query = VectorizedQuery(vector=vector, k_nearest_neighbors=top_k, fields="content_vector")
         filter_expr = None if role == "HRAdmin" else f"allowed_roles/any(r: r eq '{role.replace("'", "''")}')"
         results = self._azure_client().search(

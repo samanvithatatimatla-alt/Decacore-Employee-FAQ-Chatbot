@@ -10,14 +10,27 @@ it on early locks every user out of the deployed app.
 
 ## Where things stand
 
+Re-checked against Microsoft Graph on **2026-08-14** — nothing has moved since the
+code landed:
+
 | | |
 |---|---|
 | App registration | `DecaCore-HR-Chatbot` — client `efccb481-74ba-45b8-940a-fed5dfbec74e` |
 | Tenant | `0eadb77e-42dc-47f8-bbe3-ec2395e0712c` (Quadrant Technologies LLC) |
 | Sole owner | Nihitha Datla (`i-nihitha.d@quadranttechnologies.com`) |
-| Application ID URI | **not set** |
+| Application ID URI | **not set** (`identifierUris: []`) |
 | App roles | **none defined** |
-| Redirect URIs | **none set** |
+| Redirect URIs | **none set** (neither `spa` nor `web`) |
+| Exposed API scopes | **none** |
+| Archit's directory roles | **none** — group memberships only, so no Application Administrator |
+
+To re-check at any time:
+
+```bash
+az rest --method get \
+  --uri "https://graph.microsoft.com/v1.0/applications(appId='efccb481-74ba-45b8-940a-fed5dfbec74e')" \
+  --query "{uri:identifierUris, roles:appRoles[].value, spa:spa.redirectUris}"
+```
 
 Archit is not an owner and holds no directory role, so `az ad app update` returns
 *Insufficient privileges*. Steps 1–3 must be run by Nihitha, or by anyone holding
@@ -111,8 +124,28 @@ Two changes, made together:
 ```
 
 **Backend** — in `infra/terraform/settings.tf`, change `AUTH_MODE` from `"dev"` to
-`"entra"`, then `terraform apply`. Deploy to the **dev slot** and verify there
-before swapping to production.
+`"entra"`, then `terraform apply`.
+
+> **There is no staging environment any more.** The dev slot was deleted when the
+> App Service plan moved from S1 to B1 (B1 has no deployment slots), so this change
+> lands directly on the URL the demo runs against. If the registration is wrong, the
+> first thing anyone sees is a locked door.
+>
+> Verify locally first — this is now the substitute for the dev slot, and step 3
+> already registers `http://localhost:5173` as a redirect URI precisely so it works:
+>
+> ```bash
+> # backend, against the real tenant
+> cd backend && AUTH_MODE=entra uvicorn app.main:app --reload
+>
+> # frontend, in another shell — serve on the registered port, not a random one
+> cd frontend && python -m http.server 5173
+> ```
+>
+> Write a `frontend/config.js` by hand with the three `entra` values and `apiBase`
+> pointed at `http://localhost:8000`. Sign in, confirm you land with the right role,
+> and confirm an HR-only page loads for an `HRAdmin` and 403s for an `Employee`.
+> Only then change `AUTH_MODE` on the deployed app.
 
 ## What changes when it is on
 
@@ -132,3 +165,47 @@ before swapping to production.
 
 Clear the three frontend env vars and set `AUTH_MODE=dev`. The app returns to the
 dev-header identity with no code change.
+
+## Appendix — steps 1–3 as one block to hand over
+
+Everything below must run as Nihitha, or as someone holding Application
+Administrator. It is steps 1–3 with nothing to fill in, so it can be pasted as-is.
+Step 4 (assigning users to roles) still needs a tenant admin in the portal.
+
+```bash
+APP=efccb481-74ba-45b8-940a-fed5dfbec74e
+
+# 1. Expose the API — makes api://$APP a valid token audience
+az ad app update --id $APP --identifier-uris "api://$APP"
+
+# 2. Define the four app roles the backend maps through ROLE_ORDER
+cat > /tmp/approles.json <<JSON
+[
+  {"allowedMemberTypes":["User"],"description":"Standard employee","displayName":"Employee","isEnabled":true,"value":"Employee","id":"$(uuidgen)"},
+  {"allowedMemberTypes":["User"],"description":"People manager","displayName":"Manager","isEnabled":true,"value":"Manager","id":"$(uuidgen)"},
+  {"allowedMemberTypes":["User"],"description":"Executive","displayName":"Executive","isEnabled":true,"value":"Executive","id":"$(uuidgen)"},
+  {"allowedMemberTypes":["User"],"description":"HR administrator","displayName":"HRAdmin","isEnabled":true,"value":"HRAdmin","id":"$(uuidgen)"}
+]
+JSON
+az ad app update --id $APP --app-roles @/tmp/approles.json
+
+# 3. Register the SPA redirect URIs (PKCE — must be `spa`, not `web`)
+az rest --method PATCH \
+  --url "https://graph.microsoft.com/v1.0/applications(appId='$APP')" \
+  --headers 'Content-Type=application/json' \
+  --body '{"spa":{"redirectUris":[
+      "https://delightful-tree-02eef901e.7.azurestaticapps.net",
+      "http://localhost:5173"
+  ]}}'
+
+# Verify
+az ad app show --id $APP --query "{uri:identifierUris, roles:appRoles[].value, spa:spa.redirectUris}"
+```
+
+Alternatively, adding Archit as an owner unblocks steps 1–3 without Nihitha running
+them herself:
+
+```bash
+az ad app owner add --id efccb481-74ba-45b8-940a-fed5dfbec74e \
+  --owner-object-id 374605c8-6563-4dfa-a1e6-c6d90890e78d   # Archit
+```
