@@ -112,6 +112,7 @@ type Action =
   | { type: 'NEW_CHAT' }
   | { type: 'RESTORE_CONVERSATION'; convId: number; messages?: ChatMessage[] }
   | { type: 'TOGGLE_SOURCES'; messageId: number }
+  | { type: 'MARK_ESCALATION_SENT'; messageId: number }
   | { type: 'SET_HISTORY_SEARCH'; value: string }
   | { type: 'SET_RESOURCE_FILTER'; filter: ResourceFilter }
   | { type: 'SET_RESOURCE_SEARCH'; value: string }
@@ -234,6 +235,16 @@ function reducer(state: AppState, action: Action): AppState {
           ...state.chat,
           messages: state.chat.messages.map((m) =>
             m.id === action.messageId ? { ...m, sourcesExpanded: !m.sourcesExpanded } : m,
+          ),
+        },
+      };
+    case 'MARK_ESCALATION_SENT':
+      return {
+        ...state,
+        chat: {
+          ...state.chat,
+          messages: state.chat.messages.map((m) =>
+            m.id === action.messageId ? { ...m, escalationSent: true } : m,
           ),
         },
       };

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import type { ChatMessage } from '../../types';
+import { api } from '../../api/client';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './MessageCardBot.module.css';
 
@@ -17,8 +18,10 @@ interface Props {
 
 export default function MessageCardBot({ message: m, onFollowUp }: Props) {
   const navigate = useNavigate();
-  const { dispatch } = useAppState();
+  const { state, dispatch } = useAppState();
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const cardClass = m.kind === 'warn' ? styles.warn : m.kind === 'refuse' ? styles.refuse : '';
   const canEscalate = m.kind === 'warn' || m.kind === 'refuse';
@@ -33,6 +36,32 @@ export default function MessageCardBot({ message: m, onFollowUp }: Props) {
     if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  /**
+   * Sends the question and the bot's answer to HR as a real request.
+   *
+   * Previously this button only navigated to /contact, which is a static page of phone
+   * numbers — nothing was created, the HR inbox never saw the question, and the
+   * dashboard's escalated-messages count stayed at zero no matter how many employees
+   * pressed it.
+   */
+  const handleEscalate = async () => {
+    const conversationId = state.chat.conversationId;
+    if (!conversationId) {
+      setSendError('This conversation has not been saved yet. Try again in a moment.');
+      return;
+    }
+    setSending(true);
+    setSendError(null);
+    try {
+      await api.escalate(conversationId, m.apiId);
+      dispatch({ type: 'MARK_ESCALATION_SENT', messageId: m.id });
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : 'Could not send this to HR.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const openInResources = () => {
@@ -109,9 +138,25 @@ export default function MessageCardBot({ message: m, onFollowUp }: Props) {
 
           {canEscalate && (
             <div className={styles.hrBtnRow}>
-              <button className={styles.sendHrBtn} onClick={() => navigate('/contact')}>
-                Connect to HR
-              </button>
+              {m.escalationSent ? (
+                <p className={styles.noMatch} role="status">
+                  Sent to HR. They have your question and this answer, and will follow up.
+                </p>
+              ) : (
+                <>
+                  <button className={styles.sendHrBtn} onClick={() => void handleEscalate()} disabled={sending}>
+                    {sending ? 'Sending…' : 'Send to HR'}
+                  </button>
+                  <button className={styles.sendHrBtn} onClick={() => navigate('/contact')}>
+                    Contact details
+                  </button>
+                </>
+              )}
+              {sendError && (
+                <p className={styles.noMatch} role="alert">
+                  {sendError}
+                </p>
+              )}
             </div>
           )}
         </div>

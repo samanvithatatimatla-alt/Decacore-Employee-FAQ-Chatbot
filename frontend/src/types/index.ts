@@ -37,7 +37,10 @@ export interface ChatMessage {
   form?: FormRef;
   extLink?: string;
   followUps?: string[];
+  /** The backend offered escalation for this answer (low confidence or no policy match). */
   escalated?: boolean;
+  /** The employee took that offer and an HR request was created. Distinct from `escalated`. */
+  escalationSent?: boolean;
   sourcesExpanded?: boolean;
 }
 
