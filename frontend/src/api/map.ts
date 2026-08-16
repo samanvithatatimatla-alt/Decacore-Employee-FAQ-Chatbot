@@ -76,7 +76,7 @@ function historyGroup(iso: string): HistoryGroupLabel {
 
 export function mapCitation(c: ApiCitation): Citation {
   const parts = [c.section, c.page ? `p.${c.page}` : null].filter(Boolean);
-  return { name: c.title, ref: parts.length ? parts.join(', ') : undefined };
+  return { name: c.title, ref: parts.length ? parts.join(', ') : undefined, documentId: c.document_id };
 }
 
 export function mapDocument(d: ApiDocument, favorite: boolean): PolicyDoc {
@@ -141,10 +141,11 @@ export function mapMessage(m: ApiMessage): ChatMessage {
     ...base,
     role: 'bot',
     body: m.content,
-    // Stored messages carry no escalation_offered flag, so confidence stands in for
-    // it: the backend records ~0 when nothing matched, and 1.0 for the scripted
-    // replies to greetings and off-topic asks, which cite nothing but did answer.
-    kind: m.citations.length === 0 && (m.confidence_score ?? 1) < 0.5 ? 'refuse' : (m.confidence_score ?? 1) < 0.15 ? 'warn' : 'answer',
+    // Same rule as the live path: a cited answer is an answer. Stored messages carry
+    // no escalation_offered flag, so confidence stands in for it — the backend records
+    // ~0 when nothing matched, and 1.0 for the scripted greeting and off-topic replies,
+    // which cite nothing but did answer.
+    kind: m.citations.length > 0 || (m.confidence_score ?? 0) >= 0.5 ? 'answer' : 'refuse',
     tags: m.citations.map((c) => c.title),
     citations: m.citations.map(mapCitation),
     escalated: m.escalated,

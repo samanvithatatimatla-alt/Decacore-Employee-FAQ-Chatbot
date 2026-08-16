@@ -297,3 +297,28 @@
     animation: none;
   }
 }
+
+/* A citation chip that opens its source PDF. Same shape as a plain tag so the row
+   reads as one set, with the affordance carried by the cursor, icon and hover. */
+.tag.tagLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.tag.tagLink:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.card.warn .tag.tagLink:hover {
+  background: rgba(242, 176, 77, 0.3);
+}
+.card.refuse .tag.tagLink:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.tagRef {
+  opacity: 0.7;
+}

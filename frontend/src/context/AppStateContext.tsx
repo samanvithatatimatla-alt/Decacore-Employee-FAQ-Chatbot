@@ -197,11 +197,12 @@ function reducer(state: AppState, action: Action): AppState {
         citations: action.citations,
         tags: action.tags,
         escalated: action.escalationOffered,
-        // `escalation_offered` is the backend saying it could not answer, which is
-        // exactly what the refuse card means. Keying off "no citations" instead was
-        // wrong: a greeting is answered correctly and cites nothing, so it came back
-        // dressed as a failure with a Send-to-HR button.
-        kind: action.escalationOffered ? 'refuse' : 'answer',
+        // Two separate questions, previously conflated into one. The card *style*
+        // asks "is this a grounded answer" — anything with citations is, and should
+        // look like every other answer rather than flipping to the failure card. The
+        // Send-to-HR buttons ask "did the backend offer escalation", which it can do
+        // on a perfectly good answer that did not fully cover the question.
+        kind: action.citations.length > 0 || !action.escalationOffered ? 'answer' : 'refuse',
         body,
       };
       return { ...state, chat: { ...state.chat, messages, isTyping: false } };
@@ -309,6 +310,7 @@ interface AppStateContextValue {
   sendMessage: (text: string) => void;
   mostReferenced: MostReferenced[];
   openDocument: (id: number) => void;
+  openDocumentByApiId: (apiId: string) => void;
   openForm: (id: number) => void;
   refresh: () => Promise<void>;
   uploadDocument: (file: File) => Promise<void>;
@@ -504,6 +506,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [state.resources.policies, openInTab],
   );
 
+  /** Open a policy PDF straight from its server id — used by chat citation chips,
+   *  which know the document id but not the numeric one the resources list uses. */
+  const openDocumentByApiId = useCallback(
+    (apiId: string) => {
+      void openInTab(() => files.documentOpenUrl(apiId));
+      void api.markViewed(apiId).catch(() => undefined);
+    },
+    [openInTab],
+  );
+
   const openForm = useCallback(
     (id: number) => {
       const form = state.resources.forms.find((f) => f.id === id);
@@ -570,6 +582,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         sendMessage,
         mostReferenced: state.mostReferenced,
         openDocument,
+        openDocumentByApiId,
         openForm,
         refresh,
         uploadDocument,

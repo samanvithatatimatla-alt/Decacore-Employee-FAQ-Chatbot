@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import Avatar from '../common/Avatar';
-import type { ChatMessage } from '../../types';
+import type { ChatMessage, Citation } from '../../types';
 import { api } from '../../api/client';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './MessageCardBot.module.css';
@@ -20,18 +20,21 @@ interface Props {
 
 export default function MessageCardBot({ message: m, onFollowUp, streaming }: Props) {
   const navigate = useNavigate();
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, openDocumentByApiId } = useAppState();
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
-  const cardClass = m.kind === 'warn' ? styles.warn : m.kind === 'refuse' ? styles.refuse : '';
-  const canEscalate = m.kind === 'warn' || m.kind === 'refuse';
-  const noPolicyMatch = m.kind === 'refuse' && !(m.tags && m.tags.length);
   const tags = m.tags ?? [];
+  // Prefer citation objects: they carry the document id, which is what makes a chip
+  // openable. Fall back to plain tag strings for messages that predate citations.
+  const sources: Citation[] = m.citations?.length ? m.citations : tags.map((name) => ({ name }));
+  const cardClass = m.kind === 'warn' ? styles.warn : m.kind === 'refuse' ? styles.refuse : '';
+  const canEscalate = m.escalated || m.kind === 'warn' || m.kind === 'refuse';
+  const noPolicyMatch = m.kind === 'refuse' && !sources.length;
   const expanded = !!m.sourcesExpanded;
-  const visibleTags = expanded || tags.length <= 2 ? tags : tags.slice(0, 2);
-  const hiddenCount = tags.length - visibleTags.length;
+  const visibleSources = expanded || sources.length <= 2 ? sources : sources.slice(0, 2);
+  const hiddenCount = sources.length - visibleSources.length;
 
   const handleCopy = () => {
     const text = m.body ?? (m.steps ? m.steps.map((s) => `${s.n}. ${s.text}`).join('\n') : '');
@@ -96,21 +99,35 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
             </div>
           )}
 
-          {tags.length > 0 && (
+          {sources.length > 0 && (
             <>
               <div className={styles.tags}>
-                {visibleTags.map((t, i) => (
-                  <span className={styles.tag} key={i}>
-                    {t}
-                  </span>
-                ))}
+                {visibleSources.map((c, i) =>
+                  c.documentId ? (
+                    <button
+                      className={cx(styles.tag, styles.tagLink)}
+                      key={i}
+                      onClick={() => openDocumentByApiId(c.documentId!)}
+                      title={`Open ${c.name}${c.ref ? ` — ${c.ref}` : ''}`}
+                      type="button"
+                    >
+                      {c.name}
+                      {c.ref && <span className={styles.tagRef}>{c.ref}</span>}
+                      <ExternalLink size={11} />
+                    </button>
+                  ) : (
+                    <span className={styles.tag} key={i}>
+                      {c.name}
+                    </span>
+                  ),
+                )}
               </div>
               {hiddenCount > 0 && (
                 <button className={styles.sourcesMore} onClick={() => dispatch({ type: 'TOGGLE_SOURCES', messageId: m.id })}>
                   +{hiddenCount} more sources
                 </button>
               )}
-              {expanded && tags.length > 2 && (
+              {expanded && sources.length > 2 && (
                 <button className={styles.sourcesMore} onClick={() => dispatch({ type: 'TOGGLE_SOURCES', messageId: m.id })}>
                   Show less
                 </button>

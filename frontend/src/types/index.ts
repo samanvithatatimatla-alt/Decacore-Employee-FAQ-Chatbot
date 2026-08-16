@@ -4,6 +4,8 @@ export type MessageKind = 'answer' | 'warn' | 'refuse';
 export interface Citation {
   name: string;
   ref?: string;
+  /** Server document id, so the chip can open the source PDF. Absent on seeded demo data. */
+  documentId?: string;
 }
 
 export interface FollowUp {
