@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Star, X } from 'lucide-react';
+import { FileText, Star, X } from 'lucide-react';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './DocumentModal.module.css';
 
@@ -79,12 +79,8 @@ export default function DocumentModal({ policyId, initialCompare, onClose }: Pro
         <div className={styles.paper}>
           <div className={styles.paperTitle}>{shownTitle}</div>
           <p className={styles.paperBody}>{shownBody}</p>
-          <button
-            className={styles.versionTab}
-            style={{ marginTop: 16 }}
-            onClick={() => openDocument(policy.id)}
-            type="button"
-          >
+          <button className={styles.openPdf} style={{ marginTop: 16 }} onClick={() => openDocument(policy.id)} type="button">
+            <FileText size={14} />
             Open full PDF
           </button>
         </div>

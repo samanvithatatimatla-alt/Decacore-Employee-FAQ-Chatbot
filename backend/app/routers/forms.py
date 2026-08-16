@@ -69,6 +69,24 @@ def upload_form(
     return form_out(item)
 
 
+@router.get("/{form_id}/url")
+def form_url(form_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Where to open this form.
+
+    Mirrors the document equivalent. The browser cannot attach a bearer token to a
+    `window.open`, so the client asks here first: with Azure storage it gets a
+    short-lived SAS URL it can open directly, and otherwise the relative content
+    path, which it fetches with credentials and opens as a blob.
+    """
+    f = db.get(HRForm, form_id)
+    if not f or not readable(f, user):
+        raise HTTPException(status_code=404, detail="Form not found")
+    if not f.blob_path:
+        raise HTTPException(status_code=404, detail="This form has not been uploaded yet")
+    url = storage_service.get_read_url(f.blob_path)
+    return {"url": url or f"/api/forms/{f.id}/content", "expires_in_seconds": 1200 if url else None}
+
+
 @router.get("/{form_id}/content")
 def form_content(form_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     f = db.get(HRForm, form_id)

@@ -13,7 +13,7 @@ function cx(...classes: Array<string | false | undefined>) {
 }
 
 export default function ResourcesPage() {
-  const { state, dispatch, sendMessage } = useAppState();
+  const { state, dispatch, sendMessage, openForm } = useAppState();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { policies, forms, recentlyViewed, policyUpdates, filter, search, highlightFormId } = state.resources;
@@ -162,10 +162,10 @@ export default function ResourcesPage() {
                   <div className={styles.rowName}>{f.name}</div>
                   <div className={styles.rowMeta}>{f.meta}</div>
                 </div>
-                <a className={styles.ghost} href="#" onClick={(e) => e.preventDefault()}>
+                <button className={styles.ghost} onClick={() => openForm(f.id)} type="button">
                   <Download size={13} style={{ marginRight: 4, verticalAlign: -2 }} />
                   Download
-                </a>
+                </button>
               </div>
             ))}
             {noFavForms && <p className={styles.emptyNote}>No favorited forms yet</p>}

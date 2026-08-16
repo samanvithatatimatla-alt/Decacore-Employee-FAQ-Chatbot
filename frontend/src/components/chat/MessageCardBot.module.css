@@ -49,6 +49,9 @@
   margin: 0;
   font-size: 13.5px;
   line-height: 1.5;
+  /* The answer is plain text, not markdown. Without this the model's line breaks
+     collapse and a bulleted list arrives as one unreadable run-on paragraph. */
+  white-space: pre-wrap;
 }
 .noMatch {
   opacity: 0.7;

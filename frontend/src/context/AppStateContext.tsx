@@ -11,7 +11,7 @@ import type {
   RecentlyViewedDoc,
   TopQuestion,
 } from '../types';
-import { api, streamChat, type ApiCharts } from '../api/client';
+import { api, files, streamChat, type ApiCharts } from '../api/client';
 import {
   mapAdminDoc,
   mapAnnouncement,
@@ -450,23 +450,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [state.history.conversations],
   );
 
+  /**
+   * Resolving the PDF's URL is asynchronous (see `files` in api/client), but opening
+   * a tab after an await is treated as an unsolicited popup and blocked. So the tab
+   * is opened synchronously inside the click and navigated once the URL arrives; on
+   * failure it shows the reason rather than being left on a blank about:blank.
+   *
+   * `noopener` is deliberately absent here — with it, window.open returns null and
+   * there is no handle to navigate. The tab is same-origin (or a SAS URL on our own
+   * storage account), so `opener` access is not a concern.
+   */
+  const openInTab = useCallback(async (resolve: () => Promise<string>) => {
+    const tab = window.open('', '_blank');
+    try {
+      const url = await resolve();
+      if (tab) tab.location.href = url;
+      else window.open(url, '_blank');
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'Unknown error';
+      if (tab) tab.document.write(`<p style="font:14px system-ui;padding:24px">Could not open this document — ${reason}</p>`);
+    }
+  }, []);
+
   const openDocument = useCallback(
     (id: number) => {
       const doc = state.resources.policies.find((p) => p.id === id);
       if (!doc?.apiId) return;
-      window.open(api.documentContentUrl(doc.apiId), '_blank', 'noopener');
+      void openInTab(() => files.documentOpenUrl(doc.apiId!));
       void api.markViewed(doc.apiId).catch(() => undefined);
     },
-    [state.resources.policies],
+    [state.resources.policies, openInTab],
   );
 
   const openForm = useCallback(
     (id: number) => {
       const form = state.resources.forms.find((f) => f.id === id);
       if (!form?.apiId) return;
-      window.open(api.formContentUrl(form.apiId), '_blank', 'noopener');
+      void openInTab(() => files.formOpenUrl(form.apiId!));
     },
-    [state.resources.forms],
+    [state.resources.forms, openInTab],
   );
 
   const uploadDocument = useCallback(

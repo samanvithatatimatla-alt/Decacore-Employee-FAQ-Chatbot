@@ -275,9 +275,47 @@ export const api = {
       body: JSON.stringify({ conversation_id: conversationId, assistant_message_id: assistantMessageId, note }),
     }),
 
-  /** Absolute URL for opening a policy PDF. The endpoint redirects to a short-lived SAS URL. */
-  documentContentUrl: (id: string) => `${API_BASE}/api/documents/${id}/content`,
-  formContentUrl: (id: string) => `${API_BASE}/api/forms/${id}/content`,
+  documentUrl: (id: string) => request<FileLocation>(`/api/documents/${id}/url`),
+  formUrl: (id: string) => request<FileLocation>(`/api/forms/${id}/url`),
+};
+
+/* ------------------------------------------------------------------- files */
+
+interface FileLocation {
+  /** Either an absolute SAS URL or an API path that still needs a bearer token. */
+  url: string;
+  expires_in_seconds: number | null;
+}
+
+/**
+ * Resolve a PDF to something `window.open` can actually load.
+ *
+ * A bare `window.open('/api/documents/x/content')` is a plain browser navigation:
+ * it carries no Authorization header, so an Entra-mode backend answers 401
+ * "missing bearer token". Two ways out, and which one applies depends on how the
+ * backend stores files:
+ *
+ *  - Azure storage: the API hands back a short-lived SAS URL that is already
+ *    authorized in the query string, so it can be opened as-is.
+ *  - Local storage: there is no such URL, so the bytes are fetched here *with*
+ *    credentials and wrapped in an object URL.
+ *
+ * The object URL is revoked on a timer rather than immediately — revoking before
+ * the new tab has finished loading leaves the viewer blank.
+ */
+async function openable(loc: FileLocation): Promise<string> {
+  if (/^https?:/i.test(loc.url)) return loc.url;
+
+  const res = await fetch(`${API_BASE}${loc.url}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError(`Could not load the file (${res.status})`, res.status);
+  const objectUrl = URL.createObjectURL(await res.blob());
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  return objectUrl;
+}
+
+export const files = {
+  documentOpenUrl: (id: string) => api.documentUrl(id).then(openable),
+  formOpenUrl: (id: string) => api.formUrl(id).then(openable),
 };
 
 /* -------------------------------------------------------------------- chat */

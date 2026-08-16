@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from .guardrails import canned_reply
 from .llm import llm_service
 from .search import search_service
 
@@ -19,6 +20,13 @@ class RagResult:
 
 class RagService:
     def answer(self, db: Session, question: str, role: str) -> RagResult:
+        # Greetings, small talk and plainly non-HR asks never reach search or the
+        # LLM. Confidence is 1.0 because the reply is exactly right for the message,
+        # and no escalation is offered — there is nothing for HR to answer.
+        fixed = canned_reply(question)
+        if fixed is not None:
+            return RagResult(answer=fixed, citations=[], confidence=1.0, should_escalate=False)
+
         hits = search_service.search(db, question, role)
         top_score = float(hits[0]["score"]) if hits else 0.0
         low_confidence = not hits or (settings.search_backend == "local" and top_score < settings.local_min_score)
