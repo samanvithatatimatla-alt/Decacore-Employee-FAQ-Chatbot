@@ -31,6 +31,7 @@
 }
 
 .iconBtn {
+  position: relative;
   width: 40px;
   height: 40px;
   flex: none;
@@ -300,4 +301,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Count of escalations waiting on HR. Pushed to the right edge of the nav row so it
+   reads as a status on the item rather than part of its label. */
+.navBadge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Collapsed rail has no room for the number, so the same signal becomes a dot. */
+.railDot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1.5px solid var(--bg-chrome);
 }

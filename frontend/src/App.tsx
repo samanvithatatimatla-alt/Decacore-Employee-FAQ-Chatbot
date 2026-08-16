@@ -12,6 +12,7 @@ import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentViewerPage from './pages/DocumentViewerPage';
+import InboxPage from './pages/InboxPage';
 
 /**
  * Entra's redirect flow always returns to the app root, which renders the welcome page.
@@ -46,6 +47,7 @@ export default function App() {
 
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<DashboardPage />} />
+            <Route path="/admin/inbox" element={<InboxPage />} />
             <Route path="/admin/documents" element={<DocumentsPage />} />
             <Route path="/admin/documents/:id" element={<DocumentViewerPage />} />
           </Route>

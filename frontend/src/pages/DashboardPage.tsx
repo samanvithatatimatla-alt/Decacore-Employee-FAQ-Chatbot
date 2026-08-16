@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { FileText, Inbox } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAppState } from '../context/AppStateContext';
 import panel from '../components/common/panel.module.css';
@@ -21,6 +21,23 @@ export default function DashboardPage() {
       <p className={panel.sub} style={{ margin: 0 }}>
         Here's what's happening with QBot today.
       </p>
+
+      <div className={styles.quickLink}>
+        <span className={styles.miniIcon}>
+          <Inbox size={22} />
+        </span>
+        <div className={styles.quickLinkText}>
+          <h2 className={styles.quickLinkTitle}>HR Inbox</h2>
+          <p className={styles.quickLinkSub}>
+            {state.pendingRequests > 0
+              ? `${state.pendingRequests} escalated question${state.pendingRequests === 1 ? '' : 's'} waiting on a reply`
+              : 'Questions employees escalated from chat'}
+          </p>
+        </div>
+        <button className={styles.ghostLink} onClick={() => navigate('/admin/inbox')}>
+          Open inbox →
+        </button>
+      </div>
 
       <div className={styles.quickLink}>
         <span className={styles.miniIcon}>

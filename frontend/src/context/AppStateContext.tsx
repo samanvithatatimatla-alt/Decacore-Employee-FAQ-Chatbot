@@ -63,6 +63,8 @@ interface AppState {
   announcements: { items: Announcement[] };
   topQuestions: TopQuestion[];
   mostReferenced: MostReferenced[];
+  /** Escalations waiting on HR. Drives the inbox badge; HR-only, 0 for everyone else. */
+  pendingRequests: number;
   loading: boolean;
   ui: { sidebarOpen: boolean };
 }
@@ -84,6 +86,7 @@ const initialState: AppState = {
   announcements: { items: [] },
   topQuestions: [],
   mostReferenced: [],
+  pendingRequests: 0,
   loading: false,
   ui: { sidebarOpen: true },
 };
@@ -98,6 +101,7 @@ interface HydratePayload {
   topQuestions: TopQuestion[];
   adminDocuments: AdminDoc[];
   mostReferenced: MostReferenced[];
+  pendingRequests: number;
 }
 
 type Action =
@@ -144,6 +148,7 @@ function reducer(state: AppState, action: Action): AppState {
         topQuestions: d.topQuestions ?? state.topQuestions,
         adminDocuments: d.adminDocuments ?? state.adminDocuments,
         mostReferenced: d.mostReferenced ?? state.mostReferenced,
+        pendingRequests: d.pendingRequests ?? state.pendingRequests,
       };
     }
     case 'SET_LOADING':
@@ -346,11 +351,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadAdminData = useCallback(async () => {
-    const [docsRes, chartsRes] = await Promise.all([
+    const [docsRes, chartsRes, metricsRes] = await Promise.all([
       api.documents().catch(() => ({ items: [], total: 0 })),
       api.charts().catch(
         (): ApiCharts => ({ requests_by_status: [], documents_by_category: [], top_questions: [], most_referenced: [] }),
       ),
+      api.metrics().catch(() => null),
     ]);
 
     // Version history is per-document, so it is fetched alongside rather than in a
@@ -374,6 +380,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           name: m.title || m.name,
           citations: m.citations,
         })),
+        pendingRequests: metricsRes?.pending_requests ?? 0,
       },
     });
   }, []);

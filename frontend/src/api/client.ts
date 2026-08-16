@@ -211,14 +211,22 @@ export interface ApiCharts {
   most_referenced?: ApiMostReferenced[];
 }
 
+export type InboxStatus = 'New' | 'In Progress' | 'Resolved';
+
 export interface ApiInboxRequest {
   id: string;
   employee_name?: string | null;
+  employee_department?: string | null;
   message: string;
   status: string;
   created_at: string;
   manager_comment?: string | null;
   type?: string | null;
+  /** The chat escalation body split back into its three parts by the API. */
+  question?: string | null;
+  employee_note?: string | null;
+  ai_response?: string | null;
+  hr_response?: string | null;
 }
 
 /* --------------------------------------------------------------- endpoints */
@@ -266,7 +274,27 @@ export const api = {
 
   metrics: () => request<ApiMetrics>('/api/dashboard/metrics'),
   charts: () => request<ApiCharts>('/api/dashboard/charts'),
-  inbox: () => request<ListOf<ApiInboxRequest>>('/api/requests/inbox'),
+  inbox: (status?: string, q?: string) => {
+    const params = new URLSearchParams();
+    if (status && status !== 'All') params.set('status', status);
+    if (q?.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    return request<ListOf<ApiInboxRequest>>(`/api/requests/inbox${qs ? `?${qs}` : ''}`);
+  },
+
+  setInboxStatus: (id: string, status: InboxStatus) =>
+    request<ApiInboxRequest>(`/api/requests/${id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }),
+
+  respondToEscalation: (id: string, response: string, resolve: boolean) =>
+    request<ApiInboxRequest>(`/api/requests/${id}/respond`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response, resolve }),
+    }),
 
   escalate: (conversationId: string, assistantMessageId?: string, note?: string) =>
     request<{ request_id: string; status: string; message: string }>('/api/chat/escalate', {

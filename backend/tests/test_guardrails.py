@@ -26,6 +26,7 @@ from app.main import app
 from app.services.guardrails import OUT_OF_SCOPE_REPLY, canned_reply
 
 EMPLOYEE = {"X-Dev-User-Email": "marietta.baudone@gmail.com"}
+HR = {"X-Dev-User-Email": "hr.admin@bluepeak.example"}
 
 
 @pytest.fixture(scope="module")
@@ -97,3 +98,43 @@ def test_pdf_content_type_is_guessed_for_blob_headers():
 
     assert _guess_type("Leave_Policy.pdf") == "application/pdf"
     assert _guess_type("no-extension") == "application/pdf"
+
+
+def test_escalation_reaches_the_hr_inbox(client):
+    """The path behind the chat's Send to HR button, through to what HR sees."""
+    chat = client.post("/api/chat", json={"message": "what is the policy on moon leave?"}, headers=EMPLOYEE)
+    assert chat.status_code == 200
+    conv_id = [
+        line for line in chat.text.splitlines() if '"conversation_id"' in line
+    ][0].split('"conversation_id": "')[1].split('"')[0]
+
+    esc = client.post(
+        "/api/chat/escalate",
+        json={"conversation_id": conv_id, "note": "need an answer before Friday"},
+        headers=EMPLOYEE,
+    )
+    assert esc.status_code == 200
+    request_id = esc.json()["request_id"]
+
+    inbox = client.get("/api/requests/inbox", headers=HR)
+    assert inbox.status_code == 200
+    row = next(r for r in inbox.json()["items"] if r["id"] == request_id)
+    assert row["status"] == "New"
+    assert "moon leave" in row["question"]
+    assert row["employee_note"] == "need an answer before Friday"
+
+    # HR replies and resolves; the row reflects both.
+    done = client.post(
+        f"/api/requests/{request_id}/respond",
+        json={"response": "Moon leave is not a thing. Use PTO.", "resolve": True},
+        headers=HR,
+    )
+    assert done.status_code == 200
+    assert done.json()["status"] == "Resolved"
+    assert done.json()["hr_response"].startswith("Moon leave")
+
+    assert all(r["id"] != request_id for r in client.get("/api/requests/inbox?status=New", headers=HR).json()["items"])
+
+
+def test_inbox_is_hr_only(client):
+    assert client.get("/api/requests/inbox", headers=EMPLOYEE).status_code == 403

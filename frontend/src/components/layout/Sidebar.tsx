@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FileText, Folder, LayoutGrid, Mail, MessageSquare } from 'lucide-react';
+import { FileText, Folder, Inbox, LayoutGrid, Mail, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './Sidebar.module.css';
@@ -78,6 +78,13 @@ export default function Sidebar() {
                     <FileText size={14} />
                   </span>
                   Document Management
+                </button>
+                <button className={cx(styles.sideNavItem, isActive('/admin/inbox') && styles.active)} onClick={() => navigate('/admin/inbox')}>
+                  <span className={styles.sideNavIcon}>
+                    <Inbox size={14} />
+                  </span>
+                  HR Inbox
+                  {state.pendingRequests > 0 && <span className={styles.navBadge}>{state.pendingRequests}</span>}
                 </button>
                 <button className={cx(styles.sideNavItem, isActive('/admin') && styles.active)} onClick={() => navigate('/admin')}>
                   <span className={styles.sideNavIcon}>
@@ -157,6 +164,15 @@ export default function Sidebar() {
                 aria-label="Document Management"
               >
                 <FileText size={16} />
+              </button>
+              <button
+                className={cx(styles.iconBtn, styles.ghost, isActive('/admin/inbox') && styles.active)}
+                onClick={() => navigate('/admin/inbox')}
+                title="HR Inbox"
+                aria-label="HR Inbox"
+              >
+                <Inbox size={16} />
+                {state.pendingRequests > 0 && <span className={styles.railDot} />}
               </button>
               <button
                 className={cx(styles.iconBtn, styles.ghost, isActive('/admin') && styles.active)}
