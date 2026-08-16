@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import mimetypes
 import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -8,6 +9,16 @@ from uuid import uuid4
 from fastapi import UploadFile
 
 from ..config import settings
+
+
+def _guess_type(name: str) -> str:
+    """Content type for a stored file, defaulting to PDF.
+
+    Everything the app stores is a policy document or a receipt, and mimetypes only
+    misses when a file arrives with no extension — where PDF is the better guess than
+    octet-stream, which the browser downloads rather than displays.
+    """
+    return mimetypes.guess_type(name)[0] or "application/pdf"
 
 
 class StorageService:
@@ -27,7 +38,7 @@ class StorageService:
             return f"{kind}/{blob_name}"
 
         from azure.identity import DefaultAzureCredential
-        from azure.storage.blob import BlobServiceClient
+        from azure.storage.blob import BlobServiceClient, ContentSettings
 
         if not settings.azure_storage_account_url:
             raise RuntimeError("AZURE_STORAGE_ACCOUNT_URL is required for STORAGE_BACKEND=azure")
@@ -35,7 +46,17 @@ class StorageService:
         client = BlobServiceClient(settings.azure_storage_account_url, credential=DefaultAzureCredential())
         blob = client.get_blob_client(container=container, blob=blob_name)
         upload.file.seek(0)
-        blob.upload_blob(upload.file, overwrite=True)
+        # Without explicit settings Azure stores every blob as application/octet-stream,
+        # which makes the browser download the file instead of rendering it — a tab
+        # opened to view a policy just sits on about:blank.
+        blob.upload_blob(
+            upload.file,
+            overwrite=True,
+            content_settings=ContentSettings(
+                content_type=upload.content_type or _guess_type(safe_name),
+                content_disposition=f'inline; filename="{safe_name}"',
+            ),
+        )
         return f"{container}/{blob_name}"
 
     def copy_seed_document(self, source: Path, filename: str) -> str:
@@ -65,7 +86,7 @@ class StorageService:
         client = BlobServiceClient(settings.azure_storage_account_url, credential=DefaultAzureCredential())
         return client.get_blob_client(container, name).download_blob().readall()
 
-    def get_read_url(self, blob_path: str) -> str | None:
+    def get_read_url(self, blob_path: str, filename: str | None = None) -> str | None:
         if settings.storage_backend == "local":
             return None
         from azure.identity import DefaultAzureCredential
@@ -88,6 +109,12 @@ class StorageService:
             permission=BlobSasPermissions(read=True),
             start=start,
             expiry=expiry,
+            # rsct/rscd: the SAS overrides the blob's stored headers on this response.
+            # Every blob written before uploads set content settings is still stored as
+            # application/octet-stream, and re-uploading them all to fix that is not
+            # worth it — overriding per-request repairs old and new blobs alike.
+            content_type=_guess_type(filename or name),
+            content_disposition=f'inline; filename="{Path(filename or name).name}"',
         )
         return f"{settings.azure_storage_account_url.rstrip('/')}/{container}/{name}?{sas}"
 

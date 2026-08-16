@@ -89,3 +89,11 @@ def test_greeting_over_chat_returns_no_citations(client):
         if line.startswith('data: {"text":')
     )
     assert len(text) < 220
+
+
+def test_pdf_content_type_is_guessed_for_blob_headers():
+    """Blobs served as octet-stream get downloaded, not displayed — a blank tab."""
+    from app.services.storage import _guess_type
+
+    assert _guess_type("Leave_Policy.pdf") == "application/pdf"
+    assert _guess_type("no-extension") == "application/pdf"

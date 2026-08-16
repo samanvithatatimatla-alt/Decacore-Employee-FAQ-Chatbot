@@ -83,7 +83,7 @@ def form_url(form_id: str, db: Session = Depends(get_db), user: User = Depends(g
         raise HTTPException(status_code=404, detail="Form not found")
     if not f.blob_path:
         raise HTTPException(status_code=404, detail="This form has not been uploaded yet")
-    url = storage_service.get_read_url(f.blob_path)
+    url = storage_service.get_read_url(f.blob_path, f.filename)
     return {"url": url or f"/api/forms/{f.id}/content", "expires_in_seconds": 1200 if url else None}
 
 
@@ -94,7 +94,7 @@ def form_content(form_id: str, db: Session = Depends(get_db), user: User = Depen
         raise HTTPException(status_code=404, detail="Form not found")
     if not f.blob_path:
         raise HTTPException(status_code=404, detail="This form has not been uploaded yet")
-    url = storage_service.get_read_url(f.blob_path)
+    url = storage_service.get_read_url(f.blob_path, f.filename)
     if url:
         return RedirectResponse(url)
     return FileResponse(storage_service.local_path(f.blob_path), media_type="application/pdf", filename=f.filename)

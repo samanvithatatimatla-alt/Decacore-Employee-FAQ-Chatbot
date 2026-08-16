@@ -172,7 +172,7 @@ def document_url(document_id: str, db: Session = Depends(get_db), user: User = D
     doc = db.get(Document, document_id)
     if not doc or not can_read(doc, user):
         raise HTTPException(status_code=404, detail="Document not found")
-    url = storage_service.get_read_url(doc.blob_path)
+    url = storage_service.get_read_url(doc.blob_path, doc.filename)
     return {"url": url or f"/api/documents/{doc.id}/content", "expires_in_seconds": 1200 if url else None}
 
 
@@ -181,7 +181,7 @@ def document_content(document_id: str, db: Session = Depends(get_db), user: User
     doc = db.get(Document, document_id)
     if not doc or not can_read(doc, user):
         raise HTTPException(status_code=404, detail="Document not found")
-    url = storage_service.get_read_url(doc.blob_path)
+    url = storage_service.get_read_url(doc.blob_path, doc.filename)
     if url:
         return RedirectResponse(url)
     path = storage_service.local_path(doc.blob_path)
@@ -384,7 +384,7 @@ def version_content(
     )
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
-    url = storage_service.get_read_url(version.blob_path)
+    url = storage_service.get_read_url(version.blob_path, version.filename)
     if url:
         return RedirectResponse(url)
     path = storage_service.local_path(version.blob_path)
