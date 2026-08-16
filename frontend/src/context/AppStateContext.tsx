@@ -191,7 +191,11 @@ function reducer(state: AppState, action: Action): AppState {
         citations: action.citations,
         tags: action.tags,
         escalated: action.escalationOffered,
-        kind: action.citations.length === 0 ? 'refuse' : action.escalationOffered ? 'warn' : 'answer',
+        // `escalation_offered` is the backend saying it could not answer, which is
+        // exactly what the refuse card means. Keying off "no citations" instead was
+        // wrong: a greeting is answered correctly and cites nothing, so it came back
+        // dressed as a failure with a Send-to-HR button.
+        kind: action.escalationOffered ? 'refuse' : 'answer',
         body,
       };
       return { ...state, chat: { ...state.chat, messages, isTyping: false } };

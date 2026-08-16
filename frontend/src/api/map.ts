@@ -141,9 +141,10 @@ export function mapMessage(m: ApiMessage): ChatMessage {
     ...base,
     role: 'bot',
     body: m.content,
-    // Low confidence is what the backend uses to offer escalation, so mirror that
-    // in the visual treatment rather than inventing a separate signal.
-    kind: m.citations.length === 0 ? 'refuse' : (m.confidence_score ?? 1) < 0.15 ? 'warn' : 'answer',
+    // Stored messages carry no escalation_offered flag, so confidence stands in for
+    // it: the backend records ~0 when nothing matched, and 1.0 for the scripted
+    // replies to greetings and off-topic asks, which cite nothing but did answer.
+    kind: m.citations.length === 0 && (m.confidence_score ?? 1) < 0.5 ? 'refuse' : (m.confidence_score ?? 1) < 0.15 ? 'warn' : 'answer',
     tags: m.citations.map((c) => c.title),
     citations: m.citations.map(mapCitation),
     escalated: m.escalated,

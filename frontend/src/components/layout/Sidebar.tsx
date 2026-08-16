@@ -11,7 +11,7 @@ function cx(...classes: Array<string | false | undefined>) {
 
 export default function Sidebar() {
   const { user, signOut } = useAuth();
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, restoreConversation } = useAppState();
   const navigate = useNavigate();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -28,6 +28,14 @@ export default function Sidebar() {
   };
 
   const recentsTop2 = state.recents.slice(0, 2);
+
+  // Same as the history page: the conversation list carries no messages, so the
+  // detail has to be fetched before the thread can render. Naming a recent chat and
+  // then dropping the user on the full history list made them find it twice.
+  const openRecent = async (convId: number) => {
+    await restoreConversation(convId);
+    navigate('/chat');
+  };
 
   const handleSignOut = () => {
     setUserMenuOpen(false);
@@ -86,7 +94,7 @@ export default function Sidebar() {
               {recentsTop2.length === 0 && <p className={styles.recentsEmpty}>No recent chats</p>}
               {recentsTop2.map((r) => (
                 <div className={styles.recent} key={r.id}>
-                  <button className={styles.recentLabel} onClick={() => navigate('/history')}>
+                  <button className={styles.recentLabel} onClick={() => void openRecent(r.id)}>
                     {r.label}
                   </button>
                 </div>
