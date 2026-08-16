@@ -268,3 +268,32 @@
   border-color: rgba(124, 77, 255, 0.8);
   color: #cbb8ff;
 }
+
+/* Blinking caret on the answer still being streamed. Inline so it sits on the last
+   line of text rather than below it, and animated with opacity steps so it reads as
+   a cursor rather than a fade. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  /* currentColor: white on the filled answer card, body text on warn/refuse cards. */
+  background: currentColor;
+  animation: caretBlink 1s steps(1, end) infinite;
+}
+@keyframes caretBlink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}

@@ -55,13 +55,16 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
 
     def generate():
         with SessionLocal() as worker_db:
-            result = rag_service.answer(worker_db, question, user_role)
+            # Retrieval runs here; the model has not written anything yet. Citations and
+            # confidence are already final at this point, which is why the row can be
+            # created — and `meta` sent — before a single token exists.
+            prepared = rag_service.stream(worker_db, question, user_role)
             assistant = Message(
                 conversation_id=conversation_id,
                 role="assistant",
-                content=result.answer,
-                citations=result.citations,
-                confidence_score=result.confidence,
+                content="",
+                citations=prepared.citations,
+                confidence_score=prepared.confidence,
                 escalated=False,
             )
             worker_db.add(assistant)
@@ -70,17 +73,30 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 conv2.last_message_at = datetime.now(UTC)
             worker_db.commit()
             worker_db.refresh(assistant)
+            message_id = assistant.id
 
-            yield sse("meta", {"conversation_id": conversation_id, "message_id": assistant.id})
-            words = result.answer.split(" ")
-            for i, word in enumerate(words):
-                yield sse("delta", {"text": word + (" " if i < len(words) - 1 else "")})
+            yield sse("meta", {"conversation_id": conversation_id, "message_id": message_id})
+
+            parts: list[str] = []
+            try:
+                for chunk in prepared.chunks:
+                    parts.append(chunk)
+                    yield sse("delta", {"text": chunk})
+            finally:
+                # Persist whatever arrived even if the client hung up or the upstream
+                # stream broke: the row was already committed with empty content, and
+                # leaving it that way would put a blank bubble in the user's history.
+                stored = worker_db.get(Message, message_id)
+                if stored is not None:
+                    stored.content = "".join(parts)
+                    worker_db.commit()
+
             yield sse("done", {
                 "conversation_id": conversation_id,
-                "message_id": assistant.id,
-                "citations": result.citations,
-                "confidence": result.confidence,
-                "escalation_offered": result.should_escalate,
+                "message_id": message_id,
+                "citations": prepared.citations,
+                "confidence": prepared.confidence,
+                "escalation_offered": prepared.should_escalate,
             })
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

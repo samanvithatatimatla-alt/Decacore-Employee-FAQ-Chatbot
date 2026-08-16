@@ -25,6 +25,7 @@ import {
   mapTopQuestion,
 } from '../api/map';
 import { useAuth } from './AuthContext';
+import { createTypewriter, type Typewriter } from './typewriter';
 
 export type ResourceFilter = 'all' | 'favorites' | 'updates';
 
@@ -322,6 +323,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { user } = useAuth();
   const abortRef = useRef<AbortController | null>(null);
+  const typewriterRef = useRef<Typewriter | null>(null);
 
   const loadEmployeeData = useCallback(async () => {
     const [docsRes, formsRes, favRes, recentRes, updatesRes, convRes, annRes, faqRes] = await Promise.all([
@@ -410,16 +412,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'START_BOT_REPLY' });
 
       abortRef.current?.abort();
+      typewriterRef.current?.cancel();
       const controller = new AbortController();
       abortRef.current = controller;
+
+      // Deltas are paced onto the screen rather than applied as they land — see
+      // typewriter.ts. FINISH_BOT_REPLY must not overtake them, so `done` flushes
+      // whatever is still queued before the card is finalised.
+      const typewriter = createTypewriter((text) => dispatch({ type: 'APPEND_DELTA', text }));
+      typewriterRef.current = typewriter;
 
       void streamChat(
         trimmed,
         state.chat.conversationId,
         {
           onMeta: (m) => dispatch({ type: 'SET_CONVERSATION_ID', id: m.conversation_id }),
-          onDelta: (t) => dispatch({ type: 'APPEND_DELTA', text: t }),
+          onDelta: (t) => typewriter.push(t),
           onDone: (d) => {
+            typewriter.flush();
             dispatch({
               type: 'FINISH_BOT_REPLY',
               citations: d.citations.map(mapCitation),
@@ -437,6 +447,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         },
         controller.signal,
       ).catch((e) => {
+        typewriter.cancel();
         if (controller.signal.aborted) return;
         dispatch({
           type: 'CHAT_ERROR',

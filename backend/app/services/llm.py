@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 import threading
+from collections.abc import Iterator
 from functools import lru_cache
 
 from ..config import settings
@@ -143,8 +144,19 @@ class LLMService:
         return "Benefits", 0.55
 
     def answer(self, question: str, hits: list[dict]) -> str:
+        """The whole answer as one string. Prefer `answer_stream` for user-facing chat."""
+        return "".join(self.answer_stream(question, hits))
+
+    def answer_stream(self, question: str, hits: list[dict]) -> Iterator[str]:
+        """Yield the answer in pieces as the model produces them.
+
+        Streaming is what makes the chat feel live, but it also cuts the *perceived*
+        latency far more than it cuts the real kind: the first words appear as soon as
+        the model starts writing instead of after it has finished the whole answer.
+        """
         if not hits:
-            return "I couldn't find this in the approved policy documents. I can help you send the question to HR."
+            yield "I couldn't find this in the approved policy documents. I can help you send the question to HR."
+            return
         if settings.llm_backend == "azure":
             excerpts = []
             for i, hit in enumerate(hits, 1):
@@ -185,13 +197,32 @@ class LLMService:
             # nothing and costs the entire response time.
             # Note: this parameter is specific to reasoning models. A non-reasoning
             # deployment (gpt-4o and similar) rejects it.
-            response = self._client().chat.completions.create(
+            stream = self._client().chat.completions.create(
                 model=settings.azure_openai_chat_deployment,
                 messages=messages,
                 reasoning_effort="minimal",
                 max_completion_tokens=4000,
+                stream=True,
             )
-            return (response.choices[0].message.content or "").strip()
+            # Leading whitespace is stripped from the first piece that has any content,
+            # which is what .strip() used to do for the whole string. Trailing space is
+            # left alone: there is no way to know a chunk is the last one until the
+            # stream ends, and a stray space at the end of a bubble is invisible.
+            leading = True
+            for chunk in stream:
+                if not chunk.choices:
+                    # Azure content filtering emits a first frame with no choices.
+                    continue
+                text = chunk.choices[0].delta.content or ""
+                if not text:
+                    continue
+                if leading:
+                    text = text.lstrip()
+                    if not text:
+                        continue
+                    leading = False
+                yield text
+            return
 
         # Offline fallback: extract the most query-relevant sentences from retrieved policy text.
         q = set(tokenize(question))
@@ -213,8 +244,9 @@ class LLMService:
             if len(chosen) == 3:
                 break
         if not chosen:
-            return "I found related policy material, but not enough to give a reliable answer. I recommend sending this question to HR."
-        return " ".join(chosen)
+            yield "I found related policy material, but not enough to give a reliable answer. I recommend sending this question to HR."
+            return
+        yield " ".join(chosen)
 
 
 llm_service = LLMService()

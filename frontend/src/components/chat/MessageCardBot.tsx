@@ -14,9 +14,11 @@ function cx(...classes: Array<string | false | undefined>) {
 interface Props {
   message: ChatMessage;
   onFollowUp: (text: string) => void;
+  /** True while this message is still being streamed; draws the caret. */
+  streaming?: boolean;
 }
 
-export default function MessageCardBot({ message: m, onFollowUp }: Props) {
+export default function MessageCardBot({ message: m, onFollowUp, streaming }: Props) {
   const navigate = useNavigate();
   const { state, dispatch } = useAppState();
   const [copied, setCopied] = useState(false);
@@ -76,7 +78,12 @@ export default function MessageCardBot({ message: m, onFollowUp }: Props) {
         <div className={cx(styles.card, cardClass)}>
           <div className={styles.kicker}>{m.kicker}</div>
 
-          {m.body && <p className={styles.body}>{m.body}</p>}
+          {m.body && (
+            <p className={styles.body}>
+              {m.body}
+              {streaming && <span className={styles.caret} aria-hidden="true" />}
+            </p>
+          )}
 
           {m.steps && (
             <div className={styles.steps}>

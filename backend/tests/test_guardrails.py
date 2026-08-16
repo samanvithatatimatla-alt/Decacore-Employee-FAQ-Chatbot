@@ -138,3 +138,24 @@ def test_escalation_reaches_the_hr_inbox(client):
 
 def test_inbox_is_hr_only(client):
     assert client.get("/api/requests/inbox", headers=EMPLOYEE).status_code == 403
+
+
+def test_streamed_answer_is_persisted_to_the_conversation(client):
+    """The row is committed empty before streaming, then filled in as chunks arrive.
+
+    If the fill-in ever regresses, history shows a blank bubble where the answer was.
+    """
+    res = client.post("/api/chat", json={"message": "hello"}, headers=EMPLOYEE)
+    conv_id = res.text.split('"conversation_id": "')[1].split('"')[0]
+
+    streamed = "".join(
+        line[len('data: {"text": "') :].rstrip('"}')
+        for line in res.text.splitlines()
+        if line.startswith('data: {"text":')
+    )
+    assert streamed
+
+    stored = client.get(f"/api/conversations/{conv_id}", headers=EMPLOYEE).json()
+    assistant = [m for m in stored["messages"] if m["role"] == "assistant"][-1]
+    assert assistant["content"].strip()
+    assert assistant["content"].startswith("Hi!")
