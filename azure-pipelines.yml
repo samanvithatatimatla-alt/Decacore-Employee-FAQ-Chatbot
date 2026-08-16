@@ -75,6 +75,12 @@ stages:
         steps:
           - checkout: self
 
+          # Stamped into the package so /health can report which commit is actually
+          # serving traffic. Without it "is my change live yet?" has no answer short
+          # of finding a behaviour that differs between builds.
+          - script: echo "$(Build.SourceVersion)" > "$(Build.SourcesDirectory)/backend/app/BUILD_SHA"
+            displayName: Stamp build SHA
+
           # Only backend/ is packaged, and its contents become the deploy root
           # so `app.main:app` resolves against the configured startup command.
           - task: ArchiveFiles@2

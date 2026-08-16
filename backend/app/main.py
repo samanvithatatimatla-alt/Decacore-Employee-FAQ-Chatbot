@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
+from functools import lru_cache
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,7 +26,28 @@ from .routers import (
 from .seed import seed_all
 
 logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
+
+
+@lru_cache(maxsize=1)
+def build_sha() -> str:
+    """Short commit the running code was built from, or "unknown" locally.
+
+    Deploys go GitHub push -> Azure DevOps queue -> zip deploy -> server-side pip
+    install, which can take several minutes with no signal at the front end. Twice now
+    a change has looked broken in production when the old build was simply still
+    running. /health reporting the commit makes that a five-second check.
+    """
+    env = os.environ.get("BUILD_SHA", "").strip()
+    if env:
+        return env[:7]
+    stamped = Path(__file__).with_name("BUILD_SHA")
+    if stamped.exists():
+        return stamped.read_text().strip()[:7] or "unknown"
+    return "unknown"
+
+
 logger = logging.getLogger("decacore")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,4 +104,5 @@ def health():
         "search_backend": settings.search_backend,
         "llm_backend": settings.llm_backend,
         "notification_backend": settings.notification_backend,
+        "build": build_sha(),
     }

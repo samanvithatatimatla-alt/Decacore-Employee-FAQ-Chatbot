@@ -11,3 +11,6 @@ data/storage/documents/*
 data/storage/receipts/*
 !data/storage/documents/.gitkeep
 !data/storage/receipts/.gitkeep
+
+# Stamped into the package at deploy time, never committed.
+app/BUILD_SHA
