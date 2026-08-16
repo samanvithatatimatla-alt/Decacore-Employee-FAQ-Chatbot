@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime, timedelta
+from time import perf_counter
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -19,6 +21,7 @@ from ..services.rag import rag_service
 from ..services.rate_limit import chat_rate_limiter
 
 router = APIRouter(prefix="/api", tags=["chat"])
+logger = logging.getLogger("decacore")
 
 
 def sse(event: str, data: dict | str) -> str:
@@ -55,10 +58,17 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
 
     def generate():
         with SessionLocal() as worker_db:
+            # Timed in three parts because they have completely different fixes:
+            # retrieval is embedding + search, first-token is the model thinking before
+            # it writes anything, and the rest is generation speed. Without the split,
+            # "the bot is slow" has no actionable answer.
+            started = perf_counter()
+
             # Retrieval runs here; the model has not written anything yet. Citations and
             # confidence are already final at this point, which is why the row can be
             # created — and `meta` sent — before a single token exists.
             prepared = rag_service.stream(worker_db, question, user_role)
+            retrieval_ms = int((perf_counter() - started) * 1000)
             assistant = Message(
                 conversation_id=conversation_id,
                 role="assistant",
@@ -78,8 +88,11 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             yield sse("meta", {"conversation_id": conversation_id, "message_id": message_id})
 
             parts: list[str] = []
+            first_token_ms: int | None = None
             try:
                 for chunk in prepared.chunks:
+                    if first_token_ms is None:
+                        first_token_ms = int((perf_counter() - started) * 1000)
                     parts.append(chunk)
                     yield sse("delta", {"text": chunk})
             finally:
@@ -91,12 +104,27 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                     stored.content = "".join(parts)
                     worker_db.commit()
 
+            total_ms = int((perf_counter() - started) * 1000)
+            timings = {
+                "retrieval_ms": retrieval_ms,
+                "first_token_ms": first_token_ms,
+                "total_ms": total_ms,
+            }
+            logger.info(
+                "chat timing retrieval=%sms first_token=%sms total=%sms chars=%s",
+                retrieval_ms,
+                first_token_ms,
+                total_ms,
+                len("".join(parts)),
+            )
+
             yield sse("done", {
                 "conversation_id": conversation_id,
                 "message_id": message_id,
                 "citations": prepared.citations,
                 "confidence": prepared.confidence,
                 "escalation_offered": prepared.should_escalate,
+                "timings": timings,
             })
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

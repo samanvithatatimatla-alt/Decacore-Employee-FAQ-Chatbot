@@ -432,6 +432,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           onDelta: (t) => typewriter.push(t),
           onDone: (d) => {
             typewriter.flush();
+            // Logged rather than shown: employees do not care, but "why is it slow"
+            // is unanswerable without knowing whether the time went to retrieval,
+            // the model thinking, or the model writing.
+            if (d.timings) {
+              const { retrieval_ms, first_token_ms, total_ms } = d.timings;
+              console.debug(
+                `[qbot] retrieval ${retrieval_ms}ms · first token ${first_token_ms ?? '—'}ms · total ${total_ms}ms`,
+              );
+            }
             dispatch({
               type: 'FINISH_BOT_REPLY',
               citations: d.citations.map(mapCitation),

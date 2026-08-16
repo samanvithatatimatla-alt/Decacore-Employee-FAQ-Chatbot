@@ -357,6 +357,8 @@ export interface ChatStreamHandlers {
     citations: ApiCitation[];
     confidence: number;
     escalation_offered: boolean;
+    /** Server-side breakdown of where the wait went. Absent on older backends. */
+    timings?: { retrieval_ms: number; first_token_ms: number | null; total_ms: number };
   }) => void;
 }
 
