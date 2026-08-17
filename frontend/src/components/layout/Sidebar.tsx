@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FileText, Folder, Inbox, LayoutGrid, Mail } from 'lucide-react';
+import { Bell, FileText, Folder, Inbox, LayoutGrid, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './Sidebar.module.css';
@@ -51,22 +51,22 @@ export default function Sidebar() {
             New chat
           </button>
           <div className={styles.sideScroll}>
-            <div className={styles.sideNav}>
-              <button className={cx(styles.sideNavItem, isActive('/chat') && styles.active)} onClick={() => navigate('/chat')}>
-                <span className={styles.sideNavIcon}>●</span>
-                Chat
-              </button>
-              <button className={cx(styles.sideNavItem, isActive('/resources') && styles.active)} onClick={() => navigate('/resources')}>
-                <span className={styles.sideNavIcon}>
-                  <Folder size={14} />
-                </span>
-                Resources
-              </button>
-            </div>
-
+            {/*
+              HR admins land on the dashboard and spend their day in HR Tools, so that
+              group leads for them and Chat/Resources sit under it. Employees keep the
+              original order — they have no HR Tools group at all. The divider class
+              goes on whichever group is second, so the rule always separates the two
+              rather than hanging under the New chat button.
+            */}
             {isHrAdmin && (
-              <div className={cx(styles.sideNav, styles.hrToolsGroup)}>
+              <div className={styles.sideNav}>
                 <p className={styles.sectionLabel}>HR Tools</p>
+                <button className={cx(styles.sideNavItem, isActive('/admin') && styles.active)} onClick={() => navigate('/admin')}>
+                  <span className={styles.sideNavIcon}>
+                    <LayoutGrid size={14} />
+                  </span>
+                  Dashboard
+                </button>
                 <button className={cx(styles.sideNavItem, isActive('/admin/documents') && styles.active)} onClick={() => navigate('/admin/documents')}>
                   <span className={styles.sideNavIcon}>
                     <FileText size={14} />
@@ -80,14 +80,32 @@ export default function Sidebar() {
                   HR Inbox
                   {state.pendingRequests > 0 && <span className={styles.navBadge}>{state.pendingRequests}</span>}
                 </button>
-                <button className={cx(styles.sideNavItem, isActive('/admin') && styles.active)} onClick={() => navigate('/admin')}>
-                  <span className={styles.sideNavIcon}>
-                    <LayoutGrid size={14} />
-                  </span>
-                  Dashboard
-                </button>
               </div>
             )}
+
+            <div className={cx(styles.sideNav, isHrAdmin && styles.navGroupDivider)}>
+              <button className={cx(styles.sideNavItem, isActive('/chat') && styles.active)} onClick={() => navigate('/chat')}>
+                <span className={styles.sideNavIcon}>●</span>
+                Chat
+              </button>
+              {/* Employee-only: HR reads and answers the same escalations from the HR
+                  Inbox above, so a second view of them would just be confusing. */}
+              {!isHrAdmin && (
+                <button className={cx(styles.sideNavItem, isActive('/my-questions') && styles.active)} onClick={() => navigate('/my-questions')}>
+                  <span className={styles.sideNavIcon}>
+                    <Bell size={14} />
+                  </span>
+                  My Questions
+                  {state.unreadAnswers > 0 && <span className={styles.navBadge}>{state.unreadAnswers}</span>}
+                </button>
+              )}
+              <button className={cx(styles.sideNavItem, isActive('/resources') && styles.active)} onClick={() => navigate('/resources')}>
+                <span className={styles.sideNavIcon}>
+                  <Folder size={14} />
+                </span>
+                Resources
+              </button>
+            </div>
 
             <div className={styles.recentsBlock}>
               <p className={styles.kicker}>Recents</p>
@@ -133,16 +151,17 @@ export default function Sidebar() {
           <button className={styles.iconBtn} onClick={newChat} title="New chat" aria-label="New chat">
             +
           </button>
-          <button
-            className={cx(styles.iconBtn, styles.ghost, isActive('/resources') && styles.active)}
-            onClick={() => navigate('/resources')}
-            title="Resources"
-            aria-label="Resources"
-          >
-            <Folder size={16} />
-          </button>
+          {/* Same ordering as the expanded sidebar: HR tools first for admins. */}
           {isHrAdmin && (
             <>
+              <button
+                className={cx(styles.iconBtn, styles.ghost, isActive('/admin') && styles.active)}
+                onClick={() => navigate('/admin')}
+                title="Dashboard"
+                aria-label="Dashboard"
+              >
+                <LayoutGrid size={16} />
+              </button>
               <button
                 className={cx(styles.iconBtn, styles.ghost, isActive('/admin/documents') && styles.active)}
                 onClick={() => navigate('/admin/documents')}
@@ -160,16 +179,27 @@ export default function Sidebar() {
                 <Inbox size={16} />
                 {state.pendingRequests > 0 && <span className={styles.railDot} />}
               </button>
-              <button
-                className={cx(styles.iconBtn, styles.ghost, isActive('/admin') && styles.active)}
-                onClick={() => navigate('/admin')}
-                title="Dashboard"
-                aria-label="Dashboard"
-              >
-                <LayoutGrid size={16} />
-              </button>
             </>
           )}
+          {!isHrAdmin && (
+            <button
+              className={cx(styles.iconBtn, styles.ghost, isActive('/my-questions') && styles.active)}
+              onClick={() => navigate('/my-questions')}
+              title="My Questions"
+              aria-label="My Questions"
+            >
+              <Bell size={16} />
+              {state.unreadAnswers > 0 && <span className={styles.railDot} />}
+            </button>
+          )}
+          <button
+            className={cx(styles.iconBtn, styles.ghost, isActive('/resources') && styles.active)}
+            onClick={() => navigate('/resources')}
+            title="Resources"
+            aria-label="Resources"
+          >
+            <Folder size={16} />
+          </button>
           <div className={styles.spacer} />
           <button className={cx(styles.iconBtn, styles.ghost, styles.connectHr)} onClick={() => navigate('/contact')} title="Connect to HR" aria-label="Connect to HR">
             <Mail size={16} />

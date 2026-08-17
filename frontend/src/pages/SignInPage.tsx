@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
 import { useAuth } from '../context/AuthContext';
+import { landingPath } from '../routes/landing';
 import styles from './SignInPage.module.css';
 
 export default function SignInPage() {
@@ -19,7 +20,7 @@ export default function SignInPage() {
       // Await before navigating: the app shell loads data as soon as it mounts, and
       // it needs an identity to load anything role-scoped.
       await signIn(role);
-      navigate('/chat');
+      navigate(landingPath(role));
     } catch {
       // Message is surfaced from context below.
     }
@@ -33,8 +34,10 @@ export default function SignInPage() {
       return;
     }
     try {
+      // No navigate() here: the redirect flow tears this component down, and the role
+      // that decides where to land is only known once the token comes back. App's
+      // useLandAfterSignIn routes it.
       await signInWithMicrosoft();
-      navigate('/chat');
     } catch {
       // Message is surfaced from context below.
     }

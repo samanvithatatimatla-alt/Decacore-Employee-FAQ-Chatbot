@@ -11,7 +11,7 @@ import type {
   RecentlyViewedDoc,
   TopQuestion,
 } from '../types';
-import { api, files, streamChat, type ApiCharts } from '../api/client';
+import { api, files, streamChat, type ApiCharts, type ApiInboxRequest } from '../api/client';
 import {
   mapAdminDoc,
   mapAnnouncement,
@@ -25,6 +25,7 @@ import {
   mapTopQuestion,
 } from '../api/map';
 import { useAuth } from './AuthContext';
+import { unreadCount } from '../utils/seenEscalations';
 import { createTypewriter, type Typewriter } from './typewriter';
 
 export type ResourceFilter = 'all' | 'favorites' | 'updates';
@@ -66,6 +67,8 @@ interface AppState {
   mostReferenced: MostReferenced[];
   /** Escalations waiting on HR. Drives the inbox badge; HR-only, 0 for everyone else. */
   pendingRequests: number;
+  /** HR replies this browser has not shown the employee yet. Drives the nav badge. */
+  unreadAnswers: number;
   loading: boolean;
   ui: { sidebarOpen: boolean };
 }
@@ -88,6 +91,7 @@ const initialState: AppState = {
   topQuestions: [],
   mostReferenced: [],
   pendingRequests: 0,
+  unreadAnswers: 0,
   loading: false,
   ui: { sidebarOpen: true },
 };
@@ -103,6 +107,7 @@ interface HydratePayload {
   adminDocuments: AdminDoc[];
   mostReferenced: MostReferenced[];
   pendingRequests: number;
+  unreadAnswers: number;
 }
 
 type Action =
@@ -125,6 +130,7 @@ type Action =
   | { type: 'MARK_RECENTLY_VIEWED'; id: number; name: string }
   | { type: 'SET_HIGHLIGHT_FORM'; formId: number | null }
   | { type: 'DELETE_ADMIN_DOC'; id: number }
+  | { type: 'SET_UNREAD_ANSWERS'; count: number }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_SIDEBAR'; open: boolean };
 
@@ -150,8 +156,12 @@ function reducer(state: AppState, action: Action): AppState {
         adminDocuments: d.adminDocuments ?? state.adminDocuments,
         mostReferenced: d.mostReferenced ?? state.mostReferenced,
         pendingRequests: d.pendingRequests ?? state.pendingRequests,
+        unreadAnswers: d.unreadAnswers ?? state.unreadAnswers,
       };
     }
+    case 'SET_UNREAD_ANSWERS':
+      return { ...state, unreadAnswers: action.count };
+
     case 'SET_LOADING':
       return { ...state, loading: action.value };
 
@@ -324,20 +334,26 @@ const AppStateContext = createContext<AppStateContextValue | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { user } = useAuth();
+  // Depended on by loadEmployeeData; taking the field rather than the object keeps
+  // the callback from being rebuilt every time an unrelated user field changes.
+  const email = user?.email;
+  const isHrAdmin = user?.role === 'hr_admin';
   const abortRef = useRef<AbortController | null>(null);
   const typewriterRef = useRef<Typewriter | null>(null);
 
   const loadEmployeeData = useCallback(async () => {
-    const [docsRes, formsRes, favRes, recentRes, updatesRes, convRes, annRes, faqRes] = await Promise.all([
-      api.documents().catch(() => ({ items: [], total: 0 })),
-      api.forms().catch(() => ({ items: [], total: 0 })),
-      api.favorites().catch(() => ({ items: [], total: 0 })),
-      api.recentlyViewed().catch(() => ({ items: [], total: 0 })),
-      api.documentUpdates().catch(() => ({ items: [], total: 0 })),
-      api.conversations().catch(() => ({ items: [], total: 0 })),
-      api.announcements().catch(() => ({ items: [], total: 0 })),
-      api.topFaq().catch(() => ({ items: [], total: 0 })),
-    ]);
+    const [docsRes, formsRes, favRes, recentRes, updatesRes, convRes, annRes, faqRes, mineRes] =
+      await Promise.all([
+        api.documents().catch(() => ({ items: [], total: 0 })),
+        api.forms().catch(() => ({ items: [], total: 0 })),
+        api.favorites().catch(() => ({ items: [], total: 0 })),
+        api.recentlyViewed().catch(() => ({ items: [], total: 0 })),
+        api.documentUpdates().catch(() => ({ items: [], total: 0 })),
+        api.conversations().catch(() => ({ items: [], total: 0 })),
+        api.announcements().catch(() => ({ items: [], total: 0 })),
+        api.topFaq().catch(() => ({ items: [], total: 0 })),
+        api.myEscalations().catch(() => ({ items: [] as ApiInboxRequest[], total: 0 })),
+      ]);
 
     const favouriteIds = new Set(favRes.items.map((f) => f.document_id));
     dispatch({
@@ -350,9 +366,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         conversations: convRes.items.map((c) => mapConversation(c)),
         announcements: annRes.items.map(mapAnnouncement),
         topQuestions: faqRes.items.map(mapTopQuestion),
+        // Computed against localStorage rather than the server: there is no
+        // "seen" column to read, and adding one is not safe without migrations.
+        unreadAnswers: email ? unreadCount(mineRes.items, email) : 0,
       },
     });
-  }, []);
+  }, [email]);
 
   const loadAdminData = useCallback(async () => {
     const [docsRes, chartsRes, metricsRes] = await Promise.all([
@@ -405,6 +424,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  /**
+   * Keeps the My Questions badge current while the app is open.
+   *
+   * HR answers on their own schedule, so a count computed once at page load is not a
+   * notification — an employee sitting in chat would not learn about a reply until
+   * they happened to reload. This refetches only the escalation list, not the whole
+   * hydrate, so it stays cheap enough to run on a timer.
+   */
+  const refreshUnreadAnswers = useCallback(async () => {
+    if (!email) return;
+    try {
+      const res = await api.myEscalations();
+      dispatch({ type: 'SET_UNREAD_ANSWERS', count: unreadCount(res.items, email) });
+    } catch {
+      // Keep the last known count. A failed poll must not clear a badge that is real.
+    }
+  }, [email]);
+
+  useEffect(() => {
+    // HR reads the same escalations from their own inbox and never sees this badge,
+    // so there is nothing to poll for them.
+    if (!email || isHrAdmin) return;
+
+    const poll = () => {
+      // Only while the tab is actually being looked at: a backgrounded tab firing
+      // this every 90s is pure waste, and focus fires the moment it comes back.
+      if (document.visibilityState === 'visible') void refreshUnreadAnswers();
+    };
+
+    window.addEventListener('focus', poll);
+    document.addEventListener('visibilitychange', poll);
+    const timer = window.setInterval(poll, 90_000);
+    return () => {
+      window.removeEventListener('focus', poll);
+      document.removeEventListener('visibilitychange', poll);
+      window.clearInterval(timer);
+    };
+  }, [email, isHrAdmin, refreshUnreadAnswers]);
 
   const sendMessage = useCallback(
     (text: string) => {

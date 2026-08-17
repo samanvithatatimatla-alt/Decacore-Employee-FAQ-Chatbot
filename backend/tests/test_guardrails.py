@@ -198,3 +198,44 @@ def test_policy_questions_that_mention_my_role_still_go_to_retrieval(client):
     profile = UserProfile(display_name="Test", role="Employee", email="t@example.com")
     assert profile_reply("what is the PTO policy for my role?", profile) is None
     assert profile_reply("how do I contact my manager about leave?", profile) is None
+
+
+def test_employee_can_read_hr_reply_to_their_own_escalation(client):
+    """The other half of the loop: HR's answer has to reach the employee who asked.
+
+    Before /mine existed the reply was only readable through /inbox, which is
+    HRAdmin-only — so "Send to HR" was a one-way trip inside the app.
+    """
+    chat = client.post("/api/chat", json={"message": "what is the policy on comet leave?"}, headers=EMPLOYEE)
+    conv_id = chat.text.split('"conversation_id": "')[1].split('"')[0]
+    request_id = client.post(
+        "/api/chat/escalate", json={"conversation_id": conv_id}, headers=EMPLOYEE
+    ).json()["request_id"]
+
+    # Before HR answers: visible, but with no reply on it.
+    mine = client.get("/api/requests/mine", headers=EMPLOYEE)
+    assert mine.status_code == 200
+    row = next(r for r in mine.json()["items"] if r["id"] == request_id)
+    assert row["status"] == "New"
+    assert not row["hr_response"]
+
+    client.post(
+        f"/api/requests/{request_id}/respond",
+        json={"response": "Comet leave is unpaid. Talk to your manager.", "resolve": True},
+        headers=HR,
+    )
+
+    row = next(r for r in client.get("/api/requests/mine", headers=EMPLOYEE).json()["items"] if r["id"] == request_id)
+    assert row["status"] == "Resolved"
+    assert row["hr_response"].startswith("Comet leave")
+
+
+def test_mine_only_returns_the_callers_own_escalations(client):
+    """It is scoped by employee_id server-side, not filtered in the client."""
+    chat = client.post("/api/chat", json={"message": "what is the policy on eclipse leave?"}, headers=EMPLOYEE)
+    conv_id = chat.text.split('"conversation_id": "')[1].split('"')[0]
+    request_id = client.post(
+        "/api/chat/escalate", json={"conversation_id": conv_id}, headers=EMPLOYEE
+    ).json()["request_id"]
+
+    assert all(r["id"] != request_id for r in client.get("/api/requests/mine", headers=HR).json()["items"])

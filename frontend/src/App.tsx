@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
+import { landingPath } from './routes/landing';
 import AppShell from './components/layout/AppShell';
 import WelcomePage from './pages/WelcomePage';
 import SignInPage from './pages/SignInPage';
 import ChatPage from './pages/ChatPage';
 import ChatHistoryPage from './pages/ChatHistoryPage';
+import MyQuestionsPage from './pages/MyQuestionsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
@@ -26,7 +28,7 @@ function useLandAfterSignIn() {
   const { pathname } = useLocation();
   useEffect(() => {
     if (user && (pathname === '/' || pathname === '/signin')) {
-      navigate('/chat', { replace: true });
+      navigate(landingPath(user.role), { replace: true });
     }
   }, [user, pathname, navigate]);
 }
@@ -42,6 +44,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/history" element={<ChatHistoryPage />} />
+          <Route path="/my-questions" element={<MyQuestionsPage />} />
           <Route path="/resources" element={<ResourcesPage />} />
           <Route path="/contact" element={<ContactPage />} />
 

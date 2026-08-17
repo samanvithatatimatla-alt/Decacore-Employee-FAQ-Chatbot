@@ -126,7 +126,9 @@
   margin: 4px 0 4px;
   font-weight: 600;
 }
-.hrToolsGroup {
+/* Separates the two nav groups. Applied to whichever group renders second, which is
+   HR Tools for employees (never) and Chat/Resources for HR admins. */
+.navGroupDivider {
   border-top: 1px solid var(--border-subtle);
   padding-top: 8px;
   margin-top: 6px;

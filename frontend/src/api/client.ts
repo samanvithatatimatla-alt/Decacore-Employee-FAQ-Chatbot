@@ -282,6 +282,9 @@ export const api = {
     return request<ListOf<ApiInboxRequest>>(`/api/requests/inbox${qs ? `?${qs}` : ''}`);
   },
 
+  /** The caller's own escalations. Same shape as the HR inbox, scoped server-side. */
+  myEscalations: () => request<ListOf<ApiInboxRequest>>('/api/requests/mine'),
+
   setInboxStatus: (id: string, status: InboxStatus) =>
     request<ApiInboxRequest>(`/api/requests/${id}/status`, {
       method: 'POST',

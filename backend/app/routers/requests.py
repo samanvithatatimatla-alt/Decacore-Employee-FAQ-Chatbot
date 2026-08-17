@@ -169,6 +169,25 @@ def inbox(
     return {"items": items, "total": len(items)}
 
 
+@router.get("/mine")
+def my_escalations(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """The caller's own escalated questions, with HR's reply once there is one.
+
+    HR's answer was only ever readable through /inbox, which is HRAdmin-only — so an
+    employee who pressed "Send to HR" had no way to see the response inside the app.
+    Declared above /{request_id} so the literal path wins the route match.
+    """
+    reqs = db.scalars(
+        select(EmployeeRequest)
+        .where(
+            EmployeeRequest.employee_id == user.id,
+            EmployeeRequest.category == ESCALATION_CATEGORY,
+        )
+        .order_by(EmployeeRequest.created_at.desc())
+    ).all()
+    return {"items": [inbox_out(r, db) for r in reqs], "total": len(reqs)}
+
+
 @router.post("/{request_id}/status")
 def set_inbox_status(
     request_id: str,
