@@ -57,9 +57,11 @@ your shell fails the suite rather than writing to shared Azure resources.
 - `infra/README.md` — provisioning and pipeline setup
 - `backend/openapi.json` — generated API contract
 ## Team
-Samanvitha Tatimatla — Lead
-–  Nihitha Datla — Cloud & Test  Engineer
-–  Archit Jaiswal — Cloud & Test Engineer
-–  Sai Navya Athi— Data Scientist
-–  Faiz Ahmed — Back-End Developer
-–  Sanaa Rahmat — Front-End Developer
+| Name | Role |
+|---|---|
+| Samanvitha Tatimatla | Lead |
+| Nihitha Datla | Cloud & Test Engineer |
+| Archit Jaiswal | Cloud & Test Engineer |
+| Sai Navya Athi | Data Scientist |
+| Faiz Ahmed | Back-End Developer |
+| Sanaa Rahmat | Front-End Developer |
