@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import DocumentCategory
@@ -71,6 +71,18 @@ def add_category(db: Session, name: str, created_by: int | None = None) -> tuple
     db.commit()
     db.refresh(category)
     return category, True
+
+
+def delete_category(db: Session, category: DocumentCategory) -> None:
+    db.delete(category)
+    db.commit()
+
+
+def documents_using(db: Session, name: str) -> int:
+    """How many documents are filed under this category name."""
+    from ..models import Document
+
+    return db.scalar(select(func.count(Document.id)).where(Document.category == name)) or 0
 
 
 def seed_categories(db: Session) -> int:

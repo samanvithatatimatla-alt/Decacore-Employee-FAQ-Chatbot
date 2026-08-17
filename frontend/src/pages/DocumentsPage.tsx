@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MoreVertical, Plus, Search } from 'lucide-react';
+import { FileText, MoreVertical, Plus, Search, X } from 'lucide-react';
 import { useAppState } from '../context/AppStateContext';
 import { api, ApiError } from '../api/client';
 import UploadModal from '../components/admin/UploadModal';
@@ -29,6 +29,7 @@ export default function DocumentsPage() {
   const [newVersionId, setNewVersionId] = useState<number | null>(null);
   const [category, setCategory] = useState(ALL);
   const [known, setKnown] = useState<string[]>([]);
+  const [categoryIds, setCategoryIds] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [relabelId, setRelabelId] = useState<number | null>(null);
 
@@ -38,7 +39,23 @@ export default function DocumentsPage() {
   const loadCategories = useCallback(async () => {
     const res = await api.documentCategories().catch(() => ({ items: [] }));
     setKnown(res.items.map((c) => c.name));
+    setCategoryIds(Object.fromEntries(res.items.map((c) => [c.name, c.id])));
   }, []);
+
+  const removeCategory = async (name: string) => {
+    const id = categoryIds[name];
+    if (!id) return;
+    if (!window.confirm(`Delete the "${name}" category?`)) return;
+    try {
+      await api.deleteDocumentCategory(id);
+      if (category === name) setCategory(ALL);
+      await loadCategories();
+      setNotice(`Deleted "${name}".`);
+    } catch (e) {
+      // The API refuses while documents still use it, and says how many.
+      setNotice(e instanceof ApiError ? e.message : 'Could not delete that category.');
+    }
+  };
 
   useEffect(() => {
     void loadCategories();
@@ -121,18 +138,35 @@ export default function DocumentsPage() {
       </div>
 
       <div className={styles.tabs} role="tablist" hidden={loading}>
-        {tabs.map(([name, count]) => (
-          <button
-            key={name}
-            className={cx(styles.tab, category === name && styles.tabActive)}
-            onClick={() => setCategory(name)}
-            role="tab"
-            aria-selected={category === name}
-          >
-            {name}
-            <span className={styles.tabCount}>{count}</span>
-          </button>
-        ))}
+        {tabs.map(([name, count]) => {
+          // Only offer delete on an empty category. The API refuses while documents
+          // are filed under one, so showing the control there would only produce an
+          // error the user could have been spared.
+          const deletable = name !== ALL && name !== UNCATEGORISED && count === 0 && !!categoryIds[name];
+          return (
+            <span className={cx(styles.tab, category === name && styles.tabActive)} key={name}>
+              <button
+                className={styles.tabLabel}
+                onClick={() => setCategory(name)}
+                role="tab"
+                aria-selected={category === name}
+              >
+                {name}
+                <span className={styles.tabCount}>{count}</span>
+              </button>
+              {deletable && (
+                <button
+                  className={styles.tabDelete}
+                  onClick={() => void removeCategory(name)}
+                  title={`Delete ${name}`}
+                  aria-label={`Delete ${name} category`}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </span>
+          );
+        })}
         <button className={styles.addTab} onClick={() => void addCategory()} title="Add category">
           <Plus size={13} />
           Add category

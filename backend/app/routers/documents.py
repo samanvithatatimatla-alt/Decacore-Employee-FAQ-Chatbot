@@ -11,9 +11,15 @@ from sqlalchemy.orm import Session
 from ..auth import get_current_user, require_roles
 from ..config import settings
 from ..database import get_db
-from ..models import Document, DocumentVersion, User
+from ..models import Document, DocumentCategory, DocumentVersion, User
 from ..schemas import CategoryCreate, CategoryPatch, DocumentOut, DocumentVersionOut, RejectBody
-from ..services.categories import add_category, category_names, list_categories
+from ..services.categories import (
+    add_category,
+    category_names,
+    delete_category,
+    documents_using,
+    list_categories,
+)
 from ..services.ingestion import extract_pdf_pages
 from ..services.llm import llm_service
 from ..services.search import search_service
@@ -141,6 +147,30 @@ def create_document_category(
         raise HTTPException(status_code=400, detail="Category name cannot be empty")
     category, created = add_category(db, name, created_by=user.id)
     return {"id": category.id, "name": category.name, "created": created}
+
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_document_category(
+    category_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("HRAdmin")),
+):
+    """Remove a category. Refused while documents are still filed under it.
+
+    Deleting one in use would leave those documents pointing at a name that no longer
+    exists — they would fall into Uncategorised with no record of where they had been.
+    Relabel them first; the error says how many are in the way.
+    """
+    category = db.get(DocumentCategory, category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    in_use = documents_using(db, category.name)
+    if in_use:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{in_use} document{'s' if in_use != 1 else ''} still use this category. Move them first.",
+        )
+    delete_category(db, category)
 
 
 @router.patch("/{document_id}/category", response_model=DocumentOut)

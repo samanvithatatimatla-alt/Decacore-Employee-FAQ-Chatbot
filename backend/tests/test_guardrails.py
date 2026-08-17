@@ -578,3 +578,28 @@ def test_citations_never_exceed_the_cap(monkeypatch):
     monkeypatch.setattr(rag_module.llm_service, "answer_stream", lambda q, h, profile=None: iter(["a"]))
     result = rag_module.rag_service.answer(None, "what is the policy on bereavement leave", "Employee")
     assert len(result.citations) == rag_module.MAX_CITATIONS
+
+
+def test_an_unused_category_can_be_deleted(client):
+    import uuid
+
+    name = f"Temp {uuid.uuid4().hex[:6]}"
+    created = client.post("/api/documents/categories", json={"name": name}, headers=HR).json()
+    assert client.delete(f"/api/documents/categories/{created['id']}", headers=HR).status_code == 204
+    assert name not in [c["name"] for c in client.get("/api/documents/categories", headers=HR).json()["items"]]
+
+
+def test_a_category_in_use_cannot_be_deleted(client):
+    """Deleting one in use would strand its documents under a name that is gone."""
+    doc = client.get("/api/documents", headers=HR).json()["items"][0]
+    in_use = next(c for c in client.get("/api/documents/categories", headers=HR).json()["items"]
+                  if c["name"] == doc["category"])
+
+    res = client.delete(f"/api/documents/categories/{in_use['id']}", headers=HR)
+    assert res.status_code == 409
+    assert "still use this category" in res.json()["detail"]
+
+
+def test_only_hr_can_delete_a_category(client):
+    cat = client.get("/api/documents/categories", headers=HR).json()["items"][0]
+    assert client.delete(f"/api/documents/categories/{cat['id']}", headers=EMPLOYEE).status_code == 403

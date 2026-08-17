@@ -293,6 +293,8 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     }),
+  deleteDocumentCategory: (id: string) =>
+    request<void>(`/api/documents/categories/${id}`, { method: 'DELETE' }),
   setDocumentCategory: (id: string, category: string) =>
     request<ApiDocument>(`/api/documents/${id}/category`, {
       method: 'PATCH',
