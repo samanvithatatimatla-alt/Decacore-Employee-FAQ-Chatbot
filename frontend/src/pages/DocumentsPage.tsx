@@ -18,6 +18,9 @@ const UNCATEGORISED = 'Uncategorised';
 
 export default function DocumentsPage() {
   const { state, deleteDocument, refresh } = useAppState();
+  // Documents arrive from the API, and on a cold backend that takes seconds. Without
+  // this the table asserts "No documents" while they are still on the wire.
+  const loading = state.loading && state.adminDocuments.length === 0;
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
@@ -117,7 +120,7 @@ export default function DocumentsPage() {
         <input placeholder="Search document names..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className={styles.tabs} role="tablist">
+      <div className={styles.tabs} role="tablist" hidden={loading}>
         {tabs.map(([name, count]) => (
           <button
             key={name}
@@ -217,12 +220,16 @@ export default function DocumentsPage() {
             </span>
           </div>
         ))}
-        {filtered.length === 0 && (
-          <div className={styles.empty}>
-            {search.trim()
-              ? `No documents match your search${category === ALL ? '' : ` in ${category}`}.`
-              : `No documents in ${category}.`}
-          </div>
+        {loading ? (
+          <div className={styles.empty}>Loading documents…</div>
+        ) : (
+          filtered.length === 0 && (
+            <div className={styles.empty}>
+              {search.trim()
+                ? `No documents match your search${category === ALL ? '' : ` in ${category}`}.`
+                : `No documents in ${category}.`}
+            </div>
+          )
         )}
       </div>
 

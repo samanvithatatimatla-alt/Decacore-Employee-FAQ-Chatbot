@@ -60,8 +60,29 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: await authHeaders(init.headers) });
+interface RequestInitWithTimeout extends RequestInit {
+  /** Fail after this many ms instead of waiting forever. Off by default. */
+  timeoutMs?: number;
+}
+
+async function request<T>(path: string, init: RequestInitWithTimeout = {}): Promise<T> {
+  const { timeoutMs, ...rest } = init;
+  // Opt-in rather than global: uploads legitimately run long, because the API chunks,
+  // embeds and indexes the PDF before it answers. Only calls that block the UI on
+  // their result set a deadline.
+  const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : rest.signal;
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...rest, signal, headers: await authHeaders(rest.headers) });
+  } catch (e) {
+    // A timeout surfaces as a DOMException whose message is "signal timed out" — true,
+    // but meaningless to the person reading it on a sign-in screen. 408 is not a status
+    // the server sent; it is the closest honest label for "we gave up waiting".
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new ApiError('The server took too long to respond. It may be starting up — try again.', 408);
+    }
+    throw e;
+  }
   if (!res.ok) {
     // FastAPI puts the human-readable reason in `detail`; falling back to the status
     // text alone produces "Bad Request" and hides the actual validation message.
@@ -237,7 +258,11 @@ export interface ApiInboxRequest {
 /* --------------------------------------------------------------- endpoints */
 
 export const api = {
-  me: () => request<ApiMe>('/api/me'),
+  // Timed out because the whole app waits on this one: it is what turns a signed-in
+  // Entra session into a user. The App Service sleeps on the B1 plan, so a cold start
+  // can take the better part of a minute — and with no deadline the sign-in screen sat
+  // on "Signing in…" for ever, with no error and no way back.
+  me: () => request<ApiMe>('/api/me', { timeoutMs: 30000 }),
 
   documents: () => request<ListOf<ApiDocument>>('/api/documents'),
   documentUpdates: () => request<ListOf<ApiPolicyUpdate>>('/api/documents/updates'),
