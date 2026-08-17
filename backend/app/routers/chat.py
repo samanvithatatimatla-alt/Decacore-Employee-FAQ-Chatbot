@@ -119,12 +119,20 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "first_token_ms": first_token_ms,
                 "total_ms": total_ms,
             }
+            # Relevance and raw score are logged next to the timings because that is
+            # how AZURE_MIN_SCORE gets tuned: read what real questions actually score,
+            # then set the threshold between the answered ones and the ones that should
+            # have gone to HR.
             logger.info(
-                "chat timing retrieval=%sms first_token=%sms total=%sms chars=%s",
+                "chat timing retrieval=%sms first_token=%sms total=%sms chars=%s "
+                "relevance=%.3f raw_score=%.3f escalate=%s",
                 retrieval_ms,
                 first_token_ms,
                 total_ms,
                 len("".join(parts)),
+                prepared.confidence,
+                prepared.raw_score,
+                prepared.should_escalate,
             )
 
             yield sse("done", {

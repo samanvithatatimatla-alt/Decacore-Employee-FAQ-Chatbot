@@ -78,6 +78,24 @@ def local_score(query: str, content: str) -> float:
     return dot / (qn * dn) if qn and dn else 0.0
 
 
+def searchable_text(hit: dict) -> str:
+    """The same field mix the local scorer indexes on, rebuilt from a search hit."""
+    title = hit.get("title") or ""
+    return f"{title} {title} {hit.get('section_heading') or ''} {hit.get('content') or ''}"
+
+
+def relevance_score(query: str, hit: dict) -> float:
+    """How well a hit actually answers the question, on the local scorer's scale.
+
+    Needed because Azure AI Search returns RRF scores, which rank the results against
+    each other and say nothing about whether any of them are relevant at all — the
+    worst possible match for "can I bring my cat to the office" still comes back with
+    a normal-looking score. Re-scoring the top hit's own text gives a number that
+    means the same thing on both backends, so one threshold covers both.
+    """
+    return local_score(query, searchable_text(hit))
+
+
 class SearchService:
     def __init__(self):
         self._client_instance = None

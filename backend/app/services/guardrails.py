@@ -108,11 +108,17 @@ ROLE_LABELS = {
     "Executive": "Executive",
 }
 
-_ASK =r"(?:hi |hey |hello )?(?:qbot[, ]*)?(?:can you |could you |please )*(?:tell me |remind me |do you know |i want to know |i'd like to know )*"
+_ASK = r"(?:hi |hey |hello )?(?:qbot[, ]*)?(?:can you |could you |please )*(?:tell me |remind me |do you know |i want to know |i'd like to know )*"
 # Optional as a whole — the group has to close around the trailing \s* or the "?"
 # at the call site would only make the whitespace optional, not the question word.
 _WHAT = r"(?:(?:what(?:'s| is| are)?|whats|which|tell me)\s*)?"
-_HERE = r"(?: (?:in|at) (?:the )?(?:company|org|organisation|organization|bluepeak|work))?(?: here)?(?: again)?"
+# Determiners matter here: the first version accepted "in the company" but not "in
+# this company", which is how people actually phrase it.
+_HERE = (
+    r"(?: (?:in|at|for|with) (?:the |this |our |my )?"
+    r"(?:company|org|organisation|organization|firm|business|team|bluepeak|work|office))?"
+    r"(?: here)?(?: currently| right now| now)?(?: again)?"
+)
 
 
 def _full(pattern: str) -> re.Pattern[str]:

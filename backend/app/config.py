@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     local_search_top_k: int = 5
     local_min_score: float = 0.08
 
+    # Relevance floor for the Azure backend. Same scale as local_min_score — both are
+    # cosine similarity from local_score — but kept separate so the deployed app can be
+    # tuned without touching local behaviour. Every answer logs its relevance score, so
+    # pick this from real numbers in the App Service log stream rather than by feel.
+    azure_min_score: float = 0.08
+
     @property
     def project_root(self) -> Path:
         return Path(__file__).resolve().parents[1]

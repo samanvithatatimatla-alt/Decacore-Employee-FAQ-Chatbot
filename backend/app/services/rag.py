@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from .guardrails import UserProfile, canned_reply, profile_reply
 from .llm import llm_service
-from .search import search_service
+from .search import relevance_score, search_service
 
 NO_MATCH = "I couldn't find this in the approved policy documents. I can help you send the question to HR."
 
@@ -35,6 +35,10 @@ class RagStream:
     confidence: float
     should_escalate: bool
     chunks: Iterator[str] = field(default_factory=lambda: iter(()))
+    # Raw backend score alongside the relevance figure in `confidence`. They differ on
+    # Azure, where the backend score is RRF and says nothing about relevance — logging
+    # both is what makes azure_min_score tunable from real traffic.
+    raw_score: float = 0.0
 
 
 class RagService:
@@ -55,13 +59,27 @@ class RagService:
 
         hits = search_service.search(db, question, role)
         top_score = float(hits[0]["score"]) if hits else 0.0
-        low_confidence = not hits or (settings.search_backend == "local" and top_score < settings.local_min_score)
+
+        # Both backends get a relevance floor, but they cannot share a number: the local
+        # scorer returns cosine similarity, while Azure returns an RRF score that only
+        # ranks hits against each other. Azure therefore always came back with something
+        # and `not hits` was the only way to fail — which is why the deployed app
+        # effectively never offered to send a question to HR. Re-scoring Azure's top hit
+        # with the local scorer puts both on the same scale.
+        if hits:
+            relevance = top_score if settings.search_backend == "local" else relevance_score(question, hits[0])
+            threshold = settings.local_min_score if settings.search_backend == "local" else settings.azure_min_score
+            low_confidence = relevance < threshold
+        else:
+            relevance = 0.0
+            low_confidence = True
         if low_confidence:
             return RagStream(
                 citations=[],
-                confidence=top_score,
+                confidence=relevance,
                 should_escalate=True,
                 chunks=iter([NO_MATCH]),
+                raw_score=top_score,
             )
 
         citations = []
@@ -86,9 +104,10 @@ class RagService:
 
         return RagStream(
             citations=citations,
-            confidence=top_score,
+            confidence=relevance,
             should_escalate=False,
             chunks=llm_service.answer_stream(question, hits),
+            raw_score=top_score,
         )
 
     def answer(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagResult:

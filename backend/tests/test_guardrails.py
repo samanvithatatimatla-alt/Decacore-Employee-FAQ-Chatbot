@@ -239,3 +239,66 @@ def test_mine_only_returns_the_callers_own_escalations(client):
     ).json()["request_id"]
 
     assert all(r["id"] != request_id for r in client.get("/api/requests/mine", headers=HR).json()["items"])
+
+
+def test_azure_backend_escalates_when_the_top_hit_is_irrelevant(monkeypatch):
+    """Azure returns RRF scores, which rank hits but never say "none of these fit".
+
+    Every Azure hit therefore looked confident and the deployed app effectively never
+    offered to send a question to HR, no matter how far off the retrieved policy was.
+    """
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    irrelevant_hit = {
+        "document_id": "doc-1",
+        "title": "Travel and Expense Reimbursement Policy",
+        "section_heading": "Mileage rates",
+        "content": "Mileage is reimbursed at the published rate for approved business travel.",
+        "score": 0.031,  # a perfectly normal-looking RRF score
+    }
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [irrelevant_hit])
+    monkeypatch.setattr(settings, "search_backend", "azure")
+
+    result = rag_module.rag_service.answer(None, "can I bring my cat to the office", "Employee")
+    assert result.should_escalate
+    assert not result.citations
+    assert "couldn't find this" in result.answer
+
+
+def test_azure_backend_answers_when_the_top_hit_is_relevant(monkeypatch):
+    """The flip side: a real match must still be answered, not escalated."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    hit = {
+        "document_id": "doc-1",
+        "title": "Paid Time Off Policy",
+        "section_heading": "Annual PTO accrual",
+        "content": "Employees accrue paid time off each month and may carry over unused PTO days.",
+        "score": 0.031,
+    }
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [hit])
+    monkeypatch.setattr(settings, "search_backend", "azure")
+
+    result = rag_module.rag_service.answer(None, "how much paid time off do I accrue?", "Employee")
+    assert not result.should_escalate
+    assert result.citations
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "what is my role in this company?",
+        "what is my role in the company",
+        "what is my position at this company",
+        "what is my role here",
+        "which department am i in at this company",
+    ],
+)
+def test_profile_questions_tolerate_the_determiner(question):
+    """"in *this* company" is how people actually type it; only "the" matched at first."""
+    from app.services.guardrails import UserProfile, profile_reply
+
+    profile = UserProfile(display_name="Test User", role="Employee", email="t@example.com", department="HR")
+    assert profile_reply(question, profile) is not None
