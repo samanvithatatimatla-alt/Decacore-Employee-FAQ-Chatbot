@@ -16,6 +16,7 @@ from ..database import SessionLocal, get_db
 from ..models import Conversation, EmployeeRequest, Message, User
 from ..schemas import ChatIn, EscalationIn
 from ..services.cache import dashboard_cache
+from ..services.guardrails import UserProfile
 from ..services.notifications import notification_service
 from ..services.rag import rag_service
 from ..services.rate_limit import chat_rate_limiter
@@ -55,6 +56,14 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
     conversation_id = conv.id
     user_role = user.role
     question = payload.message
+    profile = UserProfile(
+        display_name=user.display_name,
+        role=user.role,
+        email=user.email,
+        department=user.department,
+        manager_name=user.manager_name,
+        hire_date=user.hire_date,
+    )
 
     def generate():
         with SessionLocal() as worker_db:
@@ -67,7 +76,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             # Retrieval runs here; the model has not written anything yet. Citations and
             # confidence are already final at this point, which is why the row can be
             # created — and `meta` sent — before a single token exists.
-            prepared = rag_service.stream(worker_db, question, user_role)
+            prepared = rag_service.stream(worker_db, question, user_role, profile)
             retrieval_ms = int((perf_counter() - started) * 1000)
             assistant = Message(
                 conversation_id=conversation_id,

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from .guardrails import canned_reply
+from .guardrails import UserProfile, canned_reply, profile_reply
 from .llm import llm_service
 from .search import search_service
 
@@ -38,7 +38,14 @@ class RagStream:
 
 
 class RagService:
-    def stream(self, db: Session, question: str, role: str) -> RagStream:
+    def stream(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagStream:
+        # "What is my role?" is answered from the asker's own employee record. It is
+        # checked before the scope rules so it doesn't get brushed off as small talk,
+        # and before search because no policy document contains the answer.
+        mine = profile_reply(question, profile)
+        if mine is not None:
+            return RagStream(citations=[], confidence=1.0, should_escalate=False, chunks=iter([mine]))
+
         # Greetings, small talk and plainly non-HR asks never reach search or the
         # LLM. Confidence is 1.0 because the reply is exactly right for the message,
         # and no escalation is offered — there is nothing for HR to answer.
@@ -84,9 +91,9 @@ class RagService:
             chunks=llm_service.answer_stream(question, hits),
         )
 
-    def answer(self, db: Session, question: str, role: str) -> RagResult:
+    def answer(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagResult:
         """Blocking form, for callers that want the finished answer in one piece."""
-        prepared = self.stream(db, question, role)
+        prepared = self.stream(db, question, role, profile)
         return RagResult(
             answer="".join(prepared.chunks),
             citations=prepared.citations,

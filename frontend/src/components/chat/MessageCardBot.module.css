@@ -135,18 +135,43 @@
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-dim);
 }
-.sourcesMore {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 0 0;
-  text-align: left;
+.sourcesToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   align-self: flex-start;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
 }
-.sourcesMore:hover {
-  color: rgba(255, 255, 255, 0.75);
+.sourcesToggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Warn and refuse cards are light with dark text, so the white-on-accent treatment
+   above would render the button invisible on them. */
+.card.warn .sourcesToggle,
+.card.refuse .sourcesToggle {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hairline);
+}
+.card.warn .sourcesToggle:hover,
+.card.refuse .sourcesToggle:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.12);
+}
+.sourcesChevron {
+  transition: transform 0.15s ease;
+}
+.sourcesChevronOpen {
+  transform: rotate(180deg);
 }
 .linkChip {
   display: inline-flex;

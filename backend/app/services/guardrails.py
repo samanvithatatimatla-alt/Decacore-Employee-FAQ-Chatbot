@@ -14,6 +14,8 @@ match on a short message or an unambiguous phrase.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
+from datetime import date
 
 SCOPE_BLURB = (
     "I can answer questions about BluePeak HR policies — leave and PTO, benefits and "
@@ -81,6 +83,114 @@ _PUNCT = re.compile(r"[^\w\s'&+]")
 def _normalize(text: str) -> str:
     """Lowercase, drop punctuation, collapse whitespace."""
     return " ".join(_PUNCT.sub(" ", text.lower()).split())
+
+
+@dataclass
+class UserProfile:
+    """The asking employee's own record, copied out of the ORM session.
+
+    The chat stream is generated after the request session closes, so this has to
+    be a plain snapshot rather than the `User` row itself.
+    """
+
+    display_name: str
+    role: str
+    email: str
+    department: str | None = None
+    manager_name: str | None = None
+    hire_date: date | None = None
+
+
+ROLE_LABELS = {
+    "HRAdmin": "HR Administrator",
+    "Employee": "Employee",
+    "Manager": "Manager",
+    "Executive": "Executive",
+}
+
+_ASK =r"(?:hi |hey |hello )?(?:qbot[, ]*)?(?:can you |could you |please )*(?:tell me |remind me |do you know |i want to know |i'd like to know )*"
+# Optional as a whole — the group has to close around the trailing \s* or the "?"
+# at the call site would only make the whitespace optional, not the question word.
+_WHAT = r"(?:(?:what(?:'s| is| are)?|whats|which|tell me)\s*)?"
+_HERE = r"(?: (?:in|at) (?:the )?(?:company|org|organisation|organization|bluepeak|work))?(?: here)?(?: again)?"
+
+
+def _full(pattern: str) -> re.Pattern[str]:
+    """Anchor a pattern to the whole message, allowing a polite lead-in."""
+    return re.compile(rf"^{_ASK}(?:{pattern}){_HERE}$")
+
+
+# Questions an employee asks about *themselves*. These never had an answer: the
+# record lives in the users table, not in any policy PDF, so retrieval came back
+# empty and the bot offered to escalate "what is my role" to HR.
+#
+# Every pattern is a full-message match. A loose "my role" substring would swallow
+# "what is the PTO policy for my role", which is a real retrieval question.
+_ROLE_NOUN = r"(?:role|job title|title|position|designation|access level|permission level|access)"
+_DEPT_NOUN = r"(?:department|dept|team|division|business unit)"
+_MANAGER_NOUN = r"(?:manager|reporting manager|line manager|supervisor|boss)"
+_JOIN_NOUN = r"(?:hire date|start date|joining date|date of joining|start day)"
+
+PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (_full(rf"{_WHAT}my {_ROLE_NOUN}|my {_ROLE_NOUN} is|what (?:role|title) do i have"), "role"),
+    (_full(r"am i (?:an? )?(?:hr|hr admin|admin|administrator|manager|employee|executive)"), "role"),
+    (_full(r"(?:who am i|who i am|what am i)"), "who"),
+    (_full(rf"{_WHAT}my (?:name|profile|details|info|information)|my (?:name|profile) is"), "who"),
+    (_full(rf"{_WHAT}my {_DEPT_NOUN}|my {_DEPT_NOUN} is|(?:which|what) {_DEPT_NOUN} am i in|am i in (?:which|what) {_DEPT_NOUN}|where do i work"), "department"),
+    (_full(rf"{_WHAT}my {_MANAGER_NOUN}|my {_MANAGER_NOUN} is|who(?:'s| is)? my {_MANAGER_NOUN}|who do i report to"), "manager"),
+    (_full(rf"{_WHAT}my {_JOIN_NOUN}|my {_JOIN_NOUN} is|when did i (?:join|start)|how long have i (?:been|worked)(?: here| with the company| at bluepeak)?"), "hire_date"),
+    (_full(r"(?:what(?:'s| is)?|whats)?\s*my (?:email|email address|work email)"), "email"),
+]
+
+
+def _profile_lines(profile: UserProfile) -> list[str]:
+    role = ROLE_LABELS.get(profile.role, profile.role)
+    lines = [f"You're signed in as {profile.display_name} ({role})."]
+    if profile.department:
+        lines.append(f"Department: {profile.department}.")
+    if profile.manager_name:
+        lines.append(f"Manager: {profile.manager_name}.")
+    return lines
+
+
+def profile_reply(message: str, profile: UserProfile | None) -> str | None:
+    """Answer a question about the asker's own record, else None."""
+    if profile is None:
+        return None
+    norm = _normalize(message)
+    if not norm:
+        return None
+
+    topic = next((topic for pattern, topic in PROFILE_PATTERNS if pattern.match(norm)), None)
+    if topic is None:
+        return None
+
+    role = ROLE_LABELS.get(profile.role, profile.role)
+    if topic == "role":
+        parts = [f"You're signed in as {profile.display_name}, and your role is {role}."]
+        if profile.department:
+            parts.append(f"You sit in the {profile.department} department.")
+        if profile.role == "HRAdmin":
+            parts.append("That gives you the HR tools — document management, the HR inbox and the dashboard.")
+        parts.append("If your role or department looks wrong, HR can correct it in your employee record.")
+        return " ".join(parts)
+    if topic == "who":
+        return " ".join(_profile_lines(profile) + [f"Email: {profile.email}."])
+    if topic == "department":
+        if not profile.department:
+            return "Your employee record doesn't have a department set. HR can add it for you."
+        return f"You're in the {profile.department} department. Your role there is {role}."
+    if topic == "manager":
+        if not profile.manager_name:
+            return "Your employee record doesn't list a manager. HR can confirm who you report to."
+        return f"You report to {profile.manager_name}."
+    if topic == "hire_date":
+        if not profile.hire_date:
+            return "Your employee record doesn't have a hire date on it. HR can confirm your start date."
+        return f"Your record shows you joined on {profile.hire_date.strftime('%d %B %Y')}."
+    if topic == "email":
+        return f"The email on your account is {profile.email}."
+    return None
 
 
 def canned_reply(message: str) -> str | None:

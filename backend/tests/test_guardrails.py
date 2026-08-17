@@ -159,3 +159,42 @@ def test_streamed_answer_is_persisted_to_the_conversation(client):
     assistant = [m for m in stored["messages"] if m["role"] == "assistant"][-1]
     assert assistant["content"].strip()
     assert assistant["content"].startswith("Hi!")
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "what is my role in the company",
+        "what is my job title",
+        "who am i",
+        "which department am i in",
+        "who is my manager",
+        "when did i join",
+    ],
+)
+def test_questions_about_the_asker_are_answered_from_their_own_record(client, question):
+    """These have no answer in any policy PDF, so retrieval always came back empty.
+
+    Before this, "what is my role in the company" got the no-match reply and an offer
+    to escalate to HR — for a fact the app already knows about the signed-in user.
+    """
+    res = client.post("/api/chat", json={"message": question}, headers=EMPLOYEE)
+    body = res.text
+    assert "couldn't find this in the approved policy documents" not in body
+    assert '"escalation_offered": true' not in body
+
+
+def test_the_answer_reflects_the_signed_in_user(client):
+    employee = client.post("/api/chat", json={"message": "what is my role"}, headers=EMPLOYEE).text
+    hr = client.post("/api/chat", json={"message": "what is my role"}, headers=HR).text
+    assert "Employee" in employee
+    assert "HR Administrator" in hr
+
+
+def test_policy_questions_that_mention_my_role_still_go_to_retrieval(client):
+    """The profile rules are full-message matches, so this must not be hijacked."""
+    from app.services.guardrails import UserProfile, profile_reply
+
+    profile = UserProfile(display_name="Test", role="Employee", email="t@example.com")
+    assert profile_reply("what is the PTO policy for my role?", profile) is None
+    assert profile_reply("how do I contact my manager about leave?", profile) is None

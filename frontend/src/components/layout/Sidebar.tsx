@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FileText, Folder, Inbox, LayoutGrid, Mail, MessageSquare } from 'lucide-react';
+import { FileText, Folder, Inbox, LayoutGrid, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './Sidebar.module.css';
@@ -55,12 +55,6 @@ export default function Sidebar() {
               <button className={cx(styles.sideNavItem, isActive('/chat') && styles.active)} onClick={() => navigate('/chat')}>
                 <span className={styles.sideNavIcon}>●</span>
                 Chat
-              </button>
-              <button className={cx(styles.sideNavItem, isActive('/history') && styles.active)} onClick={() => navigate('/history')}>
-                <span className={styles.sideNavIcon}>
-                  <MessageSquare size={14} />
-                </span>
-                Chat History
               </button>
               <button className={cx(styles.sideNavItem, isActive('/resources') && styles.active)} onClick={() => navigate('/resources')}>
                 <span className={styles.sideNavIcon}>
@@ -138,14 +132,6 @@ export default function Sidebar() {
         <>
           <button className={styles.iconBtn} onClick={newChat} title="New chat" aria-label="New chat">
             +
-          </button>
-          <button
-            className={cx(styles.iconBtn, styles.ghost, isActive('/history') && styles.active)}
-            onClick={() => navigate('/history')}
-            title="Chat History"
-            aria-label="Chat History"
-          >
-            <MessageSquare size={16} />
           </button>
           <button
             className={cx(styles.iconBtn, styles.ghost, isActive('/resources') && styles.active)}

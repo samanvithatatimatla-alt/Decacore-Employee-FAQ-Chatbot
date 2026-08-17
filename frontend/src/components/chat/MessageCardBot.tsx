@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Copy, ExternalLink } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, Copy, ExternalLink } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import type { ChatMessage, Citation } from '../../types';
 import { api } from '../../api/client';
@@ -32,9 +32,9 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
   const cardClass = m.kind === 'warn' ? styles.warn : m.kind === 'refuse' ? styles.refuse : '';
   const canEscalate = m.escalated || m.kind === 'warn' || m.kind === 'refuse';
   const noPolicyMatch = m.kind === 'refuse' && !sources.length;
+  // Citations stay collapsed behind a button until asked for: on a short answer,
+  // three chips of document titles took more vertical space than the answer itself.
   const expanded = !!m.sourcesExpanded;
-  const visibleSources = expanded || sources.length <= 2 ? sources : sources.slice(0, 2);
-  const hiddenCount = sources.length - visibleSources.length;
 
   const handleCopy = () => {
     const text = m.body ?? (m.steps ? m.steps.map((s) => `${s.n}. ${s.text}`).join('\n') : '');
@@ -101,36 +101,38 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
 
           {sources.length > 0 && (
             <>
-              <div className={styles.tags}>
-                {visibleSources.map((c, i) =>
-                  c.documentId ? (
-                    <button
-                      className={cx(styles.tag, styles.tagLink)}
-                      key={i}
-                      onClick={() => openDocumentByApiId(c.documentId!)}
-                      title={`Open ${c.name}${c.ref ? ` — ${c.ref}` : ''}`}
-                      type="button"
-                    >
-                      {c.name}
-                      {c.ref && <span className={styles.tagRef}>{c.ref}</span>}
-                      <ExternalLink size={11} />
-                    </button>
-                  ) : (
-                    <span className={styles.tag} key={i}>
-                      {c.name}
-                    </span>
-                  ),
-                )}
-              </div>
-              {hiddenCount > 0 && (
-                <button className={styles.sourcesMore} onClick={() => dispatch({ type: 'TOGGLE_SOURCES', messageId: m.id })}>
-                  +{hiddenCount} more sources
-                </button>
-              )}
-              {expanded && sources.length > 2 && (
-                <button className={styles.sourcesMore} onClick={() => dispatch({ type: 'TOGGLE_SOURCES', messageId: m.id })}>
-                  Show less
-                </button>
+              <button
+                className={styles.sourcesToggle}
+                onClick={() => dispatch({ type: 'TOGGLE_SOURCES', messageId: m.id })}
+                aria-expanded={expanded}
+                type="button"
+              >
+                <BookOpen size={12} />
+                {expanded ? 'Hide resources' : `Show resources (${sources.length})`}
+                <ChevronDown size={12} className={cx(styles.sourcesChevron, expanded && styles.sourcesChevronOpen)} />
+              </button>
+              {expanded && (
+                <div className={styles.tags}>
+                  {sources.map((c, i) =>
+                    c.documentId ? (
+                      <button
+                        className={cx(styles.tag, styles.tagLink)}
+                        key={i}
+                        onClick={() => openDocumentByApiId(c.documentId!)}
+                        title={`Open ${c.name}${c.ref ? ` — ${c.ref}` : ''}`}
+                        type="button"
+                      >
+                        {c.name}
+                        {c.ref && <span className={styles.tagRef}>{c.ref}</span>}
+                        <ExternalLink size={11} />
+                      </button>
+                    ) : (
+                      <span className={styles.tag} key={i}>
+                        {c.name}
+                      </span>
+                    ),
+                  )}
+                </div>
               )}
             </>
           )}
