@@ -12,12 +12,16 @@ function cx(...classes: Array<string | false | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
+const ALL_CATEGORIES = 'All';
+const UNCATEGORISED = 'Uncategorised';
+
 export default function ResourcesPage() {
   const { state, dispatch, sendMessage, openForm } = useAppState();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { policies, forms, recentlyViewed, policyUpdates, filter, search, highlightFormId } = state.resources;
   const [modal, setModal] = useState<{ id: number; compare?: boolean } | null>(null);
+  const [category, setCategory] = useState(ALL_CATEGORIES);
 
   useEffect(() => {
     if (highlightFormId == null) return;
@@ -29,20 +33,46 @@ export default function ResourcesPage() {
 
   const q = search.trim().toLowerCase();
   const matches = (name: string, meta: string) => !q || (name + ' ' + meta).toLowerCase().includes(q);
+  const inCategory = (c: string | null) => category === ALL_CATEGORIES || (c ?? UNCATEGORISED) === category;
+
+  // Built from what this user can actually see. Resources is role-scoped, so listing
+  // every category HR has defined would show employees tabs that are empty for them.
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of [...policies, ...forms]) {
+      const key = item.category?.trim() || UNCATEGORISED;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const named = [...counts.keys()].filter((n) => n !== UNCATEGORISED).sort((a, b) => a.localeCompare(b));
+    if (counts.has(UNCATEGORISED)) named.push(UNCATEGORISED);
+    return named;
+  }, [policies, forms]);
 
   const filteredPolicies = useMemo(
-    () => policies.filter((p) => (filter === 'all' || filter === 'updates' ? true : p.favorite) && matches(p.name, p.meta)),
-    [policies, filter, q],
+    () =>
+      policies.filter(
+        (p) =>
+          (filter === 'all' || filter === 'updates' ? true : p.favorite) &&
+          inCategory(p.category) &&
+          matches(p.name, p.meta),
+      ),
+    [policies, filter, q, category],
   );
   const filteredForms = useMemo(
-    () => forms.filter((f) => (filter === 'all' || filter === 'updates' ? true : f.favorite) && matches(f.name, f.meta)),
-    [forms, filter, q],
+    () =>
+      forms.filter(
+        (f) =>
+          (filter === 'all' || filter === 'updates' ? true : f.favorite) &&
+          inCategory(f.category) &&
+          matches(f.name, f.meta),
+      ),
+    [forms, filter, q, category],
   );
 
   const showRecentlyViewed = filter === 'all' && !q;
   const noFavPolicies = filter === 'favorites' && !policies.some((p) => p.favorite);
   const noFavForms = filter === 'favorites' && !forms.some((f) => f.favorite);
-  const noResults = !!q && filteredPolicies.length === 0 && filteredForms.length === 0;
+  const noResults = (!!q || category !== ALL_CATEGORIES) && filteredPolicies.length === 0 && filteredForms.length === 0;
 
   const setTab = (f: ResourceFilter) => dispatch({ type: 'SET_RESOURCE_FILTER', filter: f });
 
@@ -78,6 +108,20 @@ export default function ResourcesPage() {
           Recently Updated Policies
         </button>
       </div>
+
+      {filter !== 'updates' && categories.length > 1 && (
+        <div className={styles.categoryRow}>
+          {[ALL_CATEGORIES, ...categories].map((name) => (
+            <button
+              key={name}
+              className={cx(styles.categoryChip, category === name && styles.categoryChipActive)}
+              onClick={() => setCategory(name)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {filter === 'updates' ? (
         <>
@@ -171,7 +215,13 @@ export default function ResourcesPage() {
             {noFavForms && <p className={styles.emptyNote}>No favorited forms yet</p>}
           </div>
 
-          {noResults && <p className={styles.emptyNote}>No policies or forms match your search.</p>}
+          {noResults && (
+            <p className={styles.emptyNote}>
+              {q
+                ? `No policies or forms match your search${category === ALL_CATEGORIES ? '' : ` in ${category}`}.`
+                : `No policies or forms in ${category}.`}
+            </p>
+          )}
         </>
       )}
 

@@ -57,6 +57,57 @@
   color: rgba(244, 242, 249, 0.36);
 }
 
+/* Category filter. Scrolls sideways rather than wrapping, so a long list of
+   categories never pushes the table down the page. */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  padding: 7px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: var(--text);
+  border-color: rgba(124, 77, 255, 0.4);
+}
+.tabActive {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tabCount {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+}
+.tab:not(.tabActive) .tabCount {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dimmer);
+}
+
 .table {
   border: 1px solid var(--border-hairline);
   border-radius: 12px;
@@ -165,4 +216,114 @@
   font-size: 13px;
   color: var(--text-dimmer);
   border-top: 1px solid var(--border-subtle);
+}
+
+/* Add-category control, sitting at the end of the tab row. Dashed so it reads as an
+   action rather than another filter. */
+.addTab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-dimmer);
+  background: none;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-pill);
+  padding: 7px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.addTab:hover {
+  color: var(--accent-text);
+  border-color: rgba(124, 77, 255, 0.5);
+}
+.notice {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.pickerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+.picker {
+  width: min(360px, calc(100vw - 32px));
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 14px;
+  padding: 18px;
+  box-sizing: border-box;
+}
+.pickerTitle {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0;
+}
+.pickerDoc {
+  margin: 4px 0 14px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+.pickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.pickerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+.pickerItem:hover {
+  background: var(--surface);
+  border-color: var(--border-hairline);
+}
+.pickerItemActive {
+  border-color: rgba(124, 77, 255, 0.45);
+  color: var(--accent-text);
+}
+.pickerCurrent {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+.pickerCancel {
+  width: 100%;
+  margin-top: 14px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+}
+.pickerCancel:hover {
+  color: var(--text);
 }

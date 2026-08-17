@@ -41,6 +41,38 @@ class RagStream:
     raw_score: float = 0.0
 
 
+# A hit is only cited if it scores at least this fraction of the best hit's score.
+# Tuned against the real corpus, where the two failure modes pull in opposite
+# directions: 0.7 cut "can I carry over PTO and does parental leave affect accrual"
+# down to one source when it genuinely needs the PTO policy too, while 0.5 alone let
+# the whole tail through on "bereavement leave". 0.5 plus MAX_CITATIONS covers both —
+# the ratio drops the clearly-unrelated, the cap drops the merely-ranked.
+CITATION_SCORE_RATIO = 0.5
+
+# Hard ceiling. The ratio handles the usual case; this stops a question whose hits are
+# all equally mediocre from footnoting an answer with the entire corpus.
+MAX_CITATIONS = 3
+
+
+def _relevance(question: str, hit: dict) -> float:
+    """Score a hit on the local scorer's scale, whichever backend produced it."""
+    if settings.search_backend == "local":
+        return float(hit.get("score") or 0.0)
+    return relevance_score(question, hit)
+
+
+def _supporting_hits(question: str, hits: list[dict]) -> list[dict]:
+    """The hits worth citing: relevant in absolute terms, and close to the best one."""
+    scored = [(_relevance(question, hit), hit) for hit in hits]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    if not scored:
+        return []
+    best = scored[0][0]
+    floor = max(settings.local_min_score if settings.search_backend == "local" else settings.azure_min_score,
+                best * CITATION_SCORE_RATIO)
+    return [hit for score, hit in scored if score >= floor]
+
+
 class RagService:
     def stream(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagStream:
         # Fixed answers from the employee record, used when there is no model to hand
@@ -56,6 +88,20 @@ class RagService:
         # asking, so over-matching is harmless — see mentions_self().
         about_self = mentions_self(question) and profile is not None
         asker = profile_context(profile) if about_self else None
+
+        # The strict patterns answer a narrower question: is this *only* about the
+        # asker's record, with no policy component? If so, retrieval has nothing to
+        # contribute — skipping it drops an embedding call and a search query, and,
+        # more visibly, stops three unrelated policies being cited under "Your role is
+        # HR Administrator." Mixed questions ("how much PTO do I get as a manager")
+        # match the loose check but not this one, so they keep their citations.
+        if asker is not None and profile_reply(question, profile) is not None:
+            return RagStream(
+                citations=[],
+                confidence=1.0,
+                should_escalate=False,
+                chunks=llm_service.answer_stream(question, [], asker),
+            )
 
         # Greetings, small talk and plainly non-HR asks never reach search or the
         # LLM. Confidence is 1.0 because the reply is exactly right for the message,
@@ -99,10 +145,20 @@ class RagService:
         # No citations when the answer comes from the employee record: the retrieved
         # policies scored below the relevance floor, so citing them would footnote an
         # answer about someone's job title with the travel policy.
+        #
+        # Otherwise, cite what actually supports the answer rather than whatever
+        # retrieval happened to return. Two rules:
+        #
+        #   * a hit has to be in the same league as the best one. Search always returns
+        #     its top_k, so a question one policy answers cleanly still came back with
+        #     three, and all three were cited — two of them for no reason.
+        #   * one chip per document. The old key included section and page, so three
+        #     chunks of the same PDF produced three identical-looking chips.
+        cited_hits = [] if from_record_only else _supporting_hits(question, hits)
         citations: list[dict] = []
         seen = set()
-        for hit in [] if from_record_only else hits:
-            key = (hit["document_id"], hit.get("section_heading"), hit.get("page_number"))
+        for hit in cited_hits:
+            key = hit["document_id"]
             if key in seen:
                 continue
             seen.add(key)
@@ -116,7 +172,7 @@ class RagService:
                 "effective_date": hit.get("effective_date"),
                 "source_url": hit.get("source_url"),
             })
-            if len(citations) == 3:
+            if len(citations) == MAX_CITATIONS:
                 break
 
         return RagStream(

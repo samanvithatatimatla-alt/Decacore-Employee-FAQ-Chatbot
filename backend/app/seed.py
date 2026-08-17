@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .models import Document, DocumentVersion, HRForm, NewsAnnouncement, User
+from .services.categories import seed_categories
 from .services.search import search_service
 from .services.storage import storage_service
 
@@ -188,9 +189,12 @@ def seed_document_versions(db: Session) -> int:
 
 
 def seed_all(db: Session) -> dict:
+    # Categories first: seed_documents files documents under them.
+    categories = seed_categories(db)
     users = seed_users(db)
     documents = seed_documents(db)
     return {
+        "categories": categories,
         "users": users,
         "documents": documents,
         "announcements": seed_announcements(db),

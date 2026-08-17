@@ -108,6 +108,11 @@ export interface ApiDocument {
   source_url: string | null;
 }
 
+export interface ApiCategory {
+  id: string;
+  name: string;
+}
+
 export interface ApiForm {
   id: string;
   title: string;
@@ -255,6 +260,20 @@ export const api = {
     if (changeSummary) form.append('change_summary', changeSummary);
     return request<ApiDocument>(`/api/documents/${id}/versions`, { method: 'POST', body: form });
   },
+
+  documentCategories: () => request<ListOf<ApiCategory>>('/api/documents/categories'),
+  addDocumentCategory: (name: string) =>
+    request<ApiCategory & { created: boolean }>('/api/documents/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+  setDocumentCategory: (id: string, category: string) =>
+    request<ApiDocument>(`/api/documents/${id}/category`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category }),
+    }),
 
   forms: () => request<ListOf<ApiForm>>('/api/forms'),
 

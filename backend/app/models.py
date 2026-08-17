@@ -254,6 +254,27 @@ class Favorite(Base):
     last_viewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class DocumentCategory(Base):
+    """The controlled vocabulary documents are filed under.
+
+    A table rather than a constant in code, so HR can add a category — "Company
+    Info", say — without a developer and a redeploy. The classifier is only ever
+    allowed to choose from these rows; it cannot invent a name, which is what stops
+    the list drifting into "Leave", "Leaves" and "Time Off" as three separate things.
+
+    `key` is the de-duplication handle: a normalised form of the name, unique, so
+    "Company Info" and "company info" cannot both exist.
+    """
+
+    __tablename__ = "document_categories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid4str)
+    name: Mapped[str] = mapped_column(String(80))
+    key: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class HRForm(Base):
     """Fillable HR forms, listed separately from policies in Resources.
 

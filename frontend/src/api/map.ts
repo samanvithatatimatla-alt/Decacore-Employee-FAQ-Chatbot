@@ -87,6 +87,7 @@ export function mapDocument(d: ApiDocument, favorite: boolean): PolicyDoc {
     id: numericId(d.id),
     apiId: d.id,
     name: d.title,
+    category: d.category,
     meta: meta || d.filename,
     favorite,
     version: Number(String(d.version ?? '1').replace(/[^0-9.]/g, '').split('.')[0]) || 1,
@@ -102,6 +103,7 @@ export function mapForm(f: ApiForm, favorite: boolean): FormDoc {
     id: numericId(f.id),
     apiId: f.id,
     name: f.title,
+    category: f.category,
     meta: [f.category, f.available ? null : 'Not yet uploaded'].filter(Boolean).join(' · ') || f.filename,
     favorite,
   };
@@ -192,6 +194,7 @@ export function mapAdminDoc(d: ApiDocument, versions: ApiDocumentVersion[] = [])
     id: numericId(d.id),
     apiId: d.id,
     name: d.filename,
+    category: d.category,
     uploadedOn: formatDate(d.uploaded_at),
     size: '—',
     previewTitle: d.title,

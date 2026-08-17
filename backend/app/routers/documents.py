@@ -12,9 +12,10 @@ from ..auth import get_current_user, require_roles
 from ..config import settings
 from ..database import get_db
 from ..models import Document, DocumentVersion, User
-from ..schemas import CategoryPatch, DocumentOut, DocumentVersionOut, RejectBody
+from ..schemas import CategoryCreate, CategoryPatch, DocumentOut, DocumentVersionOut, RejectBody
+from ..services.categories import add_category, category_names, list_categories
 from ..services.ingestion import extract_pdf_pages
-from ..services.llm import CATEGORIES, llm_service
+from ..services.llm import llm_service
 from ..services.search import search_service
 from ..services.storage import storage_service
 from ..services.watermark import watermark_pdf
@@ -60,7 +61,7 @@ def upload_document(
     blob_path = storage_service.save_upload(file, "documents")
     data = storage_service.read_bytes(blob_path)
     text = "\n".join(extract_pdf_pages(data)[:4])
-    suggested, confidence = llm_service.categorize(title or file.filename or "Policy", text)
+    suggested, confidence = llm_service.categorize(title or file.filename or "Policy", text, category_names(db))
     now = datetime.now(UTC)
     doc = Document(
         filename=file.filename or "policy.pdf",
@@ -116,15 +117,43 @@ def pending_documents(db: Session = Depends(get_db), user: User = Depends(requir
     return {"items": [DocumentOut.model_validate(d) for d in docs], "total": len(docs)}
 
 
+@router.get("/categories")
+def list_document_categories(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """The categories documents can be filed under. Readable by anyone signed in."""
+    return {"items": [{"id": c.id, "name": c.name} for c in list_categories(db)], "total": None}
+
+
+@router.post("/categories")
+def create_document_category(
+    body: CategoryCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("HRAdmin")),
+):
+    """Add a category. Returns the existing one when the name is an equivalent.
+
+    Answering 200-with-the-existing-row rather than 409 is deliberate: from HR's
+    point of view "make sure there is a Leave category" succeeded either way, and
+    the `created` flag lets the UI say "that already exists as Leave" instead of
+    showing an error for something that is not one.
+    """
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name cannot be empty")
+    category, created = add_category(db, name, created_by=user.id)
+    return {"id": category.id, "name": category.name, "created": created}
+
+
 @router.patch("/{document_id}/category", response_model=DocumentOut)
 def update_category(document_id: str, body: CategoryPatch, db: Session = Depends(get_db), user: User = Depends(require_roles("HRAdmin"))):
-    if body.category not in CATEGORIES:
-        raise HTTPException(status_code=400, detail=f"Category must be one of {CATEGORIES}")
+    known = category_names(db)
+    if body.category not in known:
+        raise HTTPException(status_code=400, detail=f"Category must be one of {known}")
     doc = db.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.status not in {"pending_approval", "pending_review"}:
-        raise HTTPException(status_code=409, detail="Category can only be changed before approval")
+    # Approved documents used to be frozen here. Since an HRAdmin upload approves
+    # itself, that made every mislabel permanent — including the ones the classifier
+    # produced. Relabelling touches only the label, never the file or its chunks.
     doc.category = body.category
     db.commit()
     db.refresh(doc)

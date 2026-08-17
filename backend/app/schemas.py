@@ -113,6 +113,10 @@ class RequestOut(ORMModel):
     decided_by_name: str | None = None
 
 
+class CategoryCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
 class DecisionBody(BaseModel):
     comment: str | None = Field(default=None, max_length=2000)
 

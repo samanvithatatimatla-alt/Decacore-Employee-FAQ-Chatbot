@@ -395,3 +395,186 @@ def test_policy_questions_do_not_get_the_record(monkeypatch):
 
     assert captured["profile"] is None
     assert result.citations
+
+
+# --------------------------------------------------------------------------
+# Document categories
+# --------------------------------------------------------------------------
+
+
+def test_category_keys_fold_case_punctuation_and_plurals():
+    from app.services.categories import normalize_key
+
+    assert normalize_key("Company Info") == normalize_key("company info")
+    assert normalize_key("Company  Info!") == normalize_key("Company Info")
+    assert normalize_key("Leaves") == normalize_key("Leave")
+    # Distinct ideas stay distinct — this is not a synonym matcher.
+    assert normalize_key("Time Off") != normalize_key("Leave")
+
+
+def test_adding_an_equivalent_category_returns_the_existing_one(client):
+    """HR adding "leaves" must not create a second Leave category."""
+    # Unique per run: the test database file persists between runs, so a fixed name
+    # would be "already created" the second time and the assertion below would flip.
+    import uuid
+
+    name = f"Company Info {uuid.uuid4().hex[:6]}"
+    first = client.post("/api/documents/categories", json={"name": name}, headers=HR)
+    assert first.status_code == 200
+    assert first.json()["created"] is True
+
+    again = client.post("/api/documents/categories", json={"name": f"  {name.lower()}  "}, headers=HR)
+    assert again.status_code == 200
+    assert again.json()["created"] is False
+    assert again.json()["name"] == name
+
+    dupe = client.post("/api/documents/categories", json={"name": "Leaves"}, headers=HR)
+    assert dupe.json()["created"] is False
+    assert dupe.json()["name"] == "Leave"
+
+    names = [c["name"] for c in client.get("/api/documents/categories", headers=HR).json()["items"]]
+    assert names.count("Leave") == 1
+    assert name in names
+
+
+def test_only_hr_can_add_a_category(client):
+    assert client.post("/api/documents/categories", json={"name": "Random"}, headers=EMPLOYEE).status_code == 403
+
+
+def test_an_approved_document_can_be_relabelled(client):
+    """HR uploads approve themselves, so freezing the label made mislabels permanent."""
+    doc = client.get("/api/documents", headers=HR).json()["items"][0]
+    assert doc["status"] == "approved"
+
+    res = client.patch(f"/api/documents/{doc['id']}/category", json={"category": "Payroll"}, headers=HR)
+    assert res.status_code == 200
+    assert res.json()["category"] == "Payroll"
+
+    bad = client.patch(f"/api/documents/{doc['id']}/category", json={"category": "Nonsense"}, headers=HR)
+    assert bad.status_code == 400
+
+
+def test_the_classifier_only_picks_from_the_supplied_list():
+    """A name the model invents must be discarded, not adopted as a new category."""
+    from app.services.llm import llm_service
+
+    allowed = ["Benefits", "Leave", "Company Info"]
+    category, _ = llm_service.categorize("Travel Policy", "airfare lodging trip per diem", allowed)
+    assert category in allowed
+
+
+def test_identity_questions_skip_retrieval_entirely(monkeypatch):
+    """"Your role is HR Administrator." came back with three policy citations attached.
+
+    Nothing was retrieved *for* that answer — the hits merely scored above the
+    relevance floor and got stapled on. A question that is only about the asker's own
+    record now bypasses search, so there is nothing to cite and no embedding call.
+    """
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    searched = []
+
+    def fake_search(*args, **kwargs):
+        searched.append(args)
+        return [{"document_id": "d", "title": "Travel Policy", "section_heading": "s",
+                 "content": "mileage rates for business travel", "score": 0.9}]
+
+    monkeypatch.setattr(settings, "llm_backend", "azure")
+    monkeypatch.setattr(rag_module.search_service, "search", fake_search)
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream",
+                        lambda q, hits, profile=None: iter(["Your role is HR Administrator."]))
+
+    profile = UserProfile(display_name="BluePeak HR Admin", role="HRAdmin",
+                          email="hr.admin@bluepeak.example", department="HR")
+    result = rag_module.rag_service.answer(None, "what is my role in this company?", "HRAdmin", profile)
+
+    assert result.citations == []
+    assert not searched, "identity questions must not hit search at all"
+
+
+def test_a_question_mixing_the_record_and_policy_keeps_its_citations(monkeypatch):
+    """"How much PTO do I get as a manager" needs both, so the policy is still cited."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    hit = {"document_id": "d", "title": "Paid Time Off Policy", "section_heading": "Accrual",
+           "content": "Employees accrue paid time off each month up to a maximum balance.",
+           "score": 0.9}
+    monkeypatch.setattr(settings, "llm_backend", "azure")
+    monkeypatch.setattr(settings, "search_backend", "local")
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [hit])
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream",
+                        lambda q, hits, profile=None: iter(["answer"]))
+
+    profile = UserProfile(display_name="Test", role="Manager", email="t@example.com", department="HR")
+    result = rag_module.rag_service.answer(None, "how much paid time off do i accrue as a manager?", "Manager", profile)
+    assert result.citations
+
+
+def test_only_hits_that_support_the_answer_are_cited(monkeypatch):
+    """Every answer used to carry three citations because search returns three.
+
+    A question one policy answers cleanly was footnoted with two unrelated ones.
+    """
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    monkeypatch.setattr(settings, "search_backend", "local")
+    monkeypatch.setattr(settings, "llm_backend", "offline")
+
+    def make(doc, title, score):
+        return {"document_id": doc, "title": title, "section_heading": "s", "page_number": 1,
+                "content": "policy text", "score": score}
+
+    # One clear winner, then a long tail.
+    hits = [make("a", "Paid Time Off Policy", 0.40), make("b", "Travel Policy", 0.09), make("c", "Security Policy", 0.085)]
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: hits)
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream", lambda q, h, profile=None: iter(["a"]))
+    result = rag_module.rag_service.answer(None, "how much pto do i get", "Employee")
+    assert [c["title"] for c in result.citations] == ["Paid Time Off Policy"]
+
+    # Genuinely multi-policy: comparable scores must all survive.
+    close = [make("a", "Paid Time Off Policy", 0.33), make("b", "Parental Leave Policy", 0.19), make("c", "Sick Leave Policy", 0.17)]
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: close)
+    result = rag_module.rag_service.answer(None, "can i carry over pto during parental leave", "Employee")
+    assert len(result.citations) == 3
+
+
+def test_one_citation_per_document(monkeypatch):
+    """Three chunks of one PDF used to render as three identical-looking chips."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    monkeypatch.setattr(settings, "search_backend", "local")
+    monkeypatch.setattr(settings, "llm_backend", "offline")
+    same_doc = [
+        {"document_id": "a", "title": "Paid Time Off Policy", "section_heading": "Accrual", "page_number": 2,
+         "content": "x", "score": 0.40},
+        {"document_id": "a", "title": "Paid Time Off Policy", "section_heading": "Carryover", "page_number": 3,
+         "content": "x", "score": 0.38},
+        {"document_id": "a", "title": "Paid Time Off Policy", "section_heading": "Payout", "page_number": 4,
+         "content": "x", "score": 0.36},
+    ]
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: same_doc)
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream", lambda q, h, profile=None: iter(["a"]))
+    result = rag_module.rag_service.answer(None, "how much pto do i get", "Employee")
+    assert len(result.citations) == 1
+
+
+def test_citations_never_exceed_the_cap(monkeypatch):
+    """When every hit scores about the same, the cap is what stops a wall of chips."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    monkeypatch.setattr(settings, "search_backend", "local")
+    monkeypatch.setattr(settings, "llm_backend", "offline")
+    flat = [
+        {"document_id": c, "title": f"Policy {c}", "section_heading": "s", "page_number": 1,
+         "content": "x", "score": 0.30}
+        for c in "abcde"
+    ]
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: flat)
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream", lambda q, h, profile=None: iter(["a"]))
+    result = rag_module.rag_service.answer(None, "what is the policy on bereavement leave", "Employee")
+    assert len(result.citations) == rag_module.MAX_CITATIONS

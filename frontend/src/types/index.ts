@@ -61,6 +61,8 @@ export interface PolicyDoc {
   id: number;
   apiId?: string;
   name: string;
+  /** Policy category, also used to drive the Resources category filter. */
+  category: string | null;
   meta: string;
   favorite: boolean;
   version: number;
@@ -74,6 +76,7 @@ export interface FormDoc {
   id: number;
   apiId?: string;
   name: string;
+  category: string | null;
   meta: string;
   favorite: boolean;
 }
@@ -107,6 +110,8 @@ export interface AdminDoc {
   id: number;
   apiId?: string;
   name: string;
+  /** Policy category ("Leave", "Benefits", ...). Null on documents uploaded without one. */
+  category: string | null;
   uploadedOn: string;
   size: string;
   previewTitle: string;
