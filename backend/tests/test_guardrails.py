@@ -19,11 +19,13 @@ os.environ.setdefault("SEARCH_BACKEND", "local")
 os.environ.setdefault("LLM_BACKEND", "offline")
 os.environ.setdefault("NOTIFICATION_BACKEND", "log")
 
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.guardrails import OUT_OF_SCOPE_REPLY, canned_reply
+from app.services.guardrails import OUT_OF_SCOPE_REPLY, UserProfile, canned_reply
 
 EMPLOYEE = {"X-Dev-User-Email": "marietta.baudone@gmail.com"}
 HR = {"X-Dev-User-Email": "hr.admin@bluepeak.example"}
@@ -302,3 +304,94 @@ def test_profile_questions_tolerate_the_determiner(question):
 
     profile = UserProfile(display_name="Test User", role="Employee", email="t@example.com", department="HR")
     assert profile_reply(question, profile) is not None
+
+
+# --------------------------------------------------------------------------
+# Questions about the asker, on the deployed (Azure) path.
+#
+# Locally the fixed replies in profile_reply answer these. With a real model the
+# employee record is handed to it as context instead, so any phrasing works rather
+# than only the ones a regex was written for.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "what is my role in this company?",
+        "hey so like what do i actually do around here, job title wise?",
+        "remind me which team i sit in these days",
+        "who signs off my expenses, my manager i mean",
+        "how long have i been working here now",
+    ],
+)
+def test_self_questions_reach_the_model_with_the_record_attached(monkeypatch, question):
+    """The loose check has to catch phrasings no pattern list would contain."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    captured = {}
+
+    def fake_stream(q, hits, profile=None):
+        captured["profile"] = profile
+        return iter(["answer"])
+
+    irrelevant_hit = {
+        "document_id": "doc-1",
+        "title": "Travel and Expense Reimbursement Policy",
+        "section_heading": "Mileage rates",
+        "content": "Mileage is reimbursed at the published rate for approved business travel.",
+        "score": 0.031,
+    }
+    monkeypatch.setattr(settings, "search_backend", "azure")
+    monkeypatch.setattr(settings, "llm_backend", "azure")
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [irrelevant_hit])
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream", fake_stream)
+
+    profile = UserProfile(
+        display_name="Marietta Baudone",
+        role="Employee",
+        email="marietta@example.com",
+        department="HR",
+        manager_name="Alejandra Farryann",
+        hire_date=date(2024, 3, 5),
+    )
+    result = rag_module.rag_service.answer(None, question, "Employee", profile)
+
+    # The record went to the model...
+    assert captured["profile"] is not None
+    assert "Marietta Baudone" in captured["profile"]
+    # ...instead of the question being escalated to HR for a fact the app knows...
+    assert not result.should_escalate
+    # ...and the unrelated travel policy is not cited under the answer.
+    assert not result.citations
+
+
+def test_policy_questions_do_not_get_the_record(monkeypatch):
+    """A plain policy question is unchanged: no record, normal citations."""
+    from app.config import settings
+    from app.services import rag as rag_module
+
+    captured = {}
+
+    def fake_stream(q, hits, profile=None):
+        captured["profile"] = profile
+        return iter(["answer"])
+
+    hit = {
+        "document_id": "doc-1",
+        "title": "Paid Time Off Policy",
+        "section_heading": "Annual PTO accrual",
+        "content": "Employees accrue paid time off each month and may carry over unused PTO days.",
+        "score": 0.031,
+    }
+    monkeypatch.setattr(settings, "search_backend", "azure")
+    monkeypatch.setattr(settings, "llm_backend", "azure")
+    monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [hit])
+    monkeypatch.setattr(rag_module.llm_service, "answer_stream", fake_stream)
+
+    profile = UserProfile(display_name="Test", role="Employee", email="t@example.com")
+    result = rag_module.rag_service.answer(None, "how much paid time off does everyone accrue?", "Employee", profile)
+
+    assert captured["profile"] is None
+    assert result.citations

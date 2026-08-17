@@ -149,6 +149,53 @@ PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 
+# A loose "is this about the person asking?" test, used to decide whether the model
+# should be told who is asking.
+#
+# Deliberately far looser than PROFILE_PATTERNS above, because the consequences are
+# different. A PROFILE_PATTERNS match replaces the whole answer with fixed text, so a
+# false positive turns a real policy question into a brush-off and the patterns have
+# to be exact. A match here only *adds* the asker's record to the prompt — the policy
+# excerpts still go along with it and the model still answers normally — so a false
+# positive costs about forty tokens and nothing else. That is what lets this be a
+# keyword test instead of an ever-growing list of phrasings.
+_FIRST_PERSON = re.compile(r"\b(?:my|mine|i|i'm|im|me)\b")
+# Identity signals: mostly nouns, plus a few short phrases where the noun alone would
+# be too broad. "how long have i been" is here; a bare "work" is not, because "can I
+# work from home" is a policy question, and matching it would suppress the offer to
+# send it to HR when no policy covers it.
+_PROFILE_NOUNS = re.compile(
+    r"\b(?:role|roles|title|position|designation|department|dept|team|division|"
+    r"manager|supervisor|boss|report|reports|reporting|joined|join|joining|hire|hired|"
+    r"start date|started|tenure|seniority|email|name|profile|access|permission|"
+    r"job title|job role|how long have i|worked here|working here|been here|admin|administrator|hr admin)\b"
+)
+
+
+def mentions_self(message: str) -> bool:
+    """True when the message plausibly asks about the person sending it."""
+    norm = _normalize(message)
+    return bool(_FIRST_PERSON.search(norm) and _PROFILE_NOUNS.search(norm))
+
+
+def profile_context(profile: UserProfile | None) -> str | None:
+    """The asker's own record, formatted for the model's prompt."""
+    if profile is None:
+        return None
+    facts = [
+        f"Name: {profile.display_name}",
+        f"Role: {ROLE_LABELS.get(profile.role, profile.role)}",
+        f"Email: {profile.email}",
+    ]
+    if profile.department:
+        facts.append(f"Department: {profile.department}")
+    if profile.manager_name:
+        facts.append(f"Manager: {profile.manager_name}")
+    if profile.hire_date:
+        facts.append(f"Joined: {profile.hire_date.strftime('%d %B %Y')}")
+    return "\n".join(facts)
+
+
 def _profile_lines(profile: UserProfile) -> list[str]:
     role = ROLE_LABELS.get(profile.role, profile.role)
     lines = [f"You're signed in as {profile.display_name} ({role})."]
