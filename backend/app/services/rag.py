@@ -58,6 +58,12 @@ CITATION_SCORE_RATIO = 0.5
 # all equally mediocre from footnoting an answer with the entire corpus.
 MAX_CITATIONS = 3
 
+# The equivalent ratio for Azure's RRF scores, which sit in a much narrower band —
+# measured, an unrelated document still scores ~0.5 of the best, so 0.5 would keep
+# everything. At 0.8 the dental question cites one document and the PTO question drops
+# the unrelated retirement guide it used to carry.
+AZURE_CITATION_RATIO = 0.8
+
 
 def _relevance(question: str, hit: dict) -> float:
     """Score a hit on the local scorer's scale, whichever backend produced it."""
@@ -67,14 +73,31 @@ def _relevance(question: str, hit: dict) -> float:
 
 
 def _supporting_hits(question: str, hits: list[dict]) -> list[dict]:
-    """The hits worth citing: relevant in absolute terms, and close to the best one."""
+    """The hits worth citing: close to the best one, in the backend's own ranking.
+
+    On Azure the ranking is Azure's, not ours. Re-scoring its results with the keyword
+    scorer picked the wrong document outright — "I like dancing, how can the company
+    support my hobby" was answered from the Wellness Program, which Azure ranked first,
+    while the keyword scorer put the Bereavement policy top on 0.045 against Wellness's
+    0.036 and cited that instead. At those values the keyword score is noise. Measured
+    over seven questions Azure's own order picked the right document 6/7, the keyword
+    re-score 4/7.
+
+    The ratio is tighter here than for local search because RRF scores compress: an
+    unrelated hit still lands around 0.5 of the best, where cosine would have collapsed.
+    """
+    if not hits:
+        return []
+    if settings.search_backend == "azure":
+        best = float(hits[0].get("score") or 0.0)
+        if best <= 0:
+            return list(hits)
+        return [h for h in hits if float(h.get("score") or 0.0) >= best * AZURE_CITATION_RATIO]
+
     scored = [(_relevance(question, hit), hit) for hit in hits]
     scored.sort(key=lambda pair: pair[0], reverse=True)
-    if not scored:
-        return []
     best = scored[0][0]
-    floor = max(settings.local_min_score if settings.search_backend == "local" else settings.azure_min_score,
-                best * CITATION_SCORE_RATIO)
+    floor = max(settings.local_min_score, best * CITATION_SCORE_RATIO)
     return [hit for score, hit in scored if score >= floor]
 
 
@@ -91,7 +114,12 @@ class RagService:
 
         # Loose, keyword-level check. It only decides whether the model is told who is
         # asking, so over-matching is harmless — see mentions_self().
-        about_self = mentions_self(question) and profile is not None
+        #
+        # profile_reply is consulted too because the loose check was not a superset of
+        # the strict one: "who am i" fails mentions_self but profile_reply answers it,
+        # so the record path never ran and the question went to policy search, which
+        # replied that the documents do not cover it and cited two unrelated policies.
+        about_self = profile is not None and (mentions_self(question) or profile_reply(question, profile) is not None)
         asker = profile_context(profile) if about_self else None
 
         # The strict patterns answer a narrower question: is this *only* about the
