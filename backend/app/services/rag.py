@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
@@ -17,7 +18,7 @@ from .guardrails import (
     profile_reply,
 )
 from .llm import llm_service
-from .search import local_score, relevance_score, search_service
+from .search import relevance_score, search_service, tokens
 
 NO_MATCH = "I couldn't find this in the approved policy documents. I can help you send the question to HR."
 
@@ -66,7 +67,11 @@ class RagStream:
     # credited. Verification runs over this rather than over `citations`, because the
     # document the answer used is not always one retrieval ranked highly.
     candidates: list[dict] = field(default_factory=list)
-    candidate_texts: list[str] = field(default_factory=list)
+    # All chunks retrieved for each candidate document, not just the highest-ranked
+    # one. A document is credited on its best-matching excerpt: "I'm starting Monday"
+    # was answered from a New Hire Guide chunk that ranked below another chunk of the
+    # same guide, so scoring the document on its first chunk alone lost it entirely.
+    candidate_texts: list[list[str]] = field(default_factory=list)
 
 
 # A hit is only cited if it scores at least this fraction of the best hit's score.
@@ -88,6 +93,32 @@ MAX_CITATIONS = 3
 AZURE_CITATION_RATIO = 0.8
 
 
+def support_score(answer_tokens: Counter, text: str, weights: dict[str, float]) -> float:
+    """How much of the answer this excerpt accounts for, rare words counting most.
+
+    Plain word overlap does not work here: every policy in the corpus shares the same
+    furniture — "People Operations", "policy", "approval", "guidance" — so an excerpt
+    about travel to BluePeak sites scored 0.89 of the best against an answer about job
+    classification, purely on boilerplate. Weighting each shared word by how few of the
+    candidate excerpts contain it leaves the distinctive terms ("classification",
+    "timekeeping") deciding the match, which is what actually identifies the source.
+    """
+    shared = set(tokens(text)) & set(answer_tokens)
+    if not shared:
+        return 0.0
+    total = sum(weights.get(t, 1.0) for t in answer_tokens)
+    return sum(weights.get(t, 1.0) for t in shared) / total if total else 0.0
+
+
+def rarity_weights(texts: list[str]) -> dict[str, float]:
+    """1 for a word in one excerpt, approaching 0 for one in all of them."""
+    import math
+
+    n = max(len(texts), 1)
+    seen = Counter(t for text in texts for t in set(tokens(text)))
+    return {t: math.log(1 + n / df) / math.log(1 + n) for t, df in seen.items()}
+
+
 # How much of a cited excerpt has to survive in the answer for that citation to be
 # treated as evidence rather than as something retrieval merely happened to return.
 # Measured on the awkward cases: an answer genuinely taken from a policy scores 0.24
@@ -95,8 +126,11 @@ AZURE_CITATION_RATIO = 0.8
 # 0.15 against whatever search returned alongside it.
 CITATION_SUPPORT_MIN = 0.20
 
+# How much of the answer a further citation has to explain that earlier ones did not.
+CITATION_MARGINAL_MIN = 0.12
 
-def verified_citations(answer: str, candidates: list[dict], texts: list[str],
+
+def verified_citations(answer: str, candidates: list[dict], texts: list[list[str]],
                        fallback: list[dict], record_only: bool) -> list[dict]:
     """The documents the answer actually drew on, best-supported first.
 
@@ -121,11 +155,36 @@ def verified_citations(answer: str, candidates: list[dict], texts: list[str],
     this check alone: a heavily paraphrased answer would score low against text it
     genuinely used, and no citation at all is worse than an imperfect one.
     """
-    scored = [(local_score(answer, text), c) for c, text in zip(candidates, texts, strict=False)]
+    flat = [chunk for group in texts for chunk in group]
+    weights = rarity_weights(flat)
+    answer_tokens = Counter(tokens(answer))
+    scored = [(max((support_score(answer_tokens, chunk, weights) for chunk in group), default=0.0), c)
+              for c, group in zip(candidates, texts, strict=False)]
     kept = [c for score, c in sorted(scored, key=lambda pair: pair[0], reverse=True)
             if score >= CITATION_SUPPORT_MIN]
+    # A second citation has to earn its place by explaining part of the answer the
+    # first one does not. Ranking alone kept "Remote Work Policy — Travel to BluePeak
+    # Sites" beside an answer about job classification: it scored 0.79 of the best on
+    # filler alone, while containing none of "classification", "timekeeping", "title"
+    # or "duties". Requiring new ground covers the genuine multi-source case too —
+    # "quit notice, equipment return and account shutoff" keeps three documents,
+    # because each one answers a different third of the question.
     if kept:
-        return kept[:MAX_CITATIONS]
+        chosen: list[dict] = []
+        covered: set[str] = set()
+        total = sum(weights.get(t, 1.0) for t in answer_tokens) or 1.0
+        by_doc = {id(c): group for c, group in zip(candidates, texts, strict=False)}
+        for c in kept:
+            group = by_doc.get(id(c), [])
+            best_chunk = max(group, key=lambda t: support_score(answer_tokens, t, weights), default="")
+            shared = set(tokens(best_chunk)) & set(answer_tokens)
+            gain = sum(weights.get(t, 1.0) for t in shared - covered) / total
+            if not chosen or gain >= CITATION_MARGINAL_MIN:
+                chosen.append(c)
+                covered |= shared
+            if len(chosen) == MAX_CITATIONS:
+                break
+        return chosen
     # Nothing resembled the answer. For a question about the asker that is the expected
     # outcome — the record answered it — so cite nothing. Otherwise keep what retrieval
     # ranked, because losing every source is worse than an imperfect one.
@@ -286,13 +345,14 @@ class RagService:
         citations: list[dict] = []
         candidates: list[dict] = []
         candidate_texts: list[str] = []
-        seen = set()
+        seen: dict[str, int] = {}
         for hit in ranked + [h for h in hits if id(h) not in ranked_ids]:
             key = hit["document_id"]
             if key in seen:
+                candidate_texts[seen[key]].append(hit.get("content") or "")
                 continue
-            seen.add(key)
-            candidate_texts.append(hit.get("content") or "")
+            seen[key] = len(candidates)
+            candidate_texts.append([hit.get("content") or ""])
             entry = {
                 "document_id": hit["document_id"],
                 "external_document_id": hit.get("external_document_id"),
