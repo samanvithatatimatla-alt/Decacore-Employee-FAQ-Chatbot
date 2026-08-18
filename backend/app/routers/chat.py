@@ -212,7 +212,15 @@ def escalate_chat(payload: EscalationIn, db: Session = Depends(get_db), user: Us
             raise HTTPException(status_code=404, detail="Assistant message not found")
     if assistant is None:
         assistant = db.scalar(select(Message).where(Message.conversation_id == conv.id, Message.role == "assistant").order_by(Message.created_at.desc()).limit(1))
-    user_message = db.scalar(select(Message).where(Message.conversation_id == conv.id, Message.role == "user").order_by(Message.created_at.desc()).limit(1))
+    # The question that produced *this* answer, which is the newest user message
+    # before it — not the newest in the conversation. Those differ whenever someone
+    # keeps chatting and then scrolls back to escalate an earlier reply, and the
+    # difference filed the wrong text: pressing Send to HR on an earlier answer
+    # after typing "yes forward it" opened an HR request titled "yes forward it".
+    user_query = select(Message).where(Message.conversation_id == conv.id, Message.role == "user")
+    if assistant is not None:
+        user_query = user_query.where(Message.created_at <= assistant.created_at)
+    user_message = db.scalar(user_query.order_by(Message.created_at.desc()).limit(1))
     question = user_message.content if user_message else conv.title
     req = EmployeeRequest(
         employee_id=user.id,

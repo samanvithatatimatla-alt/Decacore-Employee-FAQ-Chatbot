@@ -120,7 +120,23 @@ class RagService:
         # effectively never offered to send a question to HR. Re-scoring Azure's top hit
         # with the local scorer puts both on the same scale.
         if hits:
-            relevance = top_score if settings.search_backend == "local" else relevance_score(question, hits[0])
+            # Score every hit, not just the first. Azure orders by RRF, which ranks hits
+            # against each other and does not track how well any of them answers the
+            # question — so the chunk that actually holds the answer routinely sits at
+            # position 3 or 4 behind a vaguer one. Judging only hits[0] made the app
+            # refuse questions the corpus answers ("where do I get my laptop" scored
+            # 0.047 at the top and 0.137 further down). Local search already sorts by
+            # this exact score, so there hits[0] is the best one anyway.
+            relevance = (
+                top_score
+                if settings.search_backend == "local"
+                else max(relevance_score(question, hit) for hit in hits)
+            )
+            # Two different questions, so two different signals. "Is there anything
+            # here worth answering from" is the best hit above. "Was retrieval actually
+            # confident" is the top-ranked hit, and when it is weak the answer deserves
+            # a Send to HR button next to it even though we do answer.
+            leading = top_score if settings.search_backend == "local" else relevance_score(question, hits[0])
             threshold = settings.local_min_score if settings.search_backend == "local" else settings.azure_min_score
             # A question about the asker's own record has no matching policy text by
             # definition, so the relevance floor would escalate every one of them to HR
@@ -131,6 +147,7 @@ class RagService:
             from_record_only = weak and about_self
         else:
             relevance = 0.0
+            leading = 0.0
             low_confidence = True
             from_record_only = False
         if low_confidence:
@@ -178,7 +195,13 @@ class RagService:
         return RagStream(
             citations=citations,
             confidence=relevance,
-            should_escalate=False,
+            # Answered, but offer HR anyway when retrieval was not confident or nothing
+            # was solid enough to cite. Previously this was always False, so a reply
+            # that said "I can forward your question to HR" appeared with no button to
+            # do it — the employee was told to take an action the screen did not offer.
+            # ... except when the answer came from the employee's own record, which is
+            # citation-free by design and is not something HR needs to look up.
+            should_escalate=(leading < threshold or not citations) and not from_record_only,
             chunks=llm_service.answer_stream(question, hits, asker),
             raw_score=top_score,
         )
