@@ -290,6 +290,22 @@ FORWARD_REPLY = (
 )
 
 
+def only_about_self(message: str, profile: UserProfile | None) -> bool:
+    """Is every part of this message answerable from the employee record?
+
+    Asked because people combine them — "who am I? what is my role?" is two questions
+    the record answers individually, but the strict patterns match neither the pair nor
+    the joined string, so it fell through to policy search and came back with the
+    corporate card policy cited underneath the person's own job title.
+    """
+    if profile is None:
+        return False
+    parts = [p.strip() for p in re.split(r"[?.;,]|\band\b", message) if p.strip()]
+    if not parts:
+        return False
+    return all(profile_reply(part, profile) is not None for part in parts)
+
+
 def canned_reply(message: str) -> str | None:
     """Return a fixed reply for a message that needs no policy lookup, else None."""
     norm = _normalize(message)

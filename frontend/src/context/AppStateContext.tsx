@@ -123,6 +123,7 @@ type Action =
       citations: Citation[];
       tags: string[];
       escalationOffered: boolean;
+      noPolicyMatch: boolean;
       form?: FormRef;
       messageApiId: string;
     }
@@ -222,7 +223,7 @@ function reducer(state: AppState, action: Action): AppState {
         // look like every other answer rather than flipping to the failure card. The
         // Send-to-HR buttons ask "did the backend offer escalation", which it can do
         // on a perfectly good answer that did not fully cover the question.
-        kind: action.citations.length > 0 || !action.escalationOffered ? 'answer' : 'refuse',
+        kind: action.noPolicyMatch ? 'refuse' : 'answer',
         body,
       };
       return { ...state, chat: { ...state.chat, messages, isTyping: false } };
@@ -516,6 +517,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               citations: d.citations.map(mapCitation),
               tags: d.citations.map((c) => c.title),
               escalationOffered: d.escalation_offered,
+              // Told by the server, not inferred. Clearing the citations of an answer
+              // that concedes a gap used to flip the card to the failure style and
+              // headline it "No approved company policy matched this request".
+              noPolicyMatch: d.no_policy_match ?? (d.citations.length === 0 && d.escalation_offered),
               // Only offered when the form actually has a file behind it; pointing at
               // a row whose PDF was never uploaded sends the employee to a dead link.
               form:

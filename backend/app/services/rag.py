@@ -8,7 +8,14 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import HRForm
 from .form_hints import suggest_form
-from .guardrails import UserProfile, canned_reply, mentions_self, profile_context, profile_reply
+from .guardrails import (
+    UserProfile,
+    canned_reply,
+    mentions_self,
+    only_about_self,
+    profile_context,
+    profile_reply,
+)
 from .llm import llm_service
 from .search import relevance_score, search_service
 
@@ -44,6 +51,12 @@ class RagStream:
     # Azure, where the backend score is RRF and says nothing about relevance — logging
     # both is what makes azure_min_score tunable from real traffic.
     raw_score: float = 0.0
+    # True only when retrieval found nothing usable and the reply is NO_MATCH. Sent to
+    # the client rather than inferred there: "no citations and an escalation offer" is
+    # not the same thing, and inferring it turned a partial answer ("the documents do
+    # not include a company overview beyond the leadership team") into a card headed
+    # "No approved company policy matched this request".
+    no_policy_match: bool = False
 
 
 # A hit is only cited if it scores at least this fraction of the best hit's score.
@@ -128,7 +141,7 @@ class RagService:
         # more visibly, stops three unrelated policies being cited under "Your role is
         # HR Administrator." Mixed questions ("how much PTO do I get as a manager")
         # match the loose check but not this one, so they keep their citations.
-        if asker is not None and profile_reply(question, profile) is not None:
+        if asker is not None and (profile_reply(question, profile) is not None or only_about_self(question, profile)):
             return RagStream(
                 citations=[],
                 confidence=1.0,
@@ -188,6 +201,7 @@ class RagService:
                 citations=[],
                 confidence=relevance,
                 should_escalate=True,
+                no_policy_match=True,
                 chunks=iter([NO_MATCH]),
                 # No policy matched, but "how do I change my bank account" is still
                 # plainly a request for a form. Nothing was cited, so this can only

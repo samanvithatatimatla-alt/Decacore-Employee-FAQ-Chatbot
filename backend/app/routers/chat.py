@@ -161,6 +161,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "citations": citations,
                 "confidence": prepared.confidence,
                 "escalation_offered": escalation_offered,
+                "no_policy_match": prepared.no_policy_match,
                 # Separate from citations on purpose: a blank form is not a source.
                 "form": form_payload(prepared.form),
                 "timings": timings,

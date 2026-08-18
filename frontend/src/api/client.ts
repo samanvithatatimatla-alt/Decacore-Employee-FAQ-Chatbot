@@ -430,6 +430,12 @@ export interface ChatStreamHandlers {
     confidence: number;
     escalation_offered: boolean;
     /**
+     * True only when retrieval found nothing usable. Distinct from "no citations":
+     * an answer can concede a gap, lose its citations and still be a real answer.
+     * Absent on older backends, where the client falls back to inferring it.
+     */
+    no_policy_match?: boolean;
+    /**
      * The fillable form this answer points at, when a cited policy names one. Kept
      * apart from `citations` deliberately — a blank form is not a source, and showing
      * it among the sources would suggest the answer came out of an empty PDF.
