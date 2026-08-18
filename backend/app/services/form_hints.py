@@ -7,75 +7,156 @@ way to say "and here is the form", without the form pretending to be a source.
 
 Two ways a form gets attached, in order of trust:
 
-  * grounded — a policy the answer actually cited names the form ("Use Form LND-301
-    Development Funding Request"). The suggestion then comes from the corpus rather
-    than from guessing at the question.
-  * intent — nobody cited a form, but the question is plainly asking for one
-    ("how do I change my bank account"). Phrases come from the Example chatbot
-    intents column of BluePeak_Employee_Forms_Catalog.csv.
+  * grounded — a policy the answer actually cited names the form, by the form's own
+    title ("submit the Leave Request Form") or by the code in its filename
+    ("Use Form LND-301"). The suggestion then comes from the corpus rather than from
+    guessing at the question.
+  * intent — nothing cited a form, but the question is plainly asking for one. This
+    compares the question against each form's name using embeddings, the same vectors
+    search already uses.
 
-Both match on `HRForm.filename`, which is stable and set by the loader.
+Neither path holds a list of phrases. An earlier version did, and it matched 0 of 10
+natural rephrasings: "my paycheck is going to the wrong account" shares no words with
+"Direct Deposit Authorization Form", so any lexical scheme misses it and a curated
+list only works for people who guess the phrasing it was written for. Embeddings put
+those two a short distance apart without anyone writing the connection down, and a
+form added later is covered the moment it is uploaded.
 """
 
 from __future__ import annotations
 
+import logging
+import math
+import re
+import threading
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..models import HRForm
+from .llm import llm_service
+from .search import local_score
 
-# filename -> (phrases a policy uses to name the form, phrases an employee uses to ask for it)
-FORM_HINTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
-    "01_Leave_Request_Form.pdf": (
-        ("leave request form",),
-        ("request pto", "request time off", "need time off", "take time off", "book time off",
-         "request leave", "apply for leave", "leave request", "request vacation", "book leave"),
-    ),
-    "02_Expense_Reimbursement_Form.pdf": (
-        ("expense reimbursement form",),
-        ("expense report", "expense claim", "claim expenses", "submit expenses", "get reimbursed",
-         "reimbursement form", "mileage claim", "claim mileage"),
-    ),
-    "03_Benefits_Enrollment_Change_Form.pdf": (
-        ("benefits enrollment form", "benefits enrollment / change form"),
-        ("enroll in benefits", "change my benefits", "change benefits", "add a dependent",
-         "add dependent", "open enrollment", "benefits enrollment", "elect benefits"),
-    ),
-    "04_New_Hire_Employee_Information_Form.pdf": (
-        ("new hire employee information form", "new hire information form"),
-        ("new hire form", "new hire paperwork", "onboarding form", "new employee information"),
-    ),
-    "05_Direct_Deposit_Authorization_Form.pdf": (
-        ("direct deposit authorization form",),
-        ("direct deposit", "change my bank", "change bank account", "update bank account",
-         "payroll bank", "where my pay goes", "deposit my paycheck"),
-    ),
-    "06_Personal_Information_Emergency_Contact_Change_Form.pdf": (
-        ("personal information change form", "emergency contact change form"),
-        ("change my address", "update my address", "change my name", "update my phone",
-         "emergency contact", "change my personal", "update my details"),
-    ),
-    "07_Timekeeping_Payroll_Correction_Form.pdf": (
-        ("timekeeping correction form", "payroll correction form", "timekeeping / payroll correction"),
-        ("missed punch", "fix my timesheet", "wrong timesheet", "fix my hours", "wrong hours",
-         "payroll correction", "correct my time", "timesheet correction"),
-    ),
-    "08_Equipment_Access_Request_Form.pdf": (
-        ("equipment and access request form", "equipment & access request form", "equipment request form"),
-        ("need a laptop", "request a laptop", "request equipment", "new monitor", "request access",
-         "software access", "return equipment", "return my laptop", "get my laptop"),
-    ),
-    "09_Remote_Work_Work_Away_Request_Form.pdf": (
-        ("remote work request form", "work-away request form", "work away request"),
-        ("work from another state", "work abroad", "work away", "remote work request",
-         "work from another country", "temporarily relocate"),
-    ),
-    "10_Learning_Development_Funding_Request_LND-301.pdf": (
-        ("lnd-301", "development funding request", "learning and development funding"),
-        ("tuition reimbursement", "certification cost", "pay for my certification", "conference funding",
-         "training reimbursement", "fund my course", "pay for a course"),
-    ),
-}
+logger = logging.getLogger("decacore")
+
+# Whether to offer a form at all is a question about the *shape* of the ask, not its
+# topic. Measuring proved it: "how much vacation do I get" and "I want to book a
+# holiday" are near-identical topically — cosine 0.345 vs 0.218 against the Leave
+# Request Form, the wrong way round — so no similarity threshold separates them. What
+# does separate them is whether the employee wants to DO something or to KNOW
+# something. On 12 transactional and 11 informational questions this matched 12/12
+# with no false alarms, where similarity alone could not be thresholded at all.
+WANTS_TO_ACT = re.compile(
+    r"\bhow\s+(do|can|would)\s+i\b|\bwhere\s+do\s+i\b|\bwhat\s+(form|paperwork)\b"
+    r"|\bi\s+(want|need|would\s+like|have)\s+to\b|\bi\s+need\b|\bi'?d\s+like\b"
+    r"|\bcan\s+i\s+(get|request|submit|change|update|add|book|take|claim|apply)\b"
+    r"|\b(request|submit|apply\s+for|sign\s+up|enroll|claim|fill\s+(in|out))\b"
+    r"|\bi\s+(moved|forgot|broke)\b"
+    r"|\b(broke|is\s+going\s+to\s+the\s+wrong|went\s+to\s+the\s+wrong)\b",
+    re.I,
+)
+
+# Once the shape gate has decided a form belongs, similarity only has to rank the
+# forms against each other, so this floor is deliberately low — it exists to stop a
+# transactional question about something with no form at all ("how do I appeal a
+# performance review") from dragging in whichever form ranked least badly.
+MIN_SIMILARITY = 0.15
+
+_vectors: dict[str, list[float]] = {}
+_vectors_key: tuple[str, ...] = ()
+_lock = threading.Lock()
+
+
+def describe(form: HRForm) -> str:
+    """What the form is, as a sentence to embed. Title plus category is all the row
+    holds, and it is enough: the title of a form is a description of its purpose."""
+    return f"{form.title}. {form.category}" if form.category else form.title
+
+
+def _title_variants(form: HRForm) -> list[str]:
+    """Ways a policy might name this form.
+
+    Derived from the row, never hand-listed. "Benefits Enrollment / Change Form"
+    yields both "benefits enrollment form" and "benefits change form", because a
+    policy writes one branch of the slash, not the slash itself.
+    """
+    title = form.title.lower().strip()
+    variants = {title}
+    if "/" in title:
+        head, _, tail = title.partition("/")
+        head, tail = head.strip(), tail.strip()
+        # "benefits enrollment / change form" -> "benefits enrollment form"
+        suffix = tail.split()[-1] if tail else ""
+        if head and suffix:
+            variants.add(f"{head} {suffix}")
+        if tail:
+            lead = head.split()[0] if head else ""
+            variants.add(f"{lead} {tail}".strip())
+    # The form code, when the filename carries one ("..._LND-301.pdf").
+    code = re.search(r"[A-Z]{2,4}-\d{3}", form.filename or "")
+    if code:
+        variants.add(code.group(0).lower())
+    return [v for v in variants if len(v) > 4]
+
+
+def _form_vectors(forms: list[HRForm]) -> dict[str, list[float]]:
+    """Embed every form name once per process, refreshed if the set changes."""
+    global _vectors, _vectors_key
+    key = tuple(sorted(f"{f.id}:{f.title}" for f in forms))
+    if key == _vectors_key and _vectors:
+        return _vectors
+    with _lock:
+        if key == _vectors_key and _vectors:
+            return _vectors
+        vectors = llm_service.embed([describe(f) for f in forms])
+        _vectors = {f.id: v for f, v in zip(forms, vectors, strict=True)}
+        _vectors_key = key
+    return _vectors
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    return dot / (na * nb) if na and nb else 0.0
+
+
+def _by_intent(forms: list[HRForm], question: str, cited_hits: list[dict]) -> HRForm | None:
+    """Which form the question is reaching for.
+
+    Retrieval has already decided what the question is about, so the categories of the
+    documents behind the answer narrow the field before similarity ranks it. "I want to
+    book a holiday" cites the PTO policy, filed under Leave and Attendance, which is
+    also the Leave Request Form's category — a hint no amount of embedding the phrase
+    "book a holiday" against a three-word form title would supply.
+    """
+    cited_categories = {(hit.get("category") or "").lower() for hit in cited_hits}
+    cited_categories.discard("")
+    if cited_categories:
+        narrowed = [f for f in forms if (f.category or "").lower() in cited_categories]
+        # Only narrow when it leaves something; a question can cite a policy whose
+        # category has no form at all.
+        forms = narrowed or forms
+    if settings.llm_backend == "azure":
+        try:
+            vectors = _form_vectors(forms)
+            asked = llm_service.embed_query(question)
+            scored = [(_cosine(asked, vectors[f.id]), f) for f in forms if f.id in vectors]
+            if scored:
+                score, form = max(scored, key=lambda pair: pair[0])
+                return form if score >= MIN_SIMILARITY else None
+            return None
+        except Exception:
+            # A form chip is a convenience; never fail an answer over one. Falls
+            # through to the lexical path, which needs nothing but the question.
+            logger.warning("form embedding lookup failed, falling back to lexical", exc_info=True)
+
+    scored = [(local_score(question, describe(f)), f) for f in forms]
+    if not scored:
+        return None
+    score, form = max(scored, key=lambda pair: pair[0])
+    return form if score > 0 else None
 
 
 def suggest_form(db: Session | None, question: str, cited_hits: list[dict]) -> HRForm | None:
@@ -89,23 +170,27 @@ def suggest_form(db: Session | None, question: str, cited_hits: list[dict]) -> H
     # tests that exercise citation rules) legitimately pass none.
     if db is None:
         return None
-    forms = {f.filename: f for f in db.scalars(select(HRForm))}
+    forms = list(db.scalars(select(HRForm)))
+    # A form with no file behind it would send the employee to a dead download.
+    forms = [f for f in forms if f.blob_path]
     if not forms:
+        return None
+
+    # Whether to offer a form is decided before which one. A policy names its form in
+    # passing — the bereavement policy mentions the Leave Request Form — so without
+    # this, "how many days off if my parent dies" arrives with a form attached to an
+    # answer that is purely informational.
+    if not WANTS_TO_ACT.search(question):
         return None
 
     cited_text = " ".join((hit.get("content") or "") for hit in cited_hits).lower()
     if cited_text:
-        for filename, (aliases, _) in FORM_HINTS.items():
-            form = forms.get(filename)
-            if form is not None and any(alias in cited_text for alias in aliases):
+        for form in forms:
+            if any(variant in cited_text for variant in _title_variants(form)):
                 return form
 
-    asked = question.lower()
-    for filename, (_, intents) in FORM_HINTS.items():
-        form = forms.get(filename)
-        if form is not None and any(intent in asked for intent in intents):
-            return form
-    return None
+    # Nothing cited a form by name, so rank the forms against the question itself.
+    return _by_intent(forms, question, cited_hits)
 
 
 def form_payload(form: HRForm | None) -> dict | None:
