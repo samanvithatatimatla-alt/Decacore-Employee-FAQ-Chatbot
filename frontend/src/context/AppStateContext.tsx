@@ -6,6 +6,7 @@ import type {
   Citation,
   Conversation,
   FormDoc,
+  FormRef,
   PolicyDoc,
   PolicyUpdate,
   RecentlyViewedDoc,
@@ -23,6 +24,7 @@ import {
   mapPolicyUpdate,
   mapSavedToRecentlyViewed,
   mapTopQuestion,
+  numericId,
 } from '../api/map';
 import { useAuth } from './AuthContext';
 import { unreadCount } from '../utils/seenEscalations';
@@ -116,7 +118,14 @@ type Action =
   | { type: 'SEND_MESSAGE'; text: string }
   | { type: 'START_BOT_REPLY' }
   | { type: 'APPEND_DELTA'; text: string }
-  | { type: 'FINISH_BOT_REPLY'; citations: Citation[]; tags: string[]; escalationOffered: boolean; messageApiId: string }
+  | {
+      type: 'FINISH_BOT_REPLY';
+      citations: Citation[];
+      tags: string[];
+      escalationOffered: boolean;
+      form?: FormRef;
+      messageApiId: string;
+    }
   | { type: 'SET_CONVERSATION_ID'; id: string }
   | { type: 'CHAT_ERROR'; message: string }
   | { type: 'NEW_CHAT' }
@@ -207,6 +216,7 @@ function reducer(state: AppState, action: Action): AppState {
         citations: action.citations,
         tags: action.tags,
         escalated: action.escalationOffered,
+        form: action.form,
         // Two separate questions, previously conflated into one. The card *style*
         // asks "is this a grounded answer" — anything with citations is, and should
         // look like every other answer rather than flipping to the failure card. The
@@ -324,6 +334,7 @@ interface AppStateContextValue {
   openForm: (id: number) => void;
   refresh: () => Promise<void>;
   uploadDocument: (file: File) => Promise<void>;
+  uploadForm: (file: File, title?: string, category?: string) => Promise<void>;
   uploadNewVersion: (id: number, file: File, summary: string) => Promise<void>;
   deleteDocument: (id: number) => Promise<void>;
   restoreConversation: (convId: number) => Promise<void>;
@@ -504,6 +515,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               citations: d.citations.map(mapCitation),
               tags: d.citations.map((c) => c.title),
               escalationOffered: d.escalation_offered,
+              // Only offered when the form actually has a file behind it; pointing at
+              // a row whose PDF was never uploaded sends the employee to a dead link.
+              form:
+                d.form && d.form.available
+                  ? { mode: 'resources' as const, formId: numericId(d.form.form_id), title: d.form.title }
+                  : undefined,
               messageApiId: d.message_id,
             });
             // The conversation list only changes once a reply exists, so refresh
@@ -600,6 +617,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const uploadForm = useCallback(
+    async (file: File, title?: string, category?: string) => {
+      await api.uploadForm(file, title, category);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const uploadNewVersion = useCallback(
     async (id: number, file: File, summary: string) => {
       const doc = state.adminDocuments.find((d) => d.id === id);
@@ -653,6 +678,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         openForm,
         refresh,
         uploadDocument,
+        uploadForm,
         uploadNewVersion,
         deleteDocument,
         restoreConversation,

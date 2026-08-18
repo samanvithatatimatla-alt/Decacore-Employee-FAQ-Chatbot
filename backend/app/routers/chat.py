@@ -16,6 +16,7 @@ from ..database import SessionLocal, get_db
 from ..models import Conversation, EmployeeRequest, Message, User
 from ..schemas import ChatIn, EscalationIn
 from ..services.cache import dashboard_cache
+from ..services.form_hints import form_payload
 from ..services.guardrails import UserProfile
 from ..services.notifications import notification_service
 from ..services.rag import rag_service
@@ -141,6 +142,8 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "citations": prepared.citations,
                 "confidence": prepared.confidence,
                 "escalation_offered": prepared.should_escalate,
+                # Separate from citations on purpose: a blank form is not a source.
+                "form": form_payload(prepared.form),
                 "timings": timings,
             })
 

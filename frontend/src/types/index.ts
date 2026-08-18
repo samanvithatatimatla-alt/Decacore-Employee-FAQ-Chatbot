@@ -22,6 +22,8 @@ export interface FormRef {
   mode: 'resources' | 'external';
   formId?: number;
   url?: string;
+  /** Form name, so the chip can say which form rather than just "Resources". */
+  title?: string;
 }
 
 export interface ChatMessage {

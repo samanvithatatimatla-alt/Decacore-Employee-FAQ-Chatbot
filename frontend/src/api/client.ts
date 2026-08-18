@@ -279,6 +279,20 @@ export const api = {
     return request<ApiDocument>('/api/documents', { method: 'POST', body: form });
   },
 
+  /**
+   * Publish a fillable form. Forms are not documents: they are never chunked,
+   * indexed or cited, so this is a separate endpoint rather than a flag on upload.
+   * Re-uploading a filename that already exists fills in that row's file instead
+   * of creating a duplicate.
+   */
+  uploadForm: (file: File, title?: string, category?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (title) form.append('title', title);
+    if (category) form.append('category', category);
+    return request<ApiForm>('/api/forms', { method: 'POST', body: form });
+  },
+
   uploadVersion: (id: string, file: File, changeSummary: string) => {
     const form = new FormData();
     form.append('file', file);
@@ -406,6 +420,13 @@ export interface ChatStreamHandlers {
     citations: ApiCitation[];
     confidence: number;
     escalation_offered: boolean;
+    /**
+     * The fillable form this answer points at, when a cited policy names one. Kept
+     * apart from `citations` deliberately — a blank form is not a source, and showing
+     * it among the sources would suggest the answer came out of an empty PDF.
+     * Absent on older backends.
+     */
+    form?: { mode: 'resources' | 'external'; form_id: string; title: string; available: boolean } | null;
     /** Server-side breakdown of where the wait went. Absent on older backends. */
     timings?: { retrieval_ms: number; first_token_ms: number | null; total_ms: number };
   }) => void;

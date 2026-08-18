@@ -147,7 +147,10 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
           {m.form?.mode === 'resources' && (
             <div className={styles.hrBtnRow}>
               <button className={styles.formChip} onClick={openInResources}>
-                Open in Resources →
+                {/* Named, not "Open in Resources" — the citation control right above it
+                    reads "Show resources (N)", and two near-identical labels made the
+                    form look like one more source rather than a thing to go and fill in. */}
+                {m.form.title ? `Open ${m.form.title} →` : 'Open in Resources →'}
               </button>
             </div>
           )}

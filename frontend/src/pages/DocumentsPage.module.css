@@ -354,3 +354,17 @@
 .pickerCancel:hover {
   color: var(--text);
 }
+
+/* Upload Form sits next to Upload Document. The secondary variant keeps the primary
+   action visually dominant, since publishing a policy is the far more common one. */
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.uploadBtn[data-variant='secondary'] {
+  background: transparent;
+  color: var(--accent, #7c5cff);
+  border: 1px solid currentColor;
+}

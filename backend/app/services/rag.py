@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..models import HRForm
+from .form_hints import suggest_form
 from .guardrails import UserProfile, canned_reply, mentions_self, profile_context, profile_reply
 from .llm import llm_service
 from .search import relevance_score, search_service
@@ -35,6 +37,9 @@ class RagStream:
     confidence: float
     should_escalate: bool
     chunks: Iterator[str] = field(default_factory=lambda: iter(()))
+    # The fillable form this answer points at, if a cited policy names one. Never a
+    # citation: forms are not part of the search corpus.
+    form: HRForm | None = None
     # Raw backend score alongside the relevance figure in `confidence`. They differ on
     # Azure, where the backend score is RRF and says nothing about relevance — logging
     # both is what makes azure_min_score tunable from real traffic.
@@ -156,6 +161,10 @@ class RagService:
                 confidence=relevance,
                 should_escalate=True,
                 chunks=iter([NO_MATCH]),
+                # No policy matched, but "how do I change my bank account" is still
+                # plainly a request for a form. Nothing was cited, so this can only
+                # come from the question itself.
+                form=suggest_form(db, question, []),
                 raw_score=top_score,
             )
 
@@ -194,6 +203,9 @@ class RagService:
 
         return RagStream(
             citations=citations,
+            # Only the hits that actually supported the answer are considered, so a form
+            # named in a chunk that was retrieved but not cited is not offered.
+            form=suggest_form(db, question, cited_hits),
             confidence=relevance,
             # Answered, but offer HR anyway when retrieval was not confident or nothing
             # was solid enough to cite. Previously this was always False, so a reply

@@ -236,7 +236,7 @@ def load(policies_dir: Path, forms_dir: Path, replace: bool, index: bool, dry_ru
             print(f"created {len(FORMS)} forms")
 
         if index and not dry_run:
-            print(f"\nindexing (embeds each chunk, ~1 call per document)")
+            print("\nindexing (embeds each chunk, ~1 call per document)")
             total = 0
             for n, doc in enumerate(to_index, start=1):
                 count = search_service.index_document(db, doc)

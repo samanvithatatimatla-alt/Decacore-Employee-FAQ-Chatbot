@@ -4,6 +4,7 @@ import { FileText, MoreVertical, Plus, Search, X } from 'lucide-react';
 import { useAppState } from '../context/AppStateContext';
 import { api, ApiError } from '../api/client';
 import UploadModal from '../components/admin/UploadModal';
+import UploadFormModal from '../components/admin/UploadFormModal';
 import VersionHistoryModal from '../components/admin/VersionHistoryModal';
 import NewVersionModal from '../components/admin/NewVersionModal';
 import panel from '../components/common/panel.module.css';
@@ -25,6 +26,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [formUploadOpen, setFormUploadOpen] = useState(false);
   const [versionHistoryId, setVersionHistoryId] = useState<number | null>(null);
   const [newVersionId, setNewVersionId] = useState<number | null>(null);
   const [category, setCategory] = useState(ALL);
@@ -127,9 +129,17 @@ export default function DocumentsPage() {
     <div className={panel.panel}>
       <div className={styles.header}>
         <h1 className={styles.title}>Document Management</h1>
-        <button className={styles.uploadBtn} onClick={() => setUploadOpen(true)}>
-          Upload Document
-        </button>
+        <div className={styles.headerActions}>
+          {/* Two buttons rather than one dialog with a type switch: a document is
+              chunked, embedded and searchable, a form is neither. Choosing on the way
+              in keeps that difference visible. */}
+          <button className={styles.uploadBtn} onClick={() => setFormUploadOpen(true)} data-variant="secondary">
+            Upload Form
+          </button>
+          <button className={styles.uploadBtn} onClick={() => setUploadOpen(true)}>
+            Upload Document
+          </button>
+        </div>
       </div>
 
       <div className={styles.search}>
@@ -300,6 +310,7 @@ export default function DocumentsPage() {
       })()}
 
       {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
+      {formUploadOpen && <UploadFormModal onClose={() => setFormUploadOpen(false)} categories={known} />}
       {versionHistoryId !== null && <VersionHistoryModal docId={versionHistoryId} onClose={() => setVersionHistoryId(null)} />}
       {newVersionId !== null && <NewVersionModal docId={newVersionId} onClose={() => setNewVersionId(null)} />}
     </div>
