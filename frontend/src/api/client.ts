@@ -345,11 +345,16 @@ export const api = {
   /** The caller's own escalations. Same shape as the HR inbox, scoped server-side. */
   myEscalations: () => request<ListOf<ApiInboxRequest>>('/api/requests/mine'),
 
+  // Both carry a deadline. The API runs on a B1 App Service that takes ~50s to come
+  // back after a restart, and a deploy landing mid-click drops the connection without
+  // a response — leaving the button on "Sending…" forever, with the reply already
+  // saved server-side. Failing visibly lets HR retry instead of watching a spinner.
   setInboxStatus: (id: string, status: InboxStatus) =>
     request<ApiInboxRequest>(`/api/requests/${id}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
+      timeoutMs: 30_000,
     }),
 
   respondToEscalation: (id: string, response: string, resolve: boolean) =>
@@ -357,6 +362,7 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ response, resolve }),
+      timeoutMs: 30_000,
     }),
 
   escalate: (conversationId: string, assistantMessageId?: string, note?: string) =>

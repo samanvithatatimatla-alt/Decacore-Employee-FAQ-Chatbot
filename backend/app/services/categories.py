@@ -86,12 +86,18 @@ def documents_using(db: Session, name: str) -> int:
 
 
 def seed_categories(db: Session) -> int:
-    """Fill the table on first boot. Idempotent, like every other seeder."""
-    added = 0
+    """Fill the table on first boot only.
+
+    Guarded on the table being empty, not on each name being absent. Every seeder
+    runs on every boot, so the per-name version quietly reinstated any category HR
+    had deleted: remove "Insurance" through the UI, deploy anything at all, and it
+    was back. That made the delete button look broken and contradicted the rule this
+    module is built on — after the first boot the table is the source of truth, and
+    a default is a starting point rather than a permanent fixture.
+    """
+    if (db.scalar(select(func.count(DocumentCategory.id))) or 0) > 0:
+        return 0
     for name in DEFAULT_CATEGORIES:
-        if find_category(db, name) is None:
-            db.add(DocumentCategory(name=name, key=normalize_key(name)))
-            added += 1
-    if added:
-        db.commit()
-    return added
+        db.add(DocumentCategory(name=name, key=normalize_key(name)))
+    db.commit()
+    return len(DEFAULT_CATEGORIES)
