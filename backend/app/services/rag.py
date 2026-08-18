@@ -17,7 +17,7 @@ from .guardrails import (
     profile_reply,
 )
 from .llm import llm_service
-from .search import relevance_score, search_service
+from .search import local_score, relevance_score, search_service
 
 NO_MATCH = "I couldn't find this in the approved policy documents. I can help you send the question to HR."
 
@@ -57,6 +57,12 @@ class RagStream:
     # not include a company overview beyond the leadership team") into a card headed
     # "No approved company policy matched this request".
     no_policy_match: bool = False
+    # The question named the asker, so the answer may have come from the employee
+    # record rather than from any policy. The excerpt text travels with the citations
+    # so the caller can check, once the answer exists, whether the policies actually
+    # contributed — see verified_citations().
+    record_only: bool = False
+    citation_texts: list[str] = field(default_factory=list)
 
 
 # A hit is only cited if it scores at least this fraction of the best hit's score.
@@ -76,6 +82,36 @@ MAX_CITATIONS = 3
 # everything. At 0.8 the dental question cites one document and the PTO question drops
 # the unrelated retirement guide it used to carry.
 AZURE_CITATION_RATIO = 0.8
+
+
+# How much of a cited excerpt has to survive in the answer for that citation to be
+# treated as evidence rather than as something retrieval merely happened to return.
+# Measured on the awkward cases: an answer genuinely taken from a policy scores 0.24
+# to 0.34 against it, while an answer taken from the employee record scores at most
+# 0.15 against whatever search returned alongside it.
+CITATION_SUPPORT_MIN = 0.20
+
+
+def verified_citations(answer: str, citations: list[dict], texts: list[str]) -> list[dict]:
+    """Drop citations the answer plainly did not use.
+
+    Only consulted when the question named the asker and retrieval scored below the
+    floor, because that is where the two cases are indistinguishable beforehand:
+    "what do I do if my job title needs updating" was answered out of the Overtime and
+    Compensation Policy and deserves the citation, while "how long have I been working
+    here" is answered from the employee record and must not footnote whichever policy
+    search happened to return.
+
+    Comparing against the answer separates them — the first shares the policy's wording,
+    the second shares nothing with it. Citations are never emptied on the strength of
+    this check alone: a heavily paraphrased answer would score low against text it
+    genuinely used, and no citation at all is worse than an imperfect one.
+    """
+    if not citations:
+        return citations
+    kept = [c for c, text in zip(citations, texts, strict=False)
+            if local_score(answer, text) >= CITATION_SUPPORT_MIN]
+    return kept
 
 
 def _relevance(question: str, hit: dict) -> float:
@@ -222,14 +258,16 @@ class RagService:
         #     three, and all three were cited — two of them for no reason.
         #   * one chip per document. The old key included section and page, so three
         #     chunks of the same PDF produced three identical-looking chips.
-        cited_hits = [] if from_record_only else _supporting_hits(question, hits)
+        cited_hits = _supporting_hits(question, hits)
         citations: list[dict] = []
+        citation_texts: list[str] = []
         seen = set()
         for hit in cited_hits:
             key = hit["document_id"]
             if key in seen:
                 continue
             seen.add(key)
+            citation_texts.append(hit.get("content") or "")
             citations.append({
                 "document_id": hit["document_id"],
                 "external_document_id": hit.get("external_document_id"),
@@ -245,6 +283,8 @@ class RagService:
 
         return RagStream(
             citations=citations,
+            citation_texts=citation_texts,
+            record_only=about_self,
             # Only the hits that actually supported the answer are considered, so a form
             # named in a chunk that was retrieved but not cited is not offered.
             form=suggest_form(db, question, cited_hits),
@@ -263,9 +303,14 @@ class RagService:
     def answer(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagResult:
         """Blocking form, for callers that want the finished answer in one piece."""
         prepared = self.stream(db, question, role, profile)
+        text = "".join(prepared.chunks)
+        citations = prepared.citations
+        # Same check the streaming endpoint applies once its answer is complete.
+        if citations and prepared.record_only:
+            citations = verified_citations(text, citations, prepared.citation_texts)
         return RagResult(
-            answer="".join(prepared.chunks),
-            citations=prepared.citations,
+            answer=text,
+            citations=citations,
             confidence=prepared.confidence,
             should_escalate=prepared.should_escalate,
         )

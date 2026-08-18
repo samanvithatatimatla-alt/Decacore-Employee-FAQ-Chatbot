@@ -19,7 +19,7 @@ from ..services.cache import dashboard_cache
 from ..services.form_hints import form_payload
 from ..services.guardrails import UserProfile, answer_admits_gap
 from ..services.notifications import notification_service
-from ..services.rag import rag_service
+from ..services.rag import rag_service, verified_citations
 from ..services.rate_limit import chat_rate_limiter
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -127,6 +127,11 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             # documents do not cover the question. Nothing supported it, so nothing
             # should be cited.
             citations = [] if admits_gap else prepared.citations
+            # A question worded about the asker ("my job title") with weak retrieval may
+            # have been answered from the record or from a policy; only the finished
+            # answer tells them apart.
+            if citations and prepared.record_only:
+                citations = verified_citations(answer_text, citations, prepared.citation_texts)
             if admits_gap:
                 stored = worker_db.get(Message, message_id)
                 if stored is not None and stored.citations:
