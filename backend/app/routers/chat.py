@@ -126,12 +126,11 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             # policies attached — listed as the sources of an answer that says the
             # documents do not cover the question. Nothing supported it, so nothing
             # should be cited.
-            citations = [] if admits_gap else prepared.citations
-            # A question worded about the asker ("my job title") with weak retrieval may
-            # have been answered from the record or from a policy; only the finished
-            # answer tells them apart.
-            if citations and prepared.record_only:
-                citations = verified_citations(answer_text, citations, prepared.citation_texts)
+            # Which documents to credit can only be settled once the answer exists.
+            citations = [] if admits_gap else verified_citations(
+                answer_text, prepared.candidates, prepared.candidate_texts,
+                prepared.citations, prepared.record_only,
+            )
             if admits_gap:
                 stored = worker_db.get(Message, message_id)
                 if stored is not None and stored.citations:

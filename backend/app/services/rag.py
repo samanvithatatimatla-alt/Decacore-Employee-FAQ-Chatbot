@@ -62,7 +62,11 @@ class RagStream:
     # so the caller can check, once the answer exists, whether the policies actually
     # contributed — see verified_citations().
     record_only: bool = False
-    citation_texts: list[str] = field(default_factory=list)
+    # Every retrieved document, ranked or not, with the excerpt text that would be
+    # credited. Verification runs over this rather than over `citations`, because the
+    # document the answer used is not always one retrieval ranked highly.
+    candidates: list[dict] = field(default_factory=list)
+    candidate_texts: list[str] = field(default_factory=list)
 
 
 # A hit is only cited if it scores at least this fraction of the best hit's score.
@@ -92,8 +96,18 @@ AZURE_CITATION_RATIO = 0.8
 CITATION_SUPPORT_MIN = 0.20
 
 
-def verified_citations(answer: str, citations: list[dict], texts: list[str]) -> list[dict]:
-    """Drop citations the answer plainly did not use.
+def verified_citations(answer: str, candidates: list[dict], texts: list[str],
+                       fallback: list[dict], record_only: bool) -> list[dict]:
+    """The documents the answer actually drew on, best-supported first.
+
+    Retrieval order cannot decide this. Azure ranked the Employee Handbook last of five
+    for "what does the company entail", yet the answer — BluePeak Flow, Connect and
+    Insight, founded in Denver in 2018 — came entirely from it, and the three documents
+    ranked above it contributed nothing. Comparing each excerpt against the finished
+    answer picks the right one regardless of where it placed.
+
+    Falls back to the retrieval order when nothing clears the bar, so a heavily
+    paraphrased answer keeps its sources rather than losing them all.
 
     Only consulted when the question named the asker and retrieval scored below the
     floor, because that is where the two cases are indistinguishable beforehand:
@@ -107,11 +121,15 @@ def verified_citations(answer: str, citations: list[dict], texts: list[str]) -> 
     this check alone: a heavily paraphrased answer would score low against text it
     genuinely used, and no citation at all is worse than an imperfect one.
     """
-    if not citations:
-        return citations
-    kept = [c for c, text in zip(citations, texts, strict=False)
-            if local_score(answer, text) >= CITATION_SUPPORT_MIN]
-    return kept
+    scored = [(local_score(answer, text), c) for c, text in zip(candidates, texts, strict=False)]
+    kept = [c for score, c in sorted(scored, key=lambda pair: pair[0], reverse=True)
+            if score >= CITATION_SUPPORT_MIN]
+    if kept:
+        return kept[:MAX_CITATIONS]
+    # Nothing resembled the answer. For a question about the asker that is the expected
+    # outcome — the record answered it — so cite nothing. Otherwise keep what retrieval
+    # ranked, because losing every source is worse than an imperfect one.
+    return [] if record_only else fallback
 
 
 def _relevance(question: str, hit: dict) -> float:
@@ -258,17 +276,24 @@ class RagService:
         #     three, and all three were cited — two of them for no reason.
         #   * one chip per document. The old key included section and page, so three
         #     chunks of the same PDF produced three identical-looking chips.
-        cited_hits = _supporting_hits(question, hits)
+        # Every retrieved document is a candidate, ranked or not. Ranking alone is not
+        # enough to choose: "what does the company entail" was answered out of the
+        # Employee Handbook, which Azure placed fifth of five and the ratio then cut,
+        # leaving three unrelated policies cited and the real source missing. The
+        # finished answer settles it — see verified_citations().
+        ranked = _supporting_hits(question, hits)
+        ranked_ids = {id(h) for h in ranked}
         citations: list[dict] = []
-        citation_texts: list[str] = []
+        candidates: list[dict] = []
+        candidate_texts: list[str] = []
         seen = set()
-        for hit in cited_hits:
+        for hit in ranked + [h for h in hits if id(h) not in ranked_ids]:
             key = hit["document_id"]
             if key in seen:
                 continue
             seen.add(key)
-            citation_texts.append(hit.get("content") or "")
-            citations.append({
+            candidate_texts.append(hit.get("content") or "")
+            entry = {
                 "document_id": hit["document_id"],
                 "external_document_id": hit.get("external_document_id"),
                 "title": hit["title"],
@@ -277,17 +302,21 @@ class RagService:
                 "version": hit.get("version"),
                 "effective_date": hit.get("effective_date"),
                 "source_url": hit.get("source_url"),
-            })
-            if len(citations) == MAX_CITATIONS:
-                break
+            }
+            candidates.append(entry)
+            # `citations` stays what retrieval ranked: the fallback when the answer
+            # turns out not to resemble any single excerpt closely.
+            if id(hit) in ranked_ids and len(citations) < MAX_CITATIONS:
+                citations.append(entry)
 
         return RagStream(
             citations=citations,
-            citation_texts=citation_texts,
+            candidates=candidates,
+            candidate_texts=candidate_texts,
             record_only=about_self,
             # Only the hits that actually supported the answer are considered, so a form
             # named in a chunk that was retrieved but not cited is not offered.
-            form=suggest_form(db, question, cited_hits),
+            form=suggest_form(db, question, ranked),
             confidence=relevance,
             # Answered, but offer HR anyway when retrieval was not confident or nothing
             # was solid enough to cite. Previously this was always False, so a reply
@@ -306,8 +335,8 @@ class RagService:
         text = "".join(prepared.chunks)
         citations = prepared.citations
         # Same check the streaming endpoint applies once its answer is complete.
-        if citations and prepared.record_only:
-            citations = verified_citations(text, citations, prepared.citation_texts)
+        citations = verified_citations(text, prepared.candidates, prepared.candidate_texts,
+                                       prepared.citations, prepared.record_only)
         return RagResult(
             answer=text,
             citations=citations,
