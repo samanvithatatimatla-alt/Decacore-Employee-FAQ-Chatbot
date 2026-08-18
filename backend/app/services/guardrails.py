@@ -246,11 +246,58 @@ def profile_reply(message: str, profile: UserProfile | None) -> str | None:
     return None
 
 
+# Phrases the model uses when the corpus does not cover the question. It says so in
+# its own words — "the policy documents don't address bringing pets to the office, so
+# this isn't covered and I can forward the question to HR" — while retrieval still
+# scored well enough to look confident, so no Send to HR button appeared. The employee
+# was told to take an action the screen did not offer, and the natural workaround
+# ("go ahead and forward it") is read as a brand new question and filed as one.
+ADMITS_GAP = re.compile(
+    r"do(es)?\s*n[o']t\s+(address|mention|cover|state|specify|define|include)"
+    r"|\bnot\s+(covered|addressed|mentioned|specified)\b"
+    r"|\bno\s+(policy|documents?)\s+(covers?|addresses|mentions)"
+    r"|\bforward\s+(this|the|your)\s+(question|request)?\s*to\s+hr"
+    r"|\bescalate\s+(this|it)\s+to\s+hr",
+    re.I,
+)
+
+
+def answer_admits_gap(answer: str) -> bool:
+    """Did the model itself say the documents do not cover this?
+
+    Checked after generation, because only then does the answer exist. The relevance
+    score cannot see it: "can I bring my cat to work" retrieves the workplace policies
+    perfectly well, and they are genuinely the right documents — they simply have
+    nothing to say about pets.
+    """
+    return bool(ADMITS_GAP.search(answer))
+
+
+# Someone answering the offer to escalate, rather than asking something new. Typed
+# because the bot said it could forward the question, so the reply is an instruction
+# to the app, not a question for the corpus. Searching it finds nothing, and pressing
+# Send to HR on the result files "go ahead and forward it" as the question.
+FORWARD_REQUESTS = re.compile(
+    r"^(yes\s*)?(please\s*)?(go\s+ahead\s+(and\s+)?)?"
+    r"(forward|send|escalate)\s*(it|this|that|the\s+question)?"
+    r"(\s+to\s+hr)?[.!]?$",
+    re.I,
+)
+
+FORWARD_REPLY = (
+    "I can't send it from here — use the Send to HR button on the answer above and it "
+    "goes across with your original question and my reply attached."
+)
+
+
 def canned_reply(message: str) -> str | None:
     """Return a fixed reply for a message that needs no policy lookup, else None."""
     norm = _normalize(message)
     if not norm:
         return GREETING_REPLY
+
+    if FORWARD_REQUESTS.match(norm):
+        return FORWARD_REPLY
 
     # Exact matches only: a greeting bolted onto a real question is a real question.
     if norm in GREETINGS:

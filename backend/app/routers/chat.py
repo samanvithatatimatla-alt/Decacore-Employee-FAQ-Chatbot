@@ -17,7 +17,7 @@ from ..models import Conversation, EmployeeRequest, Message, User
 from ..schemas import ChatIn, EscalationIn
 from ..services.cache import dashboard_cache
 from ..services.form_hints import form_payload
-from ..services.guardrails import UserProfile
+from ..services.guardrails import UserProfile, answer_admits_gap
 from ..services.notifications import notification_service
 from ..services.rag import rag_service
 from ..services.rate_limit import chat_rate_limiter
@@ -114,6 +114,13 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                     stored.content = "".join(parts)
                     worker_db.commit()
 
+            answer_text = "".join(parts)
+            # Offer HR when the answer itself concedes the documents do not cover the
+            # question, whatever retrieval scored. Decided here rather than in the RAG
+            # service because it depends on the finished answer, which does not exist
+            # until the stream has run.
+            escalation_offered = prepared.should_escalate or answer_admits_gap(answer_text)
+
             total_ms = int((perf_counter() - started) * 1000)
             timings = {
                 "retrieval_ms": retrieval_ms,
@@ -130,10 +137,10 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 retrieval_ms,
                 first_token_ms,
                 total_ms,
-                len("".join(parts)),
+                len(answer_text),
                 prepared.confidence,
                 prepared.raw_score,
-                prepared.should_escalate,
+                escalation_offered,
             )
 
             yield sse("done", {
@@ -141,7 +148,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "message_id": message_id,
                 "citations": prepared.citations,
                 "confidence": prepared.confidence,
-                "escalation_offered": prepared.should_escalate,
+                "escalation_offered": escalation_offered,
                 # Separate from citations on purpose: a blank form is not a source.
                 "form": form_payload(prepared.form),
                 "timings": timings,
