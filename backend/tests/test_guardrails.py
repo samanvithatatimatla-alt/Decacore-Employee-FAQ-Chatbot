@@ -504,8 +504,13 @@ def test_a_question_mixing_the_record_and_policy_keeps_its_citations(monkeypatch
     monkeypatch.setattr(settings, "llm_backend", "azure")
     monkeypatch.setattr(settings, "search_backend", "local")
     monkeypatch.setattr(rag_module.search_service, "search", lambda *a, **k: [hit])
+    # The stub answers out of the hit, as the real model does. Citations on a question
+    # that mentions the asker are now checked against the finished answer, so a
+    # placeholder string would be indistinguishable from an answer that came entirely
+    # from the employee record and ignored the policy.
     monkeypatch.setattr(rag_module.llm_service, "answer_stream",
-                        lambda q, hits, profile=None: iter(["answer"]))
+                        lambda q, hits, profile=None: iter(
+                            ["You accrue paid time off each month up to a maximum balance."]))
 
     profile = UserProfile(display_name="Test", role="Manager", email="t@example.com", department="HR")
     result = rag_module.rag_service.answer(None, "how much paid time off do i accrue as a manager?", "Manager", profile)
