@@ -119,7 +119,19 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             # question, whatever retrieval scored. Decided here rather than in the RAG
             # service because it depends on the finished answer, which does not exist
             # until the stream has run.
-            escalation_offered = prepared.should_escalate or answer_admits_gap(answer_text)
+            admits_gap = answer_admits_gap(answer_text)
+            escalation_offered = prepared.should_escalate or admits_gap
+            # ... and drop the citations with it. Retrieval always returns its top
+            # results, so "who is archit" came back with the L&D and parental leave
+            # policies attached — listed as the sources of an answer that says the
+            # documents do not cover the question. Nothing supported it, so nothing
+            # should be cited.
+            citations = [] if admits_gap else prepared.citations
+            if admits_gap:
+                stored = worker_db.get(Message, message_id)
+                if stored is not None and stored.citations:
+                    stored.citations = []
+                    worker_db.commit()
 
             total_ms = int((perf_counter() - started) * 1000)
             timings = {
@@ -146,7 +158,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             yield sse("done", {
                 "conversation_id": conversation_id,
                 "message_id": message_id,
-                "citations": prepared.citations,
+                "citations": citations,
                 "confidence": prepared.confidence,
                 "escalation_offered": escalation_offered,
                 # Separate from citations on purpose: a blank form is not a source.
