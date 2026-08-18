@@ -49,10 +49,19 @@ logger = logging.getLogger("decacore")
 # with no false alarms, where similarity alone could not be thresholded at all.
 WANTS_TO_ACT = re.compile(
     r"\bhow\s+(do|can|would)\s+i\b|\bwhere\s+do\s+i\b|\bwhat\s+(form|paperwork)\b"
-    r"|\bi\s+(want|need|would\s+like|have)\s+to\b|\bi\s+need\b|\bi'?d\s+like\b"
-    r"|\bcan\s+i\s+(get|request|submit|change|update|add|book|take|claim|apply)\b"
+    # "and need to update", not just "I need to update": the subject is often several
+    # words back ("I got married and need to update my cover"), which an adjacency
+    # rule missed on exactly the kind of question a form belongs on.
+    r"|\b(want|need|have|wish)\s+to\b|\bi\s+need\b|\bi'?d\s+like\b"
+    r"|\bcan\s+i\s+(get|request|submit|change|update|add|book|take|claim|apply|cancel)\b"
+    # Verbs for changing something already on file. "Update" and "change" were the
+    # gap: every "I need to change my …" question is a form request by definition.
+    # Bare "change" and "update" are far too common in a policy corpus — they matched
+    # "what is the change summary for the travel policy". Requiring an object ("change
+    # my address", "update the bank details") keeps the verb sense and drops the noun.
     r"|\b(request|submit|apply\s+for|sign\s+up|enroll|claim|fill\s+(in|out))\b"
-    r"|\bi\s+(moved|forgot|broke)\b"
+    r"|\b(update|change|correct|cancel|add)\s+(my|our|the|a|an)\b"
+    r"|\bi\s+(moved|forgot|broke|switched|lost)\b"
     r"|\b(broke|is\s+going\s+to\s+the\s+wrong|went\s+to\s+the\s+wrong)\b",
     re.I,
 )

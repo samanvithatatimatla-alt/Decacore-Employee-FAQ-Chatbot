@@ -144,6 +144,11 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
             </a>
           )}
 
+          {/* After the "no policy matched" line, not before it. On a refusal the chip
+              was appearing above the explanation, so the offer arrived before the
+              reason for it. */}
+          {noPolicyMatch && <p className={styles.noMatch}>No approved company policy matched this request.</p>}
+
           {m.form?.mode === 'resources' && (
             <div className={styles.hrBtnRow}>
               <button className={styles.formChip} onClick={openInResources}>
@@ -162,8 +167,6 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
               </a>
             </div>
           )}
-
-          {noPolicyMatch && <p className={styles.noMatch}>No approved company policy matched this request.</p>}
 
           {canEscalate && (
             <div className={styles.hrBtnRow}>
