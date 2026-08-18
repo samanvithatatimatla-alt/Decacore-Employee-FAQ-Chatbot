@@ -42,8 +42,17 @@ QUERY_EXPANSIONS = {
     "login": ["information security", "access on separation"],
     "books": ["learning development", "learning materials", "reimbursement"],
     "part time": ["parental leave", "return to work", "benefits"],
-    "austin": ["payroll", "site specific working hours", "hybrid core hours"],
+    # Site-specific core hours moved into the hybrid policy in the v3 corpus; the
+    # payroll appendix that used to carry them is gone.
+    "austin": ["hybrid core hours", "site specific core hours"],
+    "reachable": ["core hours", "availability"],
     "gym": ["wellness", "benefits"],
+    # Everyday words for things the policies name differently.
+    "tuition": ["learning development", "reimbursement", "education assistance"],
+    "moving": ["relocation"],
+    "relocate": ["relocation"],
+    "commute": ["commuting", "transportation", "expense reimbursement"],
+    "overseas": ["international", "travel"],
     "death": ["bereavement", "compassionate leave", "immediate family"],
     "dies": ["bereavement", "compassionate leave", "immediate family"],
     "died": ["bereavement", "compassionate leave", "immediate family"],

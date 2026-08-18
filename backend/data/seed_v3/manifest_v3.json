@@ -1,0 +1,674 @@
+[
+  {
+    "filename": "08_Employee_Stock_Purchase_Plan_and_Financial_Wellness.pdf",
+    "document_id": "BPT-FIN-ESPP-016",
+    "title": "Employee Stock Purchase Plan and Financial Wellness",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://",
+    "owner": "T otal Rewards Classification Internal Training Data",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "10_Learning_and_Development_Reimbursement_Policy.pdf",
+    "document_id": "BPT-HR-LND-010",
+    "title": "Learning and Development Reimbursement Policy",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Reimbursements",
+    "status": "Approved",
+    "source_url": "https://",
+    "owner": "People Operations Classification Internal Training Data",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "12_Offboarding_and_Separation_Handbook.pdf",
+    "document_id": "BPT-HR-ONB-012",
+    "title": "Offboarding and Separation Handbook",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Payroll",
+    "status": "Approved",
+    "source_url": "https://",
+    "owner": "People Operations Classification Internal Training Data",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Acceptable Use of Company Devices.pdf",
+    "document_id": "BPT-IT-AUP-127",
+    "title": "Acceptable Use of Company Devices",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "IT and Security",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/it-security/policies/acceptable-use-company-devices",
+    "owner": "Information Technology and Information Security",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established comprehensive device, communications, software, AI, BYOD, monitoring, and return requirements.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Attendance & Timekeeping Policy.pdf",
+    "document_id": "BPT-HR-ATT-110",
+    "title": "Attendance & Timekeeping Policy",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Leave and Attendance",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/attendance-timekeeping",
+    "owner": "People Operations and Payroll",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial controlled attendance and timekeeping standard.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Bereavement Leave Policy.pdf",
+    "document_id": "BPT-HR-BER-013",
+    "title": "Bereavement Leave Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Leave and Attendance",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/leave/bereavement",
+    "owner": "People Operations",
+    "supersedes": "BPT-HR-BER-013 v1.0",
+    "supersedes_id": "BPT-HR-BER-013",
+    "change_summary": "Approved and expanded the bereavement policy with flexible scheduling, pregnancy-loss treatment, and support resources.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "14_Bereavement_and_Compassionate_Leave_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "BluePeak and Microsoft Contract and Policies.pdf",
+    "document_id": "BPT-LEGAL-VND-018",
+    "title": "BluePeak and Microsoft Contract and Policies",
+    "version": "v1.0",
+    "effective_date": "2026-08-13",
+    "category_raw": null,
+    "status": "Approved",
+    "source_url": null,
+    "owner": "Legal, Procurement & Information Security Approved by Sample / training use only",
+    "supersedes": "New Source Internal sample policy library",
+    "supersedes_id": null,
+    "change_summary": "v1.0 - 2026-08-13 Initial fictional sample. Added commercial framework, privacy/security policies, AI controls, onboarding/offboarding, incident response, continuity, and sample-only safeguards. Sample governance rule: retain the prominent fictional-status notice and footer whenever this document is copied, converted, printed, or shared.",
+    "allowed_roles": [
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Company Code of Conduct.pdf",
+    "document_id": "BPT-LEG-COC-103",
+    "title": "Company Code of Conduct",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Employee Handbook and Company Information",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/legal/code-of-conduct",
+    "owner": "Legal and Compliance",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial comprehensive code with reporting, decision framework, and role-specific standards.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Company Organizational Chart.pdf",
+    "document_id": "BPT-CORP-ORG-105",
+    "title": "Company Organizational Chart",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Employee Handbook and Company Information",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/company/organizational-chart",
+    "owner": "Corporate Strategy and People Operations",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial controlled organization chart and operating-model reference.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Corporate Credit Card Policy.pdf",
+    "document_id": "BPT-FIN-CC-121",
+    "title": "Corporate Credit Card Policy",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Travel and Expenses",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/finance/travel/corporate-credit-card",
+    "owner": "Finance and Procurement",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established a standalone cardholder policy and monthly control framework.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Dental & Vision Benefits.pdf",
+    "document_id": "BPT-HR-DV-112",
+    "title": "Dental & Vision Benefits",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/benefits/dental-vision",
+    "owner": "Total Rewards",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial standalone dental and vision guide with complete cost-sharing detail.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Employee Directory & Contacts.pdf",
+    "document_id": "BPT-CORP-DIR-104",
+    "title": "Employee Directory & Contacts",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Employee Handbook and Company Information",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/company/directory",
+    "owner": "Corporate Communications and People Operations",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial controlled directory for leadership and employee-service contacts.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Employee Handbook.pdf",
+    "document_id": "BPT-HR-HBK-101",
+    "title": "Employee Handbook",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Employee Handbook and Company Information",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/employee-handbook",
+    "owner": "People Operations",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Consolidated company handbook aligned to the controlled HR policy library.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Employee Wellness Program.pdf",
+    "document_id": "BPT-HR-WELL-114",
+    "title": "Employee Wellness Program",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/benefits/wellness",
+    "owner": "Total Rewards",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial standalone wellness program with complete EAP and reimbursement details.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Expense Reimbursement Policy.pdf",
+    "document_id": "BPT-FIN-EXP-004",
+    "title": "Expense Reimbursement Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Travel and Expenses",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/finance/travel/expense-reimbursement",
+    "owner": "Travel and Expense",
+    "supersedes": "BPT-FIN-EXP-004 v1.0",
+    "supersedes_id": "BPT-FIN-EXP-004",
+    "change_summary": "Separated travel standards from expense processing and added accountable-plan, approval, audit, and reimbursement controls.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "04_Travel_and_Expense_Reimbursement_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Health Insurance Guide.pdf",
+    "document_id": "BPT-HR-MED-111",
+    "title": "Health Insurance Guide",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/benefits/health-insurance",
+    "owner": "Total Rewards",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial standalone 2026 medical guide split from the combined health and welfare guide.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Hybrid Work Policy.pdf",
+    "document_id": "BPT-HR-HYB-005",
+    "title": "Hybrid Work Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Remote Work and Workplace",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/people/work-arrangements/hybrid-work",
+    "owner": "People Operations and Workplace",
+    "supersedes": "BPT-HR-HYB-005 v1.0 and the Austin core-hours appendix",
+    "supersedes_id": "BPT-HR-HYB-005",
+    "change_summary": "Consolidated site-specific core hours, clarified three-day onsite expectation, internet allowance, schedule changes, and exception governance.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "05_Hybrid_and_Remote_Work_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Information Security Policy.pdf",
+    "document_id": "BPT-IT-SEC-011",
+    "title": "Information Security Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "IT and Security",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/it-security/policies/information-security",
+    "owner": "Information Security",
+    "supersedes": "BPT-IT-SEC-011 v1.0",
+    "supersedes_id": "BPT-IT-SEC-011",
+    "change_summary": "Added approved AI and RAG controls, document-level authorization, cloud and vendor safeguards, and clarified incident reporting and data classification.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "11_Information_Security_and_Acceptable_Use_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Life & Disability Insurance.pdf",
+    "document_id": "BPT-HR-LDI-115",
+    "title": "Life & Disability Insurance",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/benefits/life-disability",
+    "owner": "Total Rewards",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Initial standalone life and disability guide with benefit amounts and duration.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "New Hire Guide.pdf",
+    "document_id": "BPT-HR-NHG-102",
+    "title": "New Hire Guide",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Employee Handbook and Company Information",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/new-hire-guide",
+    "owner": "People Operations and Talent Acquisition",
+    "supersedes": "BPT-HR-ONB-012 v1.0 - onboarding provisions",
+    "supersedes_id": "BPT-HR-ONB-012",
+    "change_summary": "Expanded onboarding guide with role, location, access, benefits, payroll, and manager checklists.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "12_Onboarding_and_Offboarding_Handbook.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Overtime & Compensation Policy.pdf",
+    "document_id": "BPT-FIN-OTC-117",
+    "title": "Overtime & Compensation Policy",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Payroll and Compensation",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/finance/payroll/overtime-compensation",
+    "owner": "Payroll and People Operations",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established a consolidated wage-and-hour and compensation administration standard.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Paid Time Off (PTO) Policy.pdf",
+    "document_id": "BPT-HR-PTO-001",
+    "title": "Paid Time Off (PTO) Policy",
+    "version": "v3.0",
+    "effective_date": "2026-07-01",
+    "category_raw": "Leave and Attendance",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/leave/paid-time-off",
+    "owner": "People Operations",
+    "supersedes": "BPT-HR-PTO-001 v1.0; BPT-HR-PTO-001 v2.0 policy update",
+    "supersedes_id": "BPT-HR-PTO-001",
+    "change_summary": "Consolidated the July 2026 carryover update into the full policy; carryover is 10 days, excess expires March 31, and the maximum balance is 25 days.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "01_Paid_Time_Off_Policy.pdf"
+      },
+      {
+        "version": "v2.0",
+        "filename": "13_Paid_Time_Off_Policy_Update_v2.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Parental Leave Policy.pdf",
+    "document_id": "BPT-HR-LEAVE-003",
+    "title": "Parental Leave Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Leave and Attendance",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/leave/parental-leave",
+    "owner": "People Operations and Total Rewards",
+    "supersedes": "BPT-HR-LEAVE-003 v1.0",
+    "supersedes_id": "BPT-HR-LEAVE-003",
+    "change_summary": "Expanded inclusive definitions, pregnancy-loss support, phased-return administration, and leave coordination.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "03_Family_and_Parental_Leave_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Password & Account Security Policy.pdf",
+    "document_id": "BPT-IT-IAM-126",
+    "title": "Password & Account Security Policy",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "IT and Security",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/it-security/policies/password-account-security",
+    "owner": "Identity and Access Management",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established passwordless-first authentication, minimum passphrase requirements, MFA methods, and account lifecycle controls.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Payroll Schedule & Direct Deposit Policy.pdf",
+    "document_id": "BPT-FIN-PAY-009",
+    "title": "Payroll Schedule & Direct Deposit Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Payroll and Compensation",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/finance/payroll/payroll-schedule-direct-deposit",
+    "owner": "Payroll",
+    "supersedes": "BPT-FIN-PAY-009 v1.0",
+    "supersedes_id": "BPT-FIN-PAY-009",
+    "change_summary": "Added the 2026 payroll calendar, multi-account deposit rules, correction service levels, and final-pay procedures.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "09_Compensation_and_Payroll_Guide.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Performance Bonus Policy.pdf",
+    "document_id": "BPT-HR-BON-118",
+    "title": "Performance Bonus Policy",
+    "version": "v1.0",
+    "effective_date": "2026-01-01",
+    "category_raw": "Payroll and Compensation",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/people/compensation/performance-bonus",
+    "owner": "People Operations and Finance",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established the 2026 annual performance incentive design and calculation controls.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Remote Work Policy.pdf",
+    "document_id": "BPT-HR-REM-123",
+    "title": "Remote Work Policy",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Remote Work and Workplace",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/people/work-arrangements/remote-work",
+    "owner": "People Operations",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established remote-location, domestic jurisdiction, international work-away, travel, equipment, and review controls.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Retirement (401k) Plan Guide.pdf",
+    "document_id": "BPT-FIN-RET-008",
+    "title": "Retirement (401k) Plan Guide",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Benefits",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/benefits/401k",
+    "owner": "Total Rewards and Finance",
+    "supersedes": "BPT-FIN-RET-008 v1.0 - 401(k) provisions",
+    "supersedes_id": "BPT-FIN-RET-008",
+    "change_summary": "Clarified contribution changes, automatic escalation, match examples, loan administration, and separation options.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "08_Retirement_and_Financial_Benefits_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Sick Leave Policy.pdf",
+    "document_id": "BPT-HR-SICK-002",
+    "title": "Sick Leave Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Leave and Attendance",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/hr/leave/sick-leave",
+    "owner": "People Operations",
+    "supersedes": "BPT-HR-SICK-002 v1.0",
+    "supersedes_id": "BPT-HR-SICK-002",
+    "change_summary": "Clarified family-care use, documentation privacy, intermittent absence, and coordination with disability and protected leave.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": [
+      {
+        "version": "v1.0",
+        "filename": "02_Sick_Leave_and_Medical_Absence_Policy.pdf"
+      }
+    ]
+  },
+  {
+    "filename": "Travel Policy.pdf",
+    "document_id": "BPT-FIN-TRV-119",
+    "title": "Travel Policy",
+    "version": "v2.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Travel and Expenses",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/finance/travel/travel-policy",
+    "owner": "Travel and Expense",
+    "supersedes": "BPT-FIN-TRV-119 v1.0 and the travel provisions of BPT-FIN-EXP-004 v1.0",
+    "supersedes_id": "BPT-FIN-TRV-119",
+    "change_summary": "Separated travel standards from expense processing and confirmed approval thresholds, lodging caps, meal limits, air class, and international reporting deadlines.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  },
+  {
+    "filename": "Workplace Safety & Emergency Procedures.pdf",
+    "document_id": "BPT-OPS-SAFE-124",
+    "title": "Workplace Safety & Emergency Procedures",
+    "version": "v1.0",
+    "effective_date": "2026-08-01",
+    "category_raw": "Remote Work and Workplace",
+    "status": "Approved",
+    "source_url": "https://employee.bluepeaktech.com/resources/workplace/safety/emergency-procedures",
+    "owner": "Workplace and Security",
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": "Established site and remote safety procedures, emergency actions, notification roles, and reporting standards.",
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ],
+    "prior_versions": []
+  }
+]

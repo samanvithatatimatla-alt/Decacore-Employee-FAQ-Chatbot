@@ -1,0 +1,59 @@
+[
+  {
+    "filename": "Benefits Enrollment Form.pdf",
+    "document_id": "BPT-HR-FRM-203",
+    "title": "Benefits Enrollment Form",
+    "version": "v1.0",
+    "effective_date": null,
+    "category_raw": null,
+    "status": "Approved",
+    "source_url": null,
+    "owner": null,
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ]
+  },
+  {
+    "filename": "Expense Reimbursement Form.pdf",
+    "document_id": "BPT-FIN-FRM-202",
+    "title": "Expense Reimbursement Form",
+    "version": "v1.0",
+    "effective_date": null,
+    "category_raw": "Merchant / location Business purpose / attendees Payment Curr. Original USD amount Receipt 1 2 3 4 5 6 7 8 9 10 Payment: CC = corporate card; PC = personal card; C = cash. Receipt: Y / N / Missing Receipt Declaration. Internal | BPT-FIN-FRM-202 | v1.0 Submit through the secure Employee Portal. Do not email sensitive information. Page 1 BLUEPEAK TECHNOLOGIES Employee Forms and Resources Expense Reimbursement Form Employee report | Page 2 of line items, mileage, and totals 3. Itemized Expenses 11-20 # Date",
+    "status": "Approved",
+    "source_url": null,
+    "owner": null,
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ]
+  },
+  {
+    "filename": "Leave Request Form.pdf",
+    "document_id": "BPT-HR-FRM-201",
+    "title": "Leave Request Form",
+    "version": "v1.0",
+    "effective_date": null,
+    "category_raw": null,
+    "status": "/",
+    "source_url": null,
+    "owner": null,
+    "supersedes": null,
+    "supersedes_id": null,
+    "change_summary": null,
+    "allowed_roles": [
+      "Employee",
+      "Manager",
+      "Executive"
+    ]
+  }
+]

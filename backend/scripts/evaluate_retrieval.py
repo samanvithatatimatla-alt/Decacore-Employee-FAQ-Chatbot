@@ -17,7 +17,11 @@ with SessionLocal() as db:
     if (db.scalar(select(func.count(User.id))) or 0) == 0:
         seed_all(db)
 
-rows = list(csv.DictReader((ROOT / "data" / "seed" / "evaluation_questions.csv").open(encoding="utf-8-sig")))
+# Defaults to the v1 question set; pass a path to score a different one, e.g.
+#   python scripts/evaluate_retrieval.py data/seed_v3/evaluation_questions_v3.csv
+questions = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "data" / "seed" / "evaluation_questions.csv"
+rows = list(csv.DictReader(questions.open(encoding="utf-8-sig")))
+print(f"questions: {questions.name}")
 with SessionLocal() as db:
     total = hit = 0
     by_type: dict[str, list[int]] = {}
