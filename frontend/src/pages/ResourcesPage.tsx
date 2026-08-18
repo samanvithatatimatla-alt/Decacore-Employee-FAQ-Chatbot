@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Search, Star } from 'lucide-react';
+import { Download, Search, Star, Trash2 } from 'lucide-react';
 import { useAppState } from '../context/AppStateContext';
 import { useAuth } from '../context/AuthContext';
 import DocumentModal from '../components/resources/DocumentModal';
@@ -16,8 +16,10 @@ const ALL_CATEGORIES = 'All';
 const UNCATEGORISED = 'Uncategorised';
 
 export default function ResourcesPage() {
-  const { state, dispatch, sendMessage, openForm } = useAppState();
+  const { state, dispatch, sendMessage, openForm, deleteForm } = useAppState();
   const { user } = useAuth();
+  const isHrAdmin = user?.role === 'hr_admin';
+  const [removing, setRemoving] = useState<string | null>(null);
   const navigate = useNavigate();
   const { policies, forms, recentlyViewed, policyUpdates, filter, search, highlightFormId } = state.resources;
   const [modal, setModal] = useState<{ id: number; compare?: boolean } | null>(null);
@@ -210,6 +212,25 @@ export default function ResourcesPage() {
                   <Download size={13} style={{ marginRight: 4, verticalAlign: -2 }} />
                   Download
                 </button>
+                {/* HR only. Confirmed because there is no undo beyond re-uploading:
+                    the row goes, the PDF stays in storage. */}
+                {isHrAdmin && (
+                  <button
+                    className={styles.ghost}
+                    type="button"
+                    title="Delete form"
+                    aria-label={`Delete ${f.name}`}
+                    disabled={removing === f.apiId}
+                    onClick={() => {
+                      if (!f.apiId) return;
+                      if (!window.confirm(`Delete "${f.name}"? Employees will no longer see it in Resources.`)) return;
+                      setRemoving(f.apiId);
+                      void deleteForm(f.apiId).finally(() => setRemoving(null));
+                    }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             ))}
             {noFavForms && <p className={styles.emptyNote}>No favorited forms yet</p>}

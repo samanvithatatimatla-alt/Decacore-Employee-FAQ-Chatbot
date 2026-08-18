@@ -335,6 +335,7 @@ interface AppStateContextValue {
   refresh: () => Promise<void>;
   uploadDocument: (file: File) => Promise<void>;
   uploadForm: (file: File, title?: string, category?: string) => Promise<void>;
+  deleteForm: (apiId: string) => Promise<void>;
   uploadNewVersion: (id: number, file: File, summary: string) => Promise<void>;
   deleteDocument: (id: number) => Promise<void>;
   restoreConversation: (convId: number) => Promise<void>;
@@ -625,6 +626,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const deleteForm = useCallback(
+    async (apiId: string) => {
+      await api.deleteForm(apiId);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const uploadNewVersion = useCallback(
     async (id: number, file: File, summary: string) => {
       const doc = state.adminDocuments.find((d) => d.id === id);
@@ -679,6 +688,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         refresh,
         uploadDocument,
         uploadForm,
+        deleteForm,
         uploadNewVersion,
         deleteDocument,
         restoreConversation,

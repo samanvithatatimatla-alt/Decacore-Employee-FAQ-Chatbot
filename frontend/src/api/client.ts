@@ -293,6 +293,9 @@ export const api = {
     return request<ApiForm>('/api/forms', { method: 'POST', body: form });
   },
 
+  /** Remove a form from Resources. HRAdmin only; the PDF itself stays in storage. */
+  deleteForm: (id: string) => request<void>(`/api/forms/${id}`, { method: 'DELETE', timeoutMs: 30_000 }),
+
   uploadVersion: (id: string, file: File, changeSummary: string) => {
     const form = new FormData();
     form.append('file', file);

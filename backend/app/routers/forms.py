@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user, require_roles
@@ -67,6 +67,27 @@ def upload_form(
     db.commit()
     db.refresh(item)
     return form_out(item)
+
+
+@router.delete("/{form_id}", status_code=204)
+def delete_form(form_id: str, db: Session = Depends(get_db), user: User = Depends(require_roles("HRAdmin"))):
+    """Remove a form from Resources.
+
+    Only the row goes. The blob stays, exactly as deleting a policy document leaves
+    its PDF in storage — nothing in this app deletes blobs, so a wrong click is
+    recoverable by re-uploading rather than being the end of the file.
+
+    Favourites are cleared explicitly. The foreign key does say ON DELETE CASCADE,
+    but SQLite only honours that with `PRAGMA foreign_keys=ON`, which is off by
+    default — so relying on it would orphan rows in local development and pass every
+    test while doing so.
+    """
+    form = db.get(HRForm, form_id)
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    db.execute(delete(FormFavorite).where(FormFavorite.form_id == form_id))
+    db.delete(form)
+    db.commit()
 
 
 @router.get("/{form_id}/url")
