@@ -71,6 +71,7 @@
   border: none;
   color: var(--text-dim);
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
 }
 .tab:hover {
   color: var(--text);
@@ -98,6 +99,7 @@
   cursor: pointer;
   color: inherit;
   font: inherit;
+  transition: border-color var(--duration-fast) var(--ease);
 }
 .row:hover {
   border-color: rgba(124, 77, 255, 0.4);

@@ -82,7 +82,7 @@ export default function SignInPage() {
         */}
         {entraEnabled ? (
           error && (
-            <p className={styles.hint} style={{ color: '#b42318' }} role="alert">
+            <p className={styles.hint} style={{ color: 'var(--danger)' }} role="alert">
               {error}
             </p>
           )
@@ -107,7 +107,7 @@ export default function SignInPage() {
             {signingIn ? 'Signing in…' : 'Sign in'}
           </button>
           {error && (
-            <p className={styles.hint} style={{ color: '#b42318' }} role="alert">
+            <p className={styles.hint} style={{ color: 'var(--danger)' }} role="alert">
               {error}
             </p>
           )}

@@ -57,6 +57,11 @@
 
   --sidebar-w: 250px;
   --sidebar-w-collapsed: 64px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
 }
 
 /*
@@ -117,6 +122,17 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Smooths the light/dark toggle: every element cross-fades its themed colors
+   instead of hard-cutting. Low specificity (bare *), so any component's own
+   transition (e.g. a faster hover transition on the same properties) wins
+   automatically — this only fills the gap for elements that don't set one. */
+*,
+*::before,
+*::after {
+  transition: background-color var(--duration-slow) var(--ease), border-color var(--duration-slow) var(--ease),
+    color var(--duration-slow) var(--ease);
 }
 
 html,

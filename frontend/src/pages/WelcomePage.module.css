@@ -1,101 +1,41 @@
 .screen {
-  min-height: 100vh;
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-page);
+}
+
+.sceneWrap {
+  position: absolute;
+  inset: 0;
+}
+
+/* @splinetool/react-spline renders its own <canvas>; force it to fill this
+   wrapper so the scene tracks the viewport on both mobile and desktop
+   instead of being clipped to Spline's authored canvas size. */
+.sceneWrap :global(canvas) {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 40px;
-  text-align: center;
-  box-sizing: border-box;
-  background: var(--bg-page);
-  position: relative;
-  isolation: isolate;
-}
-.screen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-bottom: max(48px, env(safe-area-inset-bottom, 0px) + 32px);
+  /* Let clicks/drags pass through to the Spline canvas everywhere except
+     the button itself, so the 3D scene stays fully interactive. */
   pointer-events: none;
-  background-image: radial-gradient(rgba(var(--text-rgb), 0.07) 1px, transparent 1px);
-  background-size: 26px 26px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 40%, transparent 100%);
 }
-.screen::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(900px, 110%);
-  height: min(720px, 110%);
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(124, 77, 255, 0.16) 0%, rgba(124, 77, 255, 0.07) 38%, transparent 72%);
-}
-.heroAvatar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: riseIn 0.5s ease 0.02s both, heroFloat 3.5s ease-in-out 0.52s infinite;
-}
-.heroAvatar::before {
-  content: '';
-  position: absolute;
-  width: 210px;
-  height: 210px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 77, 255, 0.55) 0%, rgba(124, 77, 255, 0.18) 45%, transparent 70%);
-  filter: blur(26px);
-  z-index: -1;
-  animation: heroGlow 3.5s ease-in-out infinite;
-}
-.heroAvatar :global(.ring) {
-  animation: heroRing 3.5s ease-in-out infinite;
-}
-.brand {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.02em;
-  margin: 0;
-  animation: riseIn 0.5s ease 0.1s both;
-}
-.tagline {
-  font-size: 17px;
-  color: var(--text-dim);
-  margin: 0;
-  animation: riseIn 0.5s ease 0.18s both;
-}
-.desc {
-  font-size: 15px;
-  line-height: 1.7;
-  color: rgba(var(--text-rgb), 0.56);
-  max-width: 520px;
-  margin: 0;
-  animation: riseIn 0.5s ease 0.26s both;
-}
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin: 4px 0 0;
-  animation: riseIn 0.5s ease 0.34s both;
-}
-.badge {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--accent-text);
-  background: rgba(124, 77, 255, 0.12);
-  border: 1px solid rgba(124, 77, 255, 0.35);
-  border-radius: 999px;
-  padding: 6px 14px;
-}
+
 .cta {
+  pointer-events: auto;
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 16px;
@@ -103,22 +43,32 @@
   color: #fff;
   border: none;
   border-radius: 12px;
-  padding: 15px 34px;
+  padding: 15px 42px;
   cursor: pointer;
-  margin-top: 6px;
-  box-shadow: 0 10px 30px rgba(124, 77, 255, 0.32);
-  animation: riseIn 0.5s ease 0.42s both;
-}
-.cta:hover {
-  background: var(--accent-hover);
-  box-shadow: 0 12px 34px rgba(124, 77, 255, 0.42);
+  box-shadow: 0 10px 30px rgba(124, 77, 255, 0.4);
+  animation: riseIn 0.5s ease 0.2s both;
+  transition: background var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 
-/* Sits clear of the CTA and fades in after it, so it settles last. The parent's
-   14px gap plus this reads as a separate footing rather than part of the stack. */
+.cta:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 12px 34px rgba(124, 77, 255, 0.5);
+}
+
+/* Fades in after the CTA so it settles last, reading as a footing rather than
+   part of the button stack. */
 .poweredBy {
-  margin-top: 20px;
-  animation: riseIn 0.5s ease 0.55s both;
+  animation: riseIn 0.5s ease 0.4s both;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  .cta {
+    font-size: 15px;
+    padding: 14px 34px;
+  }
 }
 
 @keyframes riseIn {
@@ -131,38 +81,8 @@
     transform: translateY(0);
   }
 }
-@keyframes heroFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-@keyframes heroGlow {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.07);
-  }
-}
-@keyframes heroRing {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(124, 77, 255, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(124, 77, 255, 0);
-  }
-}
 
-/* Pinned, not in flow: these screens centre their content, and adding the toggle to
-   the column would push the hero off centre. */
+/* Pinned, not in flow: sits above the Spline canvas regardless of DOM order. */
 .themeToggle {
   position: absolute;
   top: 20px;

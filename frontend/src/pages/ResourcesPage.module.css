@@ -51,6 +51,7 @@
   color: var(--text-dim);
   cursor: pointer;
   white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
 }
 .tab:hover {
   color: var(--text);
@@ -76,6 +77,7 @@
   border: 1px solid var(--border-subtle);
   text-align: left;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
 }
 .recentCard:hover {
   background: var(--bg-rail-2);
@@ -125,6 +127,7 @@
   color: rgba(var(--text-rgb), 0.35);
   width: 20px;
   height: 20px;
+  transition: color var(--duration-fast) var(--ease);
 }
 .favBtn:hover {
   color: rgba(var(--text-rgb), 0.6);
@@ -159,6 +162,7 @@
   background: none;
   border: none;
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease);
 }
 .ghost:hover {
   color: var(--accent-text);
@@ -216,6 +220,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  transition: color var(--duration-fast) var(--ease);
 }
 .updateLink:hover {
   color: var(--accent-text);
@@ -238,6 +243,8 @@
   padding: 5px 12px;
   cursor: pointer;
   white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease),
+    background var(--duration-fast) var(--ease);
 }
 .categoryChip:hover {
   color: var(--text);
