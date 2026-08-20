@@ -168,7 +168,13 @@ _PROFILE_NOUNS = re.compile(
     r"\b(?:role|roles|title|position|designation|department|dept|team|division|"
     r"manager|supervisor|boss|report|reports|reporting|joined|join|joining|hire|hired|"
     r"start date|started|tenure|seniority|email|name|profile|access|permission|"
-    r"job title|job role|how long have i|worked here|working here|been here|admin|administrator|hr admin)\b"
+    r"job title|job role|how long have i|worked here|working here|been here|admin|administrator|hr admin|"
+    # "who do i work for" and "who is my employer" are about the asker as surely as
+    # "what is my role" is, and without them the record never reached the model: the
+    # reply was that the documents do not say who your manager is, while the record
+    # held it. "work for" and not "work", so "can I work from home" stays a policy
+    # question.
+    r"work for|works for|employer|employed by)\b"
 )
 
 
