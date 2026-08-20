@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Spline from '@splinetool/react-spline';
+import SplineHero from '../components/layout/SplineHero';
 import '@phosphor-icons/web/regular';
 import { useTheme } from '../context/ThemeContext';
 import styles from './WelcomePage.module.css';
@@ -69,7 +69,7 @@ export default function WelcomePage() {
             <div className={styles.ringInner} />
             <div className={styles.glow} />
             <div className={styles.slot} data-spline-slot="hero">
-              <Spline scene="https://prod.spline.design/bxW7UuZg2uVmhcJd/scene.splinecode" />
+              <SplineHero />
             </div>
             <span className={styles.floatDot1} />
             <span className={styles.floatDot2} />
