@@ -135,6 +135,10 @@ def _full(pattern: str) -> re.Pattern[str]:
 _ROLE_NOUN = r"(?:role|job title|title|position|designation|access level|permission level|access)"
 _DEPT_NOUN = r"(?:department|dept|team|division|business unit)"
 _MANAGER_NOUN = r"(?:manager|reporting manager|line manager|supervisor|boss)"
+
+# The employer the policies describe. Everyone using the assistant works here,
+# whatever tenant their sign-in belongs to.
+COMPANY_NAME = "BluePeak Technologies"
 _JOIN_NOUN = r"(?:hire date|start date|joining date|date of joining|start day)"
 
 PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -144,6 +148,13 @@ PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (_full(rf"{_WHAT}my (?:name|profile|details|info|information)|my (?:name|profile) is"), "who"),
     (_full(rf"{_WHAT}my {_DEPT_NOUN}|my {_DEPT_NOUN} is|(?:which|what) {_DEPT_NOUN} am i in|am i in (?:which|what) {_DEPT_NOUN}|where do i work"), "department"),
     (_full(rf"{_WHAT}my {_MANAGER_NOUN}|my {_MANAGER_NOUN} is|who(?:'s| is)? my {_MANAGER_NOUN}|who do i report to"), "manager"),
+    # "Who do I work for" reads as either the employer or the manager, so it answers
+    # both. Left ambiguous it did neither: the record was never attached, and the reply
+    # was that the documents do not say who your manager is — while the record had it.
+    (_full(r"(?:who|which company|what company) do i work for"
+           r"|who employs me|who(?:'s| is)? my employer|what(?:'s| is)? my employer"
+           r"|(?:which|what) company (?:do i (?:work for|belong to|report to)|am i (?:in|at|from|with))"
+           r"|i am from which company|which company am i from|am i a bluepeak employee"), "employer"),
     (_full(rf"{_WHAT}my {_JOIN_NOUN}|my {_JOIN_NOUN} is|when did i (?:join|start)|how long have i (?:been|worked)(?: here| with the company| at bluepeak)?"), "hire_date"),
     (_full(r"(?:what(?:'s| is)?|whats)?\s*my (?:email|email address|work email)"), "email"),
 ]
@@ -195,6 +206,9 @@ def profile_context(profile: UserProfile | None) -> str | None:
         return None
     facts = [
         f"Name: {person_name(profile.display_name)}",
+        # Stated outright so the model never infers an employer from the sign-in
+        # domain, which belongs to the tenant hosting the app.
+        f"Employer: {COMPANY_NAME}",
         f"Role: {ROLE_LABELS.get(profile.role, profile.role)}",
         f"Email: {profile.email}",
     ]
@@ -244,6 +258,12 @@ def profile_reply(message: str, profile: UserProfile | None) -> str | None:
         if not profile.department:
             return "Your employee record doesn't have a department set. HR can add it for you."
         return f"You're in the {profile.department} department. Your role there is {role}."
+    if topic == "employer":
+        parts = [f"You work for {COMPANY_NAME}."]
+        if profile.manager_name:
+            # Covers the other reading of the same question in the same breath.
+            parts.append(f"Your manager is {profile.manager_name}.")
+        return " ".join(parts)
     if topic == "manager":
         if not profile.manager_name:
             return "Your employee record doesn't list a manager. HR can confirm who you report to."
