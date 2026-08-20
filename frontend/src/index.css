@@ -45,6 +45,10 @@
   --bg-rail-2: #221d2e;
   --rail-text: #97a0c9;
 
+  /* Shared source of truth for AmbientBackground's dot grid, read at runtime via
+     getComputedStyle since a <canvas> can't consume a CSS custom property directly. */
+  --ambient-grid-dot: rgba(233, 233, 237, 0.13);
+
   color-scheme: dark;
 
   --font-heading: 'Instrument Sans', system-ui, sans-serif;
@@ -57,6 +61,11 @@
 
   --sidebar-w: 250px;
   --sidebar-w-collapsed: 64px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
 }
 
 /*
@@ -82,6 +91,8 @@
   --border-hairline: rgba(var(--overlay-rgb), 0.14);
   --border-subtle: rgba(var(--overlay-rgb), 0.1);
   --border-faint: rgba(var(--overlay-rgb), 0.07);
+
+  --ambient-grid-dot: rgba(34, 35, 46, 0.13);
 
   --text: #17131f;
   --text-muted: rgba(var(--text-rgb), 0.72);
@@ -117,6 +128,17 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Smooths the light/dark toggle: every element cross-fades its themed colors
+   instead of hard-cutting. Low specificity (bare *), so any component's own
+   transition (e.g. a faster hover transition on the same properties) wins
+   automatically — this only fills the gap for elements that don't set one. */
+*,
+*::before,
+*::after {
+  transition: background-color var(--duration-slow) var(--ease), border-color var(--duration-slow) var(--ease),
+    color var(--duration-slow) var(--ease);
 }
 
 html,

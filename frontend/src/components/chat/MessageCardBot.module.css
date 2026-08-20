@@ -106,6 +106,7 @@
   white-space: nowrap;
   display: inline-block;
   animation: tagIn 0.26s ease both;
+  transition: background var(--duration-fast) var(--ease);
 }
 @keyframes msgIn {
   from {
@@ -149,6 +150,7 @@
   border-radius: 999px;
   padding: 5px 11px;
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
 }
 .sourcesToggle:hover {
   color: #fff;
@@ -189,6 +191,7 @@
   line-height: 1.2;
   cursor: pointer;
   width: fit-content;
+  transition: background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
 }
 .linkChip:hover {
   background: rgba(var(--overlay-rgb), 0.26);
@@ -210,6 +213,7 @@
   line-height: 1.2;
   box-sizing: border-box;
   width: fit-content;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .formChip:hover {
   background: #f1ecff;
@@ -233,6 +237,7 @@
   padding: 7px 14px;
   cursor: pointer;
   align-self: flex-start;
+  transition: background var(--duration-fast) var(--ease);
 }
 .sendHrBtn:hover {
   background: var(--accent-hover);
@@ -287,6 +292,8 @@
   border-radius: 100px;
   padding: 6px 12px;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
 }
 .followupChip:hover {
   background: rgba(124, 77, 255, 0.14);

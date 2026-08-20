@@ -3,6 +3,22 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  animation: pageIn var(--duration-slow) var(--ease) both;
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wrap {
+    animation: none;
+  }
 }
 .thread {
   flex: 1;

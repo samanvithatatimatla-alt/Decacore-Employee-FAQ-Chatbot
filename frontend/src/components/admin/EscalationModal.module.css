@@ -8,6 +8,7 @@
   z-index: 50;
   padding: 20px;
   box-sizing: border-box;
+  animation: backdropIn var(--duration-fast) var(--ease) both;
 }
 .card {
   background: var(--surface);
@@ -19,6 +20,32 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  animation: modalIn var(--duration-base) var(--ease) both;
+}
+
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .card {
+    animation: none;
+  }
 }
 
 .header {
@@ -51,6 +78,7 @@
   align-items: center;
   justify-content: center;
   flex: none;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .iconBtn:hover {
   background: var(--surface-2);
@@ -83,6 +111,7 @@
   border: none;
   color: var(--text-dim);
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
 }
 .statusBtn:hover:not(:disabled) {
   color: var(--text);
@@ -138,6 +167,9 @@
 .textarea:focus {
   border-color: rgba(124, 77, 255, 0.55);
 }
+.textarea {
+  transition: border-color var(--duration-fast) var(--ease);
+}
 .error {
   font-size: 12.5px;
   color: var(--danger);
@@ -159,6 +191,7 @@
   border-radius: 9px;
   border: none;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .ghostBtn {
   background: var(--surface-2);

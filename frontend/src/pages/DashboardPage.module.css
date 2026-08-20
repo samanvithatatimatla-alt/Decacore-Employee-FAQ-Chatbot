@@ -45,6 +45,7 @@
   cursor: pointer;
   flex: none;
   padding: 6px 10px;
+  transition: color var(--duration-fast) var(--ease);
 }
 .ghostLink:hover {
   color: var(--accent-text);
@@ -163,6 +164,7 @@
   padding: 16px 0 0;
   text-align: left;
   align-self: flex-start;
+  transition: color var(--duration-fast) var(--ease);
 }
 .viewAll:hover {
   color: var(--accent-text);

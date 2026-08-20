@@ -8,7 +8,11 @@
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
-  background: var(--bg-chrome);
+  /* Transparent, not var(--bg-chrome): AmbientBackground is fixed behind the
+     whole app (z-index:-1) and needs an unobstructed path to the surface —
+     an opaque background here would paint over it. Sidebar keeps its own
+     solid fill, so the effect only shows through the top nav and .main. */
+  background: transparent;
 }
 .bodyRow {
   display: flex;
@@ -22,5 +26,5 @@
   min-width: 0;
   box-sizing: border-box;
   overflow: auto;
-  background: var(--bg-page);
+  background: transparent;
 }

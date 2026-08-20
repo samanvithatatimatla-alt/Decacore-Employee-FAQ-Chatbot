@@ -6,6 +6,22 @@
   display: flex;
   flex-direction: column;
   margin: 0 auto;
+  animation: pageIn var(--duration-slow) var(--ease) both;
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
 }
 .title {
   font-family: var(--font-heading);

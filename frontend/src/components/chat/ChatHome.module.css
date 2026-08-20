@@ -6,6 +6,22 @@
   justify-content: center;
   gap: 16px;
   padding: 28px 40px;
+  animation: pageIn var(--duration-slow) var(--ease) both;
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chatHome {
+    animation: none;
+  }
 }
 .greeting {
   font-family: var(--font-heading);
@@ -58,6 +74,7 @@
   padding: 10px 14px;
   border-radius: 10px;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .chip:hover {
   background: var(--surface-2);

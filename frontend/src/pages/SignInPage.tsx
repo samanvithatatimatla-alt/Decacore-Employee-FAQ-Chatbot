@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
 import PoweredBy from '../components/common/PoweredBy';
 import ThemeToggle from '../components/common/ThemeToggle';
+import AmbientBackground from '../components/layout/AmbientBackground';
 import { useAuth } from '../context/AuthContext';
 import { landingPath } from '../routes/landing';
 import styles from './SignInPage.module.css';
@@ -52,6 +53,7 @@ export default function SignInPage() {
 
   return (
     <div className={styles.screen}>
+      <AmbientBackground />
       <ThemeToggle className={styles.themeToggle} />
       <div className={styles.card}>
         <Avatar size={52} />
@@ -82,7 +84,7 @@ export default function SignInPage() {
         */}
         {entraEnabled ? (
           error && (
-            <p className={styles.hint} style={{ color: '#b42318' }} role="alert">
+            <p className={styles.hint} style={{ color: 'var(--danger)' }} role="alert">
               {error}
             </p>
           )
@@ -107,7 +109,7 @@ export default function SignInPage() {
             {signingIn ? 'Signing in…' : 'Sign in'}
           </button>
           {error && (
-            <p className={styles.hint} style={{ color: '#b42318' }} role="alert">
+            <p className={styles.hint} style={{ color: 'var(--danger)' }} role="alert">
               {error}
             </p>
           )}

@@ -36,6 +36,7 @@
   border: 1px solid rgba(var(--overlay-rgb), 0.1);
   border-radius: 10px;
   box-sizing: border-box;
+  transition: border-color var(--duration-fast) var(--ease);
 }
 .search:focus-within {
   border-color: rgba(124, 77, 255, 0.55);
@@ -80,6 +81,7 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
   overflow: hidden;
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
 }
 .tab:hover {
   color: var(--text);
@@ -111,6 +113,8 @@
   padding: 7px 9px;
   align-self: stretch;
   cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
 }
 .tabDelete:hover {
   opacity: 1;
@@ -198,6 +202,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .kebabBtn:hover {
   background: var(--surface-2);
@@ -214,6 +219,7 @@
   min-width: 190px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
   z-index: 20;
+  animation: dropdownIn var(--duration-fast) var(--ease) both;
 }
 .kebabItem {
   display: block;
@@ -226,6 +232,7 @@
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
 }
 .kebabItem:hover {
   background: var(--surface);
@@ -262,6 +269,7 @@
   padding: 7px 13px;
   cursor: pointer;
   white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
 }
 .addTab:hover {
   color: var(--accent-text);
@@ -281,6 +289,7 @@
   align-items: center;
   justify-content: center;
   z-index: 60;
+  animation: backdropIn var(--duration-fast) var(--ease) both;
 }
 .picker {
   width: min(360px, calc(100vw - 32px));
@@ -289,6 +298,42 @@
   border-radius: 14px;
   padding: 18px;
   box-sizing: border-box;
+  animation: modalIn var(--duration-base) var(--ease) both;
+}
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pickerBackdrop,
+  .picker,
+  .kebabMenu {
+    animation: none;
+  }
 }
 .pickerTitle {
   font-family: var(--font-heading);
@@ -323,6 +368,7 @@
   border-radius: 8px;
   padding: 9px 11px;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
 }
 .pickerItem:hover {
   background: var(--surface);
@@ -350,6 +396,7 @@
   border-radius: 8px;
   padding: 8px;
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease);
 }
 .pickerCancel:hover {
   color: var(--text);
@@ -365,6 +412,6 @@
 
 .uploadBtn[data-variant='secondary'] {
   background: transparent;
-  color: var(--accent, #7c5cff);
+  color: var(--accent);
   border: 1px solid currentColor;
 }
