@@ -1,12 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
 import PoweredBy from '../components/common/PoweredBy';
+import ThemeToggle from '../components/common/ThemeToggle';
 import styles from './WelcomePage.module.css';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
   return (
     <div className={styles.screen}>
+      <ThemeToggle className={styles.themeToggle} />
       <div className={styles.heroAvatar}>
         <Avatar size={96} borderWidth={3} className="ring" />
       </div>

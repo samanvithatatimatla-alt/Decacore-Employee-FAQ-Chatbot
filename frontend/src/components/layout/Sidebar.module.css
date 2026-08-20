@@ -64,12 +64,12 @@
 }
 .iconBtn.connectHr {
   background: rgba(124, 77, 255, 0.2);
-  color: #c7b3ff;
+  color: var(--accent-text);
   border-color: rgba(154, 115, 255, 0.3);
 }
 .iconBtn.connectHr:hover {
   background: rgba(124, 77, 255, 0.28);
-  color: #d8caff;
+  color: var(--accent-text-strong);
 }
 
 .sideScroll {
@@ -206,14 +206,14 @@
   margin-top: auto;
   flex: none;
   background: rgba(124, 77, 255, 0.16);
-  color: #c7b3ff;
+  color: var(--accent-text);
   font-weight: 600;
   box-shadow: inset 0 0 0 1px rgba(154, 115, 255, 0.3);
   border-radius: 12px;
 }
 .connectHrItem:hover {
   background: rgba(124, 77, 255, 0.24);
-  color: #d8caff;
+  color: var(--accent-text-strong);
 }
 
 .spacer {

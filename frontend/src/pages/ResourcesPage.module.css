@@ -5,7 +5,7 @@
   height: 42px;
   padding: 0 13px;
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
   border-radius: 10px;
   margin: 18px 0 0;
   box-sizing: border-box;
@@ -78,7 +78,7 @@
   cursor: pointer;
 }
 .recentCard:hover {
-  background: #221d2e;
+  background: var(--bg-rail-2);
 }
 .recentName {
   font-size: 12.5px;
@@ -90,7 +90,7 @@
 }
 .recentTime {
   font-size: 11px;
-  color: rgba(244, 242, 249, 0.45);
+  color: rgba(var(--text-rgb), 0.45);
 }
 
 .list {
@@ -106,7 +106,7 @@
   padding: 12px 14px;
   background: var(--surface);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--overlay-rgb), 0.06);
 }
 .row.highlighted {
   box-shadow: inset 0 0 0 1px rgba(154, 115, 255, 0.65);
@@ -122,18 +122,18 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  color: rgba(244, 242, 249, 0.35);
+  color: rgba(var(--text-rgb), 0.35);
   width: 20px;
   height: 20px;
 }
 .favBtn:hover {
-  color: rgba(244, 242, 249, 0.6);
+  color: rgba(var(--text-rgb), 0.6);
 }
 .favBtn.on {
   color: var(--accent-text);
 }
 .favBtn.on:hover {
-  color: #cbb8ff;
+  color: var(--accent-text);
 }
 .rowInfo {
   flex: 1;
@@ -176,7 +176,7 @@
 }
 .updateCard {
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--overlay-rgb), 0.06);
   border-radius: 12px;
   padding: 16px 18px;
 }

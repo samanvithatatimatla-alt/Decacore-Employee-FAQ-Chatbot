@@ -4,7 +4,7 @@
   align-items: stretch;
   height: 32px;
   flex: none;
-  background: #1a1622;
+  background: var(--bg-rail);
   border-bottom: 1px solid var(--border-subtle);
   overflow: hidden;
 }
@@ -14,7 +14,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--overlay-rgb), 0.03);
   border-right: 1px solid var(--border-subtle);
   font-family: var(--font-heading);
   font-size: 10px;
@@ -27,7 +27,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #97a0c9;
+  background: var(--rail-text);
   animation: tickerPulse 1.8s ease-in-out infinite;
 }
 .viewport {
@@ -68,7 +68,7 @@
   white-space: nowrap;
 }
 .item strong {
-  color: rgba(244, 242, 249, 0.82);
+  color: rgba(var(--text-rgb), 0.82);
   font-weight: 600;
 }
 /* Feed items link out; HR banners do not. Underline only on hover so the resting
@@ -79,12 +79,12 @@
 }
 .linked:hover strong,
 .linked:focus-visible strong {
-  color: #f4f2f9;
+  color: var(--text);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .linked:focus-visible {
-  outline: 2px solid #97a0c9;
+  outline: 2px solid var(--rail-text);
   outline-offset: -2px;
   border-radius: 4px;
 }
@@ -101,7 +101,7 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: rgba(244, 242, 249, 0.25);
+  background: rgba(var(--text-rgb), 0.25);
   margin-left: 8px;
 }
 

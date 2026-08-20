@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
 import PoweredBy from '../components/common/PoweredBy';
+import ThemeToggle from '../components/common/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { landingPath } from '../routes/landing';
 import styles from './SignInPage.module.css';
@@ -51,6 +52,7 @@ export default function SignInPage() {
 
   return (
     <div className={styles.screen}>
+      <ThemeToggle className={styles.themeToggle} />
       <div className={styles.card}>
         <Avatar size={52} />
         <h2 className={styles.title}>Sign in to QBot</h2>

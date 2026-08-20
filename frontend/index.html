@@ -10,6 +10,28 @@
       rel="stylesheet"
     />
     <title>QBot — Employee FAQ Assistant</title>
+    <!--
+      Applies the saved theme before the first paint. React sets this too, but not
+      until the bundle has parsed and mounted — long enough to flash a full dark screen
+      at someone who chose light. Keep the storage key in step with THEME_STORAGE_KEY
+      in src/context/ThemeContext.tsx.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('qbot-theme');
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          /* Private-mode localStorage throws; the CSS default (dark) still applies. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

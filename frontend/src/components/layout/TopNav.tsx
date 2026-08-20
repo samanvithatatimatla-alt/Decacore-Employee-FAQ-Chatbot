@@ -1,4 +1,5 @@
 import { useAppState } from '../../context/AppStateContext';
+import ThemeToggle from '../common/ThemeToggle';
 import styles from './TopNav.module.css';
 
 export default function TopNav() {
@@ -11,6 +12,7 @@ export default function TopNav() {
         <span />
       </button>
       <span className={styles.brand}>QBot</span>
+      <ThemeToggle className={styles.themeToggle} />
     </nav>
   );
 }

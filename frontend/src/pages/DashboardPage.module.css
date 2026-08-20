@@ -6,7 +6,7 @@
   margin-top: 20px;
   padding: 16px 20px;
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--overlay-rgb), 0.06);
   border-radius: 12px;
 }
 .miniIcon {
@@ -52,7 +52,7 @@
 
 .col {
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--overlay-rgb), 0.06);
   border-radius: 12px;
   padding: 18px 20px;
   margin-top: 20px;
@@ -81,7 +81,7 @@
 .barTrack {
   height: 7px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--overlay-rgb), 0.07);
   overflow: hidden;
 }
 .barFill {

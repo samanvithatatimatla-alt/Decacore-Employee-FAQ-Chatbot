@@ -81,7 +81,7 @@
   flex: none;
 }
 .chevron {
-  color: rgba(244, 242, 249, 0.25);
+  color: rgba(var(--text-rgb), 0.25);
   flex: none;
 }
 
@@ -115,7 +115,7 @@
 }
 .emptyDesc {
   font-size: 13px;
-  color: rgba(244, 242, 249, 0.5);
+  color: rgba(var(--text-rgb), 0.5);
   margin: 0 0 14px;
 }
 .emptyBtn {

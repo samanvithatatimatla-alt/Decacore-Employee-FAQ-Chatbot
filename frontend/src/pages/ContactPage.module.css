@@ -108,7 +108,7 @@
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 13.5px;
-  color: rgba(244, 242, 249, 0.85);
+  color: rgba(var(--text-rgb), 0.85);
 }
 .stripItem svg {
   color: var(--accent-text);

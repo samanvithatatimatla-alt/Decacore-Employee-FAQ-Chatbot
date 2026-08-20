@@ -1,27 +1,51 @@
+/*
+ * Dark is the default and stays the unqualified :root block, because that is what the
+ * app was designed in — every component was authored against it, so anything not yet
+ * themed still lands somewhere sensible.
+ *
+ * Two of these are channel triples rather than colours: --overlay-rgb and --text-rgb.
+ * Components use them as rgba(var(--overlay-rgb), 0.12), which keeps each hand-tuned
+ * alpha exactly as designed while letting the theme decide whether the base is light
+ * or dark. Without that, ~60 white-on-dark borders and text tints would have needed a
+ * named token each, and every one would have been a place for the two themes to drift.
+ */
 :root {
+  --overlay-rgb: 255, 255, 255;
+  --text-rgb: 244, 242, 249;
+
   --bg-page: #0f0c14;
   --bg-chrome: #131019;
   --surface: #1c1826;
   --surface-2: #241f31;
   --surface-2-alt: #241f30;
-  --border-hairline: rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-faint: rgba(255, 255, 255, 0.05);
+  --border-hairline: rgba(var(--overlay-rgb), 0.09);
+  --border-subtle: rgba(var(--overlay-rgb), 0.07);
+  --border-faint: rgba(var(--overlay-rgb), 0.05);
   --text: #f4f2f9;
-  --text-muted: rgba(244, 242, 249, 0.62);
-  --text-faint: rgba(244, 242, 249, 0.42);
-  --text-dim: rgba(244, 242, 249, 0.56);
-  --text-dimmer: rgba(244, 242, 249, 0.4);
+  --text-muted: rgba(var(--text-rgb), 0.62);
+  --text-faint: rgba(var(--text-rgb), 0.42);
+  --text-dim: rgba(var(--text-rgb), 0.56);
+  --text-dimmer: rgba(var(--text-rgb), 0.4);
   --accent: #7c4dff;
   --accent-hover: #8f63ff;
   --accent-text: #b79cff;
   --accent-text-2: #9a73ff;
+  /* Hover/emphasis step above --accent-text. Brighter on dark, darker on light. */
+  --accent-text-strong: #d8caff;
   --success: #7fd99a;
   --danger: #ff8a8a;
   --warn: #f2b04d;
   --paper-bg: #e9e7ef;
   --paper-text: #1b1b1b;
   --paper-text-muted: #4a4a4a;
+
+  /* The news strip and the darker inset panels, which sit a shade off the surrounding
+     chrome rather than matching it. */
+  --bg-rail: #1a1622;
+  --bg-rail-2: #221d2e;
+  --rail-text: #97a0c9;
+
+  color-scheme: dark;
 
   --font-heading: 'Instrument Sans', system-ui, sans-serif;
   --font-body: 'Hanken Grotesk', system-ui, sans-serif;
@@ -33,6 +57,62 @@
 
   --sidebar-w: 250px;
   --sidebar-w-collapsed: 64px;
+}
+
+/*
+ * Light theme. Only overrides — anything not listed here inherits from :root above,
+ * so a token added later is never silently missing in one theme.
+ *
+ * The accent purple is deliberately unchanged: it carries the brand, it already meets
+ * contrast on both grounds, and the 45 accent tints scattered through the components
+ * were tuned against it.
+ */
+:root[data-theme='light'] {
+  --overlay-rgb: 17, 13, 26;
+  --text-rgb: 26, 22, 38;
+
+  --bg-page: #f7f5fb;
+  --bg-chrome: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1eef8;
+  --surface-2-alt: #f0edf7;
+
+  /* Hairlines need more alpha on light ground than on dark to read as the same weight;
+     a 0.09 dark-on-white line is far fainter than a 0.09 white-on-near-black one. */
+  --border-hairline: rgba(var(--overlay-rgb), 0.14);
+  --border-subtle: rgba(var(--overlay-rgb), 0.1);
+  --border-faint: rgba(var(--overlay-rgb), 0.07);
+
+  --text: #17131f;
+  --text-muted: rgba(var(--text-rgb), 0.72);
+  --text-dim: rgba(var(--text-rgb), 0.66);
+  /* 0.62 is the floor that still clears AA (4.5:1) against --surface-2, the tinted
+     ground these sit on most often. Dark theme gets away with 0.42/0.40 because a
+     light tint fades far more slowly on near-black than a dark one does on white —
+     carrying the dark alphas across is what makes a naive light mode look washed out.
+     Verified by computing the ratios, not by eye. */
+  --text-faint: rgba(var(--text-rgb), 0.62);
+  --text-dimmer: rgba(var(--text-rgb), 0.62);
+
+  /* The dark-theme accent text tints are pale — legible on near-black, washed out on
+     white — so these darken rather than lighten. */
+  --accent-text: #5b31d6;
+  --accent-text-2: #6b3fe4;
+
+  /* #1f8f4d measured 4.12:1 on white — under AA for body text. */
+  --success: #18803f;
+  --danger: #c0392f;
+  --warn: #9a6410;
+
+  --accent-text-strong: #3d1ea8;
+
+  /* The news strip follows the theme rather than staying dark. Left dark it read as a
+     stray black bar pinned above a white app, not as branded chrome. */
+  --bg-rail: #efeaf9;
+  --bg-rail-2: #ebe6f6;
+  --rail-text: #5f5a7a;
+
+  color-scheme: light;
 }
 
 * {
