@@ -57,10 +57,12 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 16px;
+  /* Slightly wider and squarer-ended than a hairline burger: at 16x2 in a 32px
+     button the glyph read as small and tentative next to the wordmark. */
+  width: 18px;
   height: 2px;
   background: var(--text);
-  border-radius: 1px;
+  border-radius: 2px;
   /* Every bar shares one origin; translate does the spacing, so the fan and the
      chevron are both just different translate/rotate values. */
   transition:
@@ -83,40 +85,42 @@
    opens up rather than just drifting apart. */
 .burger:hover span:nth-child(1),
 .burger:focus-visible span:nth-child(1) {
-  translate: -50% calc(-50% - 8px);
+  translate: -50% calc(-50% - 7px);
 }
 .burger:hover span:nth-child(3),
 .burger:focus-visible span:nth-child(3) {
-  translate: -50% calc(-50% + 8px);
+  translate: -50% calc(-50% + 7px);
 }
 .burger:hover span:nth-child(2),
 .burger:focus-visible span:nth-child(2) {
-  width: 11px;
+  width: 9px;
 }
 
 /* Collapsed: fold into a chevron pointing the way the sidebar will go. */
 .burger.collapsed span:nth-child(1) {
   width: 11px;
-  translate: -50% calc(-50% - 3px);
-  rotate: -45deg;
+  /* Nudged 1px right of centre: a chevron's visual weight sits behind its point, so
+     a mathematically centred one looks like it has drifted left. */
+  translate: calc(-50% + 1px) calc(-50% - 3.5px);
+  rotate: -48deg;
 }
 .burger.collapsed span:nth-child(2) {
-  /* The shaft would sit across the arrowhead, so it steps aside. */
+  /* The shaft would lie across the arrowhead, so it collapses to nothing rather than
+     just fading — a half-visible stub behind the point looked like a rendering fault. */
   opacity: 0;
-  width: 6px;
+  width: 0;
 }
 .burger.collapsed span:nth-child(3) {
   width: 11px;
-  translate: -50% calc(-50% + 3px);
-  rotate: 45deg;
+  translate: calc(-50% + 1px) calc(-50% + 3.5px);
+  rotate: 48deg;
 }
-/* Hovering the chevron nudges it toward the direction it will open. */
-.burger.collapsed:hover span:nth-child(1),
-.burger.collapsed:hover span:nth-child(3) {
-  translate: calc(-50% + 2px) calc(-50% - 3px);
+/* Hovering the chevron leans it toward the edge it will open from. */
+.burger.collapsed:hover span:nth-child(1) {
+  translate: calc(-50% + 3px) calc(-50% - 3.5px);
 }
 .burger.collapsed:hover span:nth-child(3) {
-  translate: calc(-50% + 2px) calc(-50% + 3px);
+  translate: calc(-50% + 3px) calc(-50% + 3.5px);
 }
 
 @media (prefers-reduced-motion: reduce) {

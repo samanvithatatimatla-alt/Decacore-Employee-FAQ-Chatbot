@@ -22,6 +22,10 @@
   height: 100%;
 }
 
+/* Opacities were roughly doubled when the chrome became frosted glass: a backdrop
+   filter can only refract what is behind it, and at the original 0.11-0.16 under an
+   80px blur the area behind the sidebar was flat enough that blurring it was
+   indistinguishable from a solid fill. */
 .blob {
   position: absolute;
   border-radius: 50%;
@@ -35,7 +39,7 @@
   top: -12%;
   left: -8%;
   background: radial-gradient(circle, #8455f5 0%, transparent 70%);
-  opacity: calc(0.16 * var(--intensity));
+  opacity: calc(0.34 * var(--intensity));
   animation: drift1 52s ease-in-out infinite alternate;
 }
 .blob2 {
@@ -44,7 +48,7 @@
   top: 8%;
   right: -14%;
   background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
-  opacity: calc(0.13 * var(--intensity));
+  opacity: calc(0.30 * var(--intensity));
   animation: drift2 64s ease-in-out infinite alternate;
   animation-delay: -18s;
 }
@@ -54,7 +58,7 @@
   bottom: -16%;
   left: 16%;
   background: radial-gradient(circle, #6d33d6 0%, transparent 70%);
-  opacity: calc(0.14 * var(--intensity));
+  opacity: calc(0.32 * var(--intensity));
   animation: drift3 45s ease-in-out infinite alternate;
   animation-delay: -30s;
 }
@@ -64,7 +68,7 @@
   bottom: 4%;
   right: 10%;
   background: radial-gradient(circle, #4c3ab8 0%, transparent 70%);
-  opacity: calc(0.11 * var(--intensity));
+  opacity: calc(0.26 * var(--intensity));
   animation: drift4 70s ease-in-out infinite alternate;
   animation-delay: -44s;
 }

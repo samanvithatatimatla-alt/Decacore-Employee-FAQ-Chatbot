@@ -15,10 +15,10 @@
   border: 1px solid var(--border-hairline);
   border-radius: 16px;
   padding: 0;
-  max-width: 640px;
+  max-width: 960px;
   width: 100%;
   box-sizing: border-box;
-  max-height: 88vh;
+  height: 88vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -56,6 +56,12 @@
   justify-content: space-between;
   gap: 12px;
   padding: 20px 24px 14px;
+}
+.subtitle {
+  display: block;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 3px;
 }
 .headerTitleRow {
   display: flex;
@@ -149,22 +155,52 @@
   flex: none;
 }
 
-.paper {
-  margin: 0 24px 24px;
+/* The PDF fills this. --paper-bg deliberately stays light in both themes: a PDF page
+   is white, so a dark trough around it would frame it in a hard seam. */
+.viewer {
+  margin: 0 20px 20px;
   background: var(--paper-bg);
   border-radius: 10px;
-  padding: 22px 24px;
-  overflow: auto;
+  overflow: hidden;
   flex: 1;
-  min-height: 200px;
+  min-height: 0;
+  display: flex;
 }
-.paperTitle {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--paper-text);
-  margin: 0 0 14px;
+.frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Loading, failure, and the previous-version case all sit on the same light surface,
+   so they need the paper text colour rather than the theme's. */
+.notice {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px;
   text-align: center;
+  color: var(--paper-text-muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.notice p {
+  margin: 0;
+  max-width: 46ch;
+}
+.loading {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading { animation: none; }
 }
 /* Lives on the light .paper background, so it cannot borrow the dark-theme button
    colours — .versionTab's var(--text-dim) is near-white and was invisible here. */
@@ -187,10 +223,3 @@
   background: var(--accent-hover);
 }
 
-.paperBody {
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--paper-text-muted);
-  white-space: pre-wrap;
-  margin: 0;
-}
