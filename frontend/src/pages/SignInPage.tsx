@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Avatar from '../components/common/Avatar';
+import SceneAvatar from '../components/common/SceneAvatar';
 import PoweredBy from '../components/common/PoweredBy';
 import ThemeToggle from '../components/common/ThemeToggle';
 import AmbientBackground from '../components/layout/AmbientBackground';
@@ -56,7 +56,7 @@ export default function SignInPage() {
       <AmbientBackground />
       <ThemeToggle className={styles.themeToggle} />
       <div className={styles.card}>
-        <Avatar size={52} />
+        <SceneAvatar size={52} borderWidth={2} />
         <h2 className={styles.title}>Sign in to QBot</h2>
         <p className={styles.sub}>Use your company account to continue</p>
 

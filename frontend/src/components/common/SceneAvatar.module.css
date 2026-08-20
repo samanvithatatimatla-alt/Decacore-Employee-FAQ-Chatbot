@@ -1,0 +1,33 @@
+/* Same ring the flat Avatar wears, so the two are interchangeable in a layout. */
+.frame {
+  border-radius: 50%;
+  background: var(--surface-2);
+  border-style: solid;
+  border-color: var(--accent);
+  flex: none;
+  overflow: hidden;
+  position: relative;
+  /* The canvas is a sibling of page content and Spline gives it its own stacking
+     context; without this it can paint over the greeting beneath it. */
+  isolation: isolate;
+}
+
+/* The scene is authored as a wide hero, so the robot sits small in the middle of its
+   own frame. Oversizing and re-centring fills the circle with the subject instead of
+   with empty scene. 145% was picked by rendering it: 100% left it a speck, 190% cut
+   the top of its head off. */
+.scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 145%;
+  height: 145%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.scene :global(canvas) {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}

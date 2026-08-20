@@ -1,4 +1,4 @@
-import Avatar from '../common/Avatar';
+import SceneAvatar from '../common/SceneAvatar';
 import Composer from './Composer';
 import { useAuth } from '../../context/AuthContext';
 import { useAppState } from '../../context/AppStateContext';
@@ -20,7 +20,7 @@ export default function ChatHome() {
 
   return (
     <div className={styles.chatHome}>
-      <Avatar size={80} borderWidth={3} />
+      <SceneAvatar size={80} borderWidth={3} />
       <h2 className={styles.greeting}>Welcome, {user.firstName}. How can I help you today?</h2>
       <p className={styles.note}>Answers and resources are personalized for your role — {user.title}.</p>
       <div className={styles.composerWrap}>
