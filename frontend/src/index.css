@@ -48,6 +48,39 @@
    * app: the blur needs a moving, textured backdrop to refract. Over a flat colour it
    * would be indistinguishable from a solid fill.
    */
+  /*
+   * Liquid glass.
+   *
+   * Frosting alone never read as glass here, for two reasons the reference designs
+   * make obvious: theirs float as rounded panels with the backdrop visible *around*
+   * them, and they sit on photographs. A flush, edge-to-edge panel on a near-flat page
+   * has no rim to catch light and nothing behind it to bend.
+   *
+   * So the panel detaches and floats, and the rim is built explicitly:
+   *   --lg-rim   the lit top-left edge and shaded bottom-right one, which is what
+   *              gives the pane thickness rather than just tint
+   *   --lg-glow  an inner bloom just inside the rim, where light pools in real glass
+   *   --lg-lift  the drop shadow that separates it from the page
+   * brightness() in the filter is the "liquid" part: glass brightens what is behind it
+   * as well as blurring it, and without it the panel reads as a grey filter.
+   */
+  --lg-filter: blur(30px) saturate(200%) brightness(1.12);
+  --lg-tint: rgba(38, 32, 56, 0.3);
+  --lg-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.38),
+    inset -1px 0 0 rgba(0, 0, 0, 0.24);
+  --lg-glow: inset 0 2px 22px rgba(255, 255, 255, 0.09);
+  --lg-lift: 0 18px 48px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --lg-sheen: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 26%,
+    rgba(255, 255, 255, 0) 52%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+
   --glass-bg: rgba(30, 25, 44, 0.34);
   --glass-edge-top: rgba(255, 255, 255, 0.22);
   --glass-edge-bottom: rgba(0, 0, 0, 0.3);
@@ -149,6 +182,25 @@
 
   /* More opaque than the dark theme: white glass over a pale backdrop has far less
      contrast to work with, and at 0.55 the text behind it showed through as smudge. */
+  /* Light glass needs a whiter tint and a much softer lift; the dark theme's shadow
+     reads as a smudge on a pale page. */
+  --lg-filter: blur(30px) saturate(190%) brightness(1.06);
+  --lg-tint: rgba(255, 255, 255, 0.46);
+  --lg-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 1px 0 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(17, 13, 26, 0.1),
+    inset -1px 0 0 rgba(17, 13, 26, 0.06);
+  --lg-glow: inset 0 2px 20px rgba(255, 255, 255, 0.6);
+  --lg-lift: 0 14px 38px rgba(17, 13, 26, 0.1), 0 2px 6px rgba(17, 13, 26, 0.06);
+  --lg-sheen: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.3) 24%,
+    rgba(124, 77, 255, 0.05) 56%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+
   --glass-bg: rgba(255, 255, 255, 0.5);
   --glass-edge-top: rgba(255, 255, 255, 0.95);
   --glass-edge-bottom: rgba(17, 13, 26, 0.1);

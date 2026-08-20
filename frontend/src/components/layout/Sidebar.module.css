@@ -5,21 +5,19 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border-right: 1px solid var(--border-hairline);
-  overflow: visible;
+  /* Floating, not flush. This is the single change that makes it read as glass: a
+     panel welded to the window edge has no rim, and the backdrop it is supposedly
+     refracting is never visible beside it for comparison. */
+  margin: 10px 0 10px 10px;
+  border-radius: 18px;
+  overflow: hidden;
   transition: width 0.2s ease;
   box-sizing: border-box;
 
-  /* Sheen layered over the tint: gradient first so it sits on top of the fill. */
-  background: var(--glass-sheen), var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  /* Lit top lip, bright inner left edge, shaded far edge — the three lines that make
-     it read as a pane with thickness rather than a tinted rectangle. */
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge-top),
-    inset 1px 0 0 rgba(255, 255, 255, 0.06),
-    inset -1px 0 0 var(--glass-edge-bottom);
+  background: var(--lg-sheen), var(--lg-tint);
+  backdrop-filter: var(--lg-filter);
+  -webkit-backdrop-filter: var(--lg-filter);
+  box-shadow: var(--lg-rim), var(--lg-glow), var(--lg-lift);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -28,6 +26,11 @@
   .sidebar {
     background: var(--bg-chrome);
   }
+}
+
+/* The panel scrolls its own content, so the rounded corners have to clip it. */
+.sideScroll {
+  border-radius: inherit;
 }
 
 /*
@@ -46,12 +49,15 @@
   font-size: 14px;
   /* Glass as well: an opaque panel sitting on a frosted one reads as a patch, not as
      a control. */
-  background: var(--glass-sheen), var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: inset 0 1px 0 var(--glass-edge-top);
+  /* Channel tokens, not literal white: on the dark theme --overlay-rgb *is* white, but
+     hardcoding it left this pill white-on-white and all but invisible once the light
+     panel went white too. */
+  background: var(--lg-sheen), rgba(var(--overlay-rgb), 0.07);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge-top),
+    inset 0 -1px 0 var(--glass-edge-bottom);
   color: var(--text);
-  border: 1px solid var(--border-hairline);
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
   border-radius: 12px;
   height: 42px;
   padding: 0;
