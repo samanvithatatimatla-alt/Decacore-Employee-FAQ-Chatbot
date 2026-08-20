@@ -5,6 +5,7 @@ import shutil
 import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import quote
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -154,7 +155,17 @@ class StorageService:
             content_type=_guess_type(filename or name),
             content_disposition=f'inline; filename="{Path(filename or name).name}"',
         )
-        return f"{settings.azure_storage_account_url.rstrip('/')}/{container}/{name}?{sas}"
+        # The blob name goes into a URL, so it has to be percent-encoded. Every policy
+        # PDF in the corpus is named like "Attendance & Timekeeping Policy.pdf": the
+        # spaces make the URL invalid outright, and a raw "&" is ambiguous next to the
+        # SAS query string. The forms, named "01_Leave_Request_Form.pdf", have neither —
+        # which is exactly why Resources could open every form and no policy.
+        #
+        # Only the URL is encoded. The signature above is generated from the decoded
+        # name because that is what Azure canonicalises to when it verifies the SAS;
+        # encoding before signing would produce a signature for a blob named "%20".
+        quoted = quote(name, safe="/")
+        return f"{settings.azure_storage_account_url.rstrip('/')}/{container}/{quoted}?{sas}"
 
 
 storage_service = StorageService()
