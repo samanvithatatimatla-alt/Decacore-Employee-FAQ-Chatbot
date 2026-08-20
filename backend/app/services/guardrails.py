@@ -135,10 +135,6 @@ def _full(pattern: str) -> re.Pattern[str]:
 _ROLE_NOUN = r"(?:role|job title|title|position|designation|access level|permission level|access)"
 _DEPT_NOUN = r"(?:department|dept|team|division|business unit)"
 _MANAGER_NOUN = r"(?:manager|reporting manager|line manager|supervisor|boss)"
-
-# The employer these policies belong to. Everyone using the assistant works here,
-# whichever tenant their sign-in account lives in.
-COMPANY_NAME = "BluePeak Technologies"
 _JOIN_NOUN = r"(?:hire date|start date|joining date|date of joining|start day)"
 
 PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -148,14 +144,6 @@ PROFILE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (_full(rf"{_WHAT}my (?:name|profile|details|info|information)|my (?:name|profile) is"), "who"),
     (_full(rf"{_WHAT}my {_DEPT_NOUN}|my {_DEPT_NOUN} is|(?:which|what) {_DEPT_NOUN} am i in|am i in (?:which|what) {_DEPT_NOUN}|where do i work"), "department"),
     (_full(rf"{_WHAT}my {_MANAGER_NOUN}|my {_MANAGER_NOUN} is|who(?:'s| is)? my {_MANAGER_NOUN}|who do i report to"), "manager"),
-    # "Who do I work for" means either the employer or the manager, and answering it
-    # as neither is the worst of the three: unmatched, the record was never attached
-    # and the reply was that the documents do not say who your manager is — when the
-    # record holds exactly that. Both readings are short, so answer both.
-    (_full(r"(?:who|which company|what company) do i work for"
-           r"|who employs me|who(?:'s| is)? my employer|what(?:'s| is)? my employer"
-           r"|(?:which|what) company (?:do i (?:work for|belong to|report to)|am i (?:in|at|from|with))"
-           r"|i am from which company|which company am i from|am i a bluepeak employee"), "employer"),
     (_full(rf"{_WHAT}my {_JOIN_NOUN}|my {_JOIN_NOUN} is|when did i (?:join|start)|how long have i (?:been|worked)(?: here| with the company| at bluepeak)?"), "hire_date"),
     (_full(r"(?:what(?:'s| is)?|whats)?\s*my (?:email|email address|work email)"), "email"),
 ]
@@ -190,34 +178,12 @@ def mentions_self(message: str) -> bool:
     return bool(_FIRST_PERSON.search(norm) and _PROFILE_NOUNS.search(norm))
 
 
-EMPLOYER_QUESTION = next(pattern for pattern, topic in PROFILE_PATTERNS if topic == "employer")
-
-
-def employer_reply(message: str, profile: UserProfile | None) -> str | None:
-    """Fixed answer for "who do I work for", or None.
-
-    Answered without the model on purpose. The question has two readings, and handed to
-    the model with only the record for context it picked one — replying "You report to
-    Maya Reynolds" to someone asking which company employs them. The employer is not a
-    judgement call, so it does not need a judgement.
-    """
-    if profile is None or not EMPLOYER_QUESTION.match(_normalize(message)):
-        return None
-    parts = [f"You work for {COMPANY_NAME}."]
-    if profile.manager_name:
-        parts.append(f"Your manager is {profile.manager_name}.")
-    return " ".join(parts)
-
-
 def profile_context(profile: UserProfile | None) -> str | None:
     """The asker's own record, formatted for the model's prompt."""
     if profile is None:
         return None
     facts = [
         f"Name: {profile.display_name}",
-        # Stated outright. The sign-in address belongs to the tenant hosting the app,
-        # and left to infer an employer from it the model answered with that instead.
-        f"Employer: {COMPANY_NAME}",
         f"Role: {ROLE_LABELS.get(profile.role, profile.role)}",
         f"Email: {profile.email}",
     ]
@@ -267,11 +233,6 @@ def profile_reply(message: str, profile: UserProfile | None) -> str | None:
         if not profile.department:
             return "Your employee record doesn't have a department set. HR can add it for you."
         return f"You're in the {profile.department} department. Your role there is {role}."
-    if topic == "employer":
-        parts = [f"You work for {COMPANY_NAME}."]
-        if profile.manager_name:
-            parts.append(f"Your manager is {profile.manager_name}.")
-        return " ".join(parts)
     if topic == "manager":
         if not profile.manager_name:
             return "Your employee record doesn't list a manager. HR can confirm who you report to."

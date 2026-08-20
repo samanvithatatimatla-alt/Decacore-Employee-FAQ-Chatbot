@@ -12,7 +12,6 @@ from .form_hints import suggest_form
 from .guardrails import (
     UserProfile,
     canned_reply,
-    employer_reply,
     mentions_self,
     only_about_self,
     profile_context,
@@ -230,12 +229,6 @@ def _supporting_hits(question: str, hits: list[dict]) -> list[dict]:
 
 class RagService:
     def stream(self, db: Session, question: str, role: str, profile: UserProfile | None = None) -> RagStream:
-        # Whoever is asking, and whichever backend is running: the employer is a fact
-        # about the deployment, not something to be inferred per answer.
-        employer = employer_reply(question, profile)
-        if employer is not None:
-            return RagStream(citations=[], confidence=1.0, should_escalate=False, chunks=iter([employer]))
-
         # Fixed answers from the employee record, used when there is no model to hand
         # the record to. With LLM_BACKEND=azure the same questions take the richer path
         # below instead: the model gets the record as context and answers in any

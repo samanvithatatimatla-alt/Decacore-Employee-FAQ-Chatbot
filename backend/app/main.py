@@ -25,6 +25,7 @@ from .routers import (
     requests,
 )
 from .seed import seed_all
+from .services.storage import storage_service
 
 logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
 
@@ -70,6 +71,15 @@ async def lifespan(app: FastAPI):
             result = seed_all(db)
             if any(result.values()):
                 logger.info("Seeded demo data: %s", result)
+    # Sign a throwaway link so the credential and the delegation key are already in
+    # hand when someone opens a document. Cold, that pair costs about 2.5 seconds,
+    # which the employee spends looking at an empty tab; warm, it is instant. Failure
+    # here is not worth blocking startup for — the first real open just pays the cost.
+    if settings.storage_backend == "azure":
+        try:
+            storage_service.get_read_url("warmup/none.pdf")
+        except Exception:
+            logger.info("Storage warm-up skipped", exc_info=True)
     yield
 
 

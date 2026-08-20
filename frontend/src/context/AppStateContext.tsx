@@ -579,13 +579,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
    */
   const openInTab = useCallback(async (resolve: () => Promise<string>) => {
     const tab = window.open('', '_blank');
+    // The tab exists before the URL does, so say what it is waiting for. Left empty it
+    // renders as a stark white page for as long as the signed link takes to come back,
+    // which reads as a broken link rather than a slow one.
+    if (tab) {
+      tab.document.write(
+        `<!doctype html><meta charset="utf-8"><title>Opening document…</title>` +
+          `<body style="margin:0;display:grid;place-items:center;height:100vh;` +
+          `background:#141317;color:#cfcbd6;font:15px system-ui,-apple-system,sans-serif">` +
+          `<div>Opening document…</div>`,
+      );
+      tab.document.close();
+    }
     try {
       const url = await resolve();
-      if (tab) tab.location.href = url;
+      if (tab) tab.location.replace(url);
       else window.open(url, '_blank');
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'Unknown error';
-      if (tab) tab.document.write(`<p style="font:14px system-ui;padding:24px">Could not open this document — ${reason}</p>`);
+      if (tab) {
+        tab.document.body.innerHTML =
+          `<div style="max-width:34rem;text-align:center">Could not open this document — ${reason}</div>`;
+      }
     }
   }, []);
 
