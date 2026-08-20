@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SplineHero from '../components/layout/SplineHero';
+import { POWERED_BY } from '../components/common/PoweredBy';
 import '@phosphor-icons/web/regular';
 import { useTheme } from '../context/ThemeContext';
 import styles from './WelcomePage.module.css';
@@ -95,7 +96,7 @@ export default function WelcomePage() {
 
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
-          Powered by <span className={styles.footerName}>Decacore</span>
+          Powered by <span className={styles.footerName}>{POWERED_BY}</span>
         </div>
       </footer>
     </div>
