@@ -125,6 +125,7 @@ type Action =
       escalationOffered: boolean;
       noPolicyMatch: boolean;
       form?: FormRef;
+      tool?: { name: string; url: string; blurb: string };
       messageApiId: string;
     }
   | { type: 'SET_CONVERSATION_ID'; id: string }
@@ -218,6 +219,7 @@ function reducer(state: AppState, action: Action): AppState {
         tags: action.tags,
         escalated: action.escalationOffered,
         form: action.form,
+        tool: action.tool,
         // Two separate questions, previously conflated into one. The card *style*
         // asks "is this a grounded answer" — anything with citations is, and should
         // look like every other answer rather than flipping to the failure card. The
@@ -527,6 +529,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
                 d.form && d.form.available
                   ? { mode: 'resources' as const, formId: numericId(d.form.form_id), title: d.form.title }
                   : undefined,
+              tool: d.tool ?? undefined,
               messageApiId: d.message_id,
             });
             // The conversation list only changes once a reply exists, so refresh

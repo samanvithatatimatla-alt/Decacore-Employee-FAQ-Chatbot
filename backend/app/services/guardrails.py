@@ -178,12 +178,23 @@ def mentions_self(message: str) -> bool:
     return bool(_FIRST_PERSON.search(norm) and _PROFILE_NOUNS.search(norm))
 
 
+def person_name(display_name: str) -> str:
+    """The employee's name without the directory's company suffix.
+
+    Entra returns "Archit Jaiswal (Quadrant Technologies)" — the tenant that hosts the
+    app, not the fictional employer the policies describe. Handed to the model as-is it
+    was taken as evidence of who the person works for, and the bot told a BluePeak
+    employee they worked for Quadrant.
+    """
+    return re.sub(r"\s*\([^)]*\)\s*$", "", display_name).strip() or display_name
+
+
 def profile_context(profile: UserProfile | None) -> str | None:
     """The asker's own record, formatted for the model's prompt."""
     if profile is None:
         return None
     facts = [
-        f"Name: {profile.display_name}",
+        f"Name: {person_name(profile.display_name)}",
         f"Role: {ROLE_LABELS.get(profile.role, profile.role)}",
         f"Email: {profile.email}",
     ]
@@ -198,7 +209,7 @@ def profile_context(profile: UserProfile | None) -> str | None:
 
 def _profile_lines(profile: UserProfile) -> list[str]:
     role = ROLE_LABELS.get(profile.role, profile.role)
-    lines = [f"You're signed in as {profile.display_name} ({role})."]
+    lines = [f"You're signed in as {person_name(profile.display_name)} ({role})."]
     if profile.department:
         lines.append(f"Department: {profile.department}.")
     if profile.manager_name:
@@ -220,7 +231,7 @@ def profile_reply(message: str, profile: UserProfile | None) -> str | None:
 
     role = ROLE_LABELS.get(profile.role, profile.role)
     if topic == "role":
-        parts = [f"You're signed in as {profile.display_name}, and your role is {role}."]
+        parts = [f"You're signed in as {person_name(profile.display_name)}, and your role is {role}."]
         if profile.department:
             parts.append(f"You sit in the {profile.department} department.")
         if profile.role == "HRAdmin":

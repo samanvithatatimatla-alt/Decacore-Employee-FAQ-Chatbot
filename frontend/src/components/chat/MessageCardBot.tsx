@@ -160,6 +160,21 @@ export default function MessageCardBot({ message: m, onFollowUp, streaming }: Pr
             </div>
           )}
 
+          {m.tool && (
+            <div className={styles.hrBtnRow}>
+              {/* Below the form, because the order is: here is the form, here is where
+                  it goes. Opens in a new tab so the conversation is not lost. */}
+              <a
+                className={styles.linkChip}
+                href={m.tool.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {`Open ${m.tool.name} to ${m.tool.blurb} ↗`}
+              </a>
+            </div>
+          )}
+
           {m.form?.mode === 'external' && (
             <div className={styles.hrBtnRow}>
               <a className={styles.formChip} href={m.form.url} target="_blank" rel="noopener noreferrer">

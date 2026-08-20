@@ -446,6 +446,8 @@ export interface ChatStreamHandlers {
      * Absent on older backends.
      */
     form?: { mode: 'resources' | 'external'; form_id: string; title: string; available: boolean } | null;
+    /** Internal system to submit the request through. Only sent alongside a form. */
+    tool?: { name: string; url: string; blurb: string } | null;
     /** Server-side breakdown of where the wait went. Absent on older backends. */
     timings?: { retrieval_ms: number; first_token_ms: number | null; total_ms: number };
   }) => void;

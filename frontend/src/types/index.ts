@@ -40,6 +40,8 @@ export interface ChatMessage {
   tags?: string[];
   form?: FormRef;
   extLink?: string;
+  /** Internal system to raise the request in, shown beside the form chip. */
+  tool?: { name: string; url: string; blurb: string };
   followUps?: string[];
   /** The backend offered escalation for this answer (low confidence or no policy match). */
   escalated?: boolean;

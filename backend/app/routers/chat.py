@@ -21,6 +21,7 @@ from ..services.guardrails import UserProfile, answer_admits_gap
 from ..services.notifications import notification_service
 from ..services.rag import rag_service, verified_citations
 from ..services.rate_limit import chat_rate_limiter
+from ..services.tool_links import suggest_tool
 
 router = APIRouter(prefix="/api", tags=["chat"])
 logger = logging.getLogger("decacore")
@@ -168,6 +169,9 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "no_policy_match": prepared.no_policy_match,
                 # Separate from citations on purpose: a blank form is not a source.
                 "form": form_payload(prepared.form),
+                # Where to submit it. Only appears alongside a form, so the answer
+                # never points at a system without saying what to file there.
+                "tool": suggest_tool(prepared.form),
                 "timings": timings,
             })
 
