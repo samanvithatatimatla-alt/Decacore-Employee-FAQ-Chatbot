@@ -171,6 +171,9 @@ export function mapAnnouncement(a: ApiAnnouncement): Announcement {
     date: formatDate(a.published_at),
     headline: a.title,
     detail: a.body,
+    // Nullable on the wire, optional in the UI type — `?? undefined` keeps the
+    // component's `item.url && ...` check honest instead of it seeing a null.
+    url: a.url ?? undefined,
   };
 }
 

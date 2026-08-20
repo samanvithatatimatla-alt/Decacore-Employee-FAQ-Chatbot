@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
+import PoweredBy from '../components/common/PoweredBy';
 import { useAuth } from '../context/AuthContext';
 import { landingPath } from '../routes/landing';
 import styles from './SignInPage.module.css';
@@ -116,6 +117,7 @@ export default function SignInPage() {
         <button className={styles.backLink} onClick={() => navigate('/')}>
           ← Back to welcome
         </button>
+        <PoweredBy className={styles.poweredBy} />
       </div>
     </div>
   );

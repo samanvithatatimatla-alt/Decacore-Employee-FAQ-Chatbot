@@ -176,3 +176,9 @@
 .backLink:hover {
   color: var(--text);
 }
+
+/* Inside the card, under the back link. The card is the only centred column on this
+   screen, so putting it outside would land it beside the card, not beneath it. */
+.poweredBy {
+  margin-top: 16px;
+}

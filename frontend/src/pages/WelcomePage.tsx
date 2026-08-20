@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';
+import PoweredBy from '../components/common/PoweredBy';
 import styles from './WelcomePage.module.css';
 
 export default function WelcomePage() {
@@ -22,6 +23,7 @@ export default function WelcomePage() {
       <button className={styles.cta} onClick={() => navigate('/signin')}>
         Sign in to continue
       </button>
+      <PoweredBy className={styles.poweredBy} />
     </div>
   );
 }

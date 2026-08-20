@@ -175,6 +175,10 @@ export interface ApiAnnouncement {
   title: string;
   body: string;
   published_at: string | null;
+  /** "hr" for a banner written in the admin UI, a feed slug for an ingested post. */
+  source: string;
+  /** Set only on ingested items; the ticker turns those into links. */
+  url: string | null;
 }
 
 export interface ApiTopQuestion {

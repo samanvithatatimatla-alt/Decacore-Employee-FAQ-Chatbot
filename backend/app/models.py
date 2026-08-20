@@ -203,6 +203,18 @@ class NewsAnnouncement(Base):
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
+    # Who owns this row. "hr" is a banner someone wrote in the admin UI; anything else
+    # is a feed slug and means the nightly ingest owns it. The ingest only ever touches
+    # rows matching its own slug, so it cannot unpublish or overwrite HR's work — and
+    # HR deleting a feed item is fine too, because the next run re-creates it.
+    source: Mapped[str] = mapped_column(String(40), default="hr", index=True)
+    # The feed's own identifier for the item (an RSS <guid>), unique within a source.
+    # This is what makes a re-run idempotent: the same post updates its row instead of
+    # appending a second copy of itself every night.
+    external_id: Mapped[str | None] = mapped_column(String(500), nullable=True, index=True)
+    # Where the item came from, so the ticker can link out to the original post.
+    url: Mapped[str | None] = mapped_column(String(800), nullable=True)
+
 
 class DocumentVersion(Base):
     """History for a policy document, so an updated policy can be diffed and summarised."""

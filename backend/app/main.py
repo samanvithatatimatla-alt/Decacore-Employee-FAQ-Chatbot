@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, SessionLocal, engine
+from .migrations import ensure_columns
 from .routers import (
     admin,
     announcements,
@@ -52,6 +53,12 @@ logger = logging.getLogger("decacore")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # create_all adds missing tables but never missing columns, so a database that
+    # booted before a model gained a field keeps the old shape forever. See
+    # migrations.py — it is add-only and a no-op once applied.
+    added = ensure_columns(engine)
+    if added:
+        logger.info("Added missing columns: %s", ", ".join(added))
     if settings.auto_seed:
         with SessionLocal() as db:
             # Run every seeder on each boot, not just on an empty database. Each one

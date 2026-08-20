@@ -139,6 +139,10 @@ class AnnouncementOut(ORMModel):
     department: str | None = None
     published_at: datetime | None = None
     expires_at: datetime | None = None
+    # "hr" for a banner written in the admin UI, a feed slug for an ingested post.
+    source: str = "hr"
+    # Present only on ingested items, which the ticker renders as a link.
+    url: str | None = None
 
 
 class AnnouncementIn(BaseModel):

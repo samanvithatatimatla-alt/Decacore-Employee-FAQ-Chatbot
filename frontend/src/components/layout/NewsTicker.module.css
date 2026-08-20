@@ -62,6 +62,24 @@
   color: rgba(244, 242, 249, 0.82);
   font-weight: 600;
 }
+/* Feed items link out; HR banners do not. Underline only on hover so the resting
+   bar still reads as one strip of text rather than a row of links. */
+.linked {
+  text-decoration: none;
+  cursor: pointer;
+}
+.linked:hover strong,
+.linked:focus-visible strong {
+  color: #f4f2f9;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.linked:focus-visible {
+  outline: 2px solid #97a0c9;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
 .itemDate {
   font-size: 10px;
   letter-spacing: 0.08em;

@@ -49,5 +49,10 @@ locals {
     openai_key   = "${azurerm_key_vault.main.vault_uri}secrets/azure-openai-api-key"
     search_key   = "${azurerm_key_vault.main.vault_uri}secrets/azure-search-api-key"
     database_url = "${azurerm_key_vault.main.vault_uri}secrets/database-url"
+    # Shared secret the nightly news-refresh workflow presents. Same value goes in the
+    # NEWS_REFRESH_TOKEN GitHub Actions secret. Create it by hand, as with the others:
+    #   az keyvault secret set --vault-name qthr-decacore-kv \
+    #     --name news-refresh-token --value "$(openssl rand -hex 32)"
+    news_refresh = "${azurerm_key_vault.main.vault_uri}secrets/news-refresh-token"
   }
 }

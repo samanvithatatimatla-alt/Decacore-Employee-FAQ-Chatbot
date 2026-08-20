@@ -1,0 +1,61 @@
+# Nightly company-news ingest.
+#
+# Calls the backend, which fetches Quadrant's public RSS feed and updates the rows
+# behind the news ticker. GitHub Actions rather than an Azure Function because there
+# is no Function App deployed — the purge timer in backend/functions/ has never been
+# provisioned — and standing one up for a single nightly HTTP call is more
+# infrastructure than this needs. Scheduled workflows are free on this repo, re-runnable
+# from the Actions tab, and email on failure.
+#
+# The endpoint is idempotent: it upserts on the feed's own guid, so a re-run after a
+# failed night changes nothing that already landed.
+
+name: news-refresh
+
+on:
+  schedule:
+    # 06:00 UTC daily — after the blog's own publishing hours, and outside the window
+    # when anyone is demoing the app. GitHub queues scheduled runs on a busy shared
+    # pool, so treat the time as "some point in that hour", not a guarantee.
+    - cron: '0 6 * * *'
+  # So a human can force a refresh without waiting for the small hours.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    name: Refresh news ticker
+    steps:
+      - name: Call refresh endpoint
+        env:
+          API_BASE: https://qthr-faq-api.azurewebsites.net
+          # Must match NEWS_REFRESH_TOKEN in the App Service settings. Add it under
+          # Settings -> Secrets and variables -> Actions. Without it the endpoint
+          # refuses the header path entirely, and this job fails 401.
+          REFRESH_TOKEN: ${{ secrets.NEWS_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${REFRESH_TOKEN}" ]; then
+            echo "NEWS_REFRESH_TOKEN is not set on this repository." >&2
+            exit 1
+          fi
+
+          # --fail-with-body so a non-2xx still prints what the server said; -sS keeps
+          # the progress meter out of the log but leaves real errors visible.
+          # Separate the body from the status so both can be reported.
+          response=$(curl -sS --fail-with-body \
+            --max-time 120 \
+            --retry 3 --retry-delay 20 --retry-connrefused \
+            -X POST "${API_BASE}/api/admin/news/refresh" \
+            -H "X-Refresh-Token: ${REFRESH_TOKEN}" \
+            -H 'Content-Length: 0')
+
+          echo "$response"
+          echo "### News ticker refreshed" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$response" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

@@ -15,7 +15,7 @@ FastAPI backend for the BluePeak/DecaCore employee FAQ project. It is intentiona
 - Azure OpenAI/Foundry v1 adapter for embeddings, categorization, and grounded answers
 - HR document upload, which approves and indexes in one step so a new policy is answerable immediately, plus AI categorization, deletion, secure read URLs, and optional per-user dynamic PDF watermarking
 - Per-document version history and new-version upload, with the change summary that drives the employee-facing "Recently Updated Policies" list and version compare
-- Company news announcements for the ticker, HR forms, and per-user favourites and recently-viewed
+- Company news announcements for the ticker — written by HR, or ingested nightly from a public RSS feed (see "Company news feed" below) — plus HR forms and per-user favourites and recently-viewed
 - HR inbox for escalated chat questions: status filters, search, New/In Progress/Resolved transitions, and an HR reply that emails the employee
 - Employee request submission with receipt upload, manager routing, priority, approve/deny, self-approval block, required denial comment
 - HR dashboard metrics/charts
@@ -24,11 +24,17 @@ FastAPI backend for the BluePeak/DecaCore employee FAQ project. It is intentiona
 - 7-day purge service, audit log, manual API endpoint, and Azure Function timer/HTTP entry points
 - Seed data includes the supplied 100 employees and 15 policy PDFs. Approved documents are indexed; Bereavement starts pending; Travel Draft starts rejected.
 
+Note the deployed app runs a larger corpus than the local seed: 31 policies and 10
+fillable forms, loaded by `scripts/load_corpus_v3.py` from `data/seed_v3/`. That script
+exists because `POST /api/documents` cannot set an external document id, version,
+effective date, supersession or source url — it hands the category to the LLM — and the
+v3 metadata comes from the block printed on page 1 of each PDF.
+
 
 ## Handoff files
 
 - `FRONTEND_HANDOFF.md` - exact frontend integration flow and SSE example
-- `AZURE_TODO.md` - the Azure values/portal checks still needed
+- `AZURE_TODO.md` - which adapters are live in Azure, and the one still outstanding
 - `openapi.json` - generated API contract
 - `run-local.ps1` - Windows local startup helper
 
@@ -45,7 +51,7 @@ uvicorn app.main:app --reload --port 8000
 
 Open Swagger at `http://localhost:8000/docs`.
 
-The frontend lives in the repo's top-level `frontend/` folder and deploys separately to Azure Static Web Apps, so it is no longer served by FastAPI — run it with any static server and point `config.js` at this API. It is plain ES modules with no build step.
+The frontend lives in the repo's top-level `frontend/` folder and deploys separately to Azure Static Web Apps, so it is no longer served by FastAPI. It is a Vite + React + TypeScript app — run `npm install && npm run dev` there, and point `public/config.js` at this API.
 
 Local mode requires no Azure keys. On first startup it seeds the database and indexes the approved PDF corpus into SQLite.
 
@@ -142,14 +148,19 @@ The supplied registration values are already in `.env.example`:
 - Directory/tenant ID: `0eadb77e-42dc-47f8-bbe3-ec2395e0712c`
 - Object ID: `2680dbf6-06a6-44b1-abd5-77f56f5b5fd1`
 
-In Entra:
+**This is done and live.** The registration is fully configured, the frontend acquires
+real tokens through MSAL, and the deployed backend runs `AUTH_MODE=entra`. What was
+required, kept as a record and for rebuilding the registration from scratch:
 
-1. Under **Expose an API**, create an Application ID URI, normally `api://efccb481-74ba-45b8-940a-fed5dfbec74e`.
-2. Create app roles with exact values: `Employee`, `Manager`, `Executive`, `HRAdmin`.
-3. Assign test users to the roles.
-4. Configure frontend redirect URIs.
-5. Have the frontend request an access token for this API and send it as `Authorization: Bearer <token>`.
-6. Set `AUTH_MODE=entra` in the backend.
+1. Under **Expose an API**, an Application ID URI of `api://efccb481-74ba-45b8-940a-fed5dfbec74e`.
+2. App roles with exact values: `Employee`, `Manager`, `Executive`, `HRAdmin`.
+3. Users assigned to the roles.
+4. Frontend redirect URIs registered as **spa** (PKCE), not `web`.
+5. The frontend requesting an access token for this API and sending it as `Authorization: Bearer <token>`.
+6. `AUTH_MODE=entra` on the backend.
+
+Full detail, including the Graph commands used, is in `docs/ENTRA_SETUP.md`. Local
+development still defaults to `AUTH_MODE=dev` and the `X-Dev-User-Email` header.
 
 The backend validates token signature, issuer, tenant, audience, and the `roles` claim. Department and manager relationships are looked up from the employee database instead of assuming Entra always emits a department claim.
 
@@ -233,6 +244,51 @@ Run the supplied retrieval benchmark with:
 ```powershell
 python scripts/evaluate_retrieval.py
 ```
+
+## Company news feed
+
+The ticker carries two kinds of row, told apart by `source`:
+
+- `hr` — a banner someone wrote through `POST /api/announcements`.
+- a feed slug (`blog` by default) — a post ingested from `NEWS_FEED_URL`.
+
+```text
+POST /api/admin/news/refresh    -> {created, updated, retired, total_in_feed}
+```
+
+Idempotent: items are upserted on the feed's own `<guid>`, so re-running after a failed
+night changes nothing that already landed. A post that drops out of the feed is
+unpublished rather than deleted. **The refresh only ever touches rows matching the
+configured slug**, so it cannot overwrite or unpublish anything HR wrote — there is a
+test for exactly that.
+
+Two ways to call it: an HRAdmin access token, or the `X-Refresh-Token` header matching
+`NEWS_REFRESH_TOKEN`. The second exists for `.github/workflows/news-refresh.yml`, which
+runs nightly at 06:00 UTC and has no user identity to authenticate as. With
+`NEWS_REFRESH_TOKEN` unset that path is disabled entirely.
+
+### Why not LinkedIn
+
+The original ask was to pull the ticker from Quadrant's LinkedIn company page. That
+page cannot be read: it redirects to a login wall, and the only sanctioned way to read
+an organisation's posts is the Community Management API, which requires a registered
+company, a verified Page, app review, and a **super admin of that LinkedIn Page** to
+authorize the app. Scraping it with a session cookie would breach LinkedIn's User
+Agreement and break on any markup change.
+
+Quadrant's own site publishes most of the same content as a WordPress RSS feed, which
+is public and permitted by their `robots.txt`, so that is the source. Nothing in
+`services/news_feed.py` is feed-specific beyond `fetch` and `parse`, so if Community
+Management API access is ever granted, only those two functions change.
+
+### A note on the XML parser
+
+`xml.etree` is used rather than `defusedxml`. Measured on Python 3.12: external
+entities are already refused by the stdlib parser, so there is no XXE here — but
+*internal* entity expansion works, and four levels of nesting already produce 3000
+characters. `_reject_dtd` refuses any document carrying a DTD before it reaches the
+parser, which is what `defusedxml.forbid_dtd` does, without taking on a dependency
+that has not shipped a release since 2021. Both attacks are covered by tests.
 
 ## Approval model
 

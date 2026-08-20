@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>blog &#8211; Quadrant Technologies</title>
+	<atom:link href="https://www.quadranttechnologies.com/blog/feed/" rel="self" type="application/rss+xml" />
+	<link>https://www.quadranttechnologies.com</link>
+	<description>Your Strategic Partner</description>
+	<lastBuildDate>Fri, 05 Jun 2026 10:14:44 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.7.2</generator>
+
+<image>
+	<url>https://www.quadranttechnologies.com/wp-content/uploads/2025/01/favicon-150x150.png</url>
+	<title>blog &#8211; Quadrant Technologies</title>
+	<link>https://www.quadranttechnologies.com</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Qrest AI Index: A Readiness Evaluation Framework for Enterprise AI Agents</title>
+		<link>https://www.quadranttechnologies.com/qrest-ai-index-a-readiness-evaluation-framework-for-enterprise-ai-agents/</link>
+					<comments>https://www.quadranttechnologies.com/qrest-ai-index-a-readiness-evaluation-framework-for-enterprise-ai-agents/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Fri, 05 Jun 2026 10:11:49 +0000</pubDate>
+				<category><![CDATA[Agentic AI]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3788</guid>
+
+					<description><![CDATA[<p>Qrest AI Index shows how enterprise AI agents can be evaluated for production readiness across accuracy, completeness, trust, business readiness, reliability, latency, and scalability using real workflow scenarios, ground-truth validation, and failure-mode analysis.</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/qrest-ai-index-a-readiness-evaluation-framework-for-enterprise-ai-agents/">Qrest AI Index: A Readiness Evaluation Framework for Enterprise AI Agents</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/qrest-ai-index-a-readiness-evaluation-framework-for-enterprise-ai-agents/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>From Dashboards to AI Pipelines: Power BI’s Next Evolution</title>
+		<link>https://www.quadranttechnologies.com/from-dashboards-to-ai-pipelines-power-bis-next-evolution/</link>
+					<comments>https://www.quadranttechnologies.com/from-dashboards-to-ai-pipelines-power-bis-next-evolution/#respond</comments>
+		
+		<dc:creator><![CDATA[varshini]]></dc:creator>
+		<pubDate>Thu, 21 May 2026 11:35:03 +0000</pubDate>
+				<category><![CDATA[AI Engineering]]></category>
+		<category><![CDATA[Application Service]]></category>
+		<category><![CDATA[microsoft power platform]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3679</guid>
+
+					<description><![CDATA[<p>For years, Power BI dashboards have been where enterprise data ended up beautiful reports, executive dashboards, KPI scorecards, and forecast charts. But for developers trying to extract that intelligence programmatically and use it inside modern applications, the experience often felt stuck between two worlds. You could query semantic models, run DAX, and retrieve results through [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/from-dashboards-to-ai-pipelines-power-bis-next-evolution/">From Dashboards to AI Pipelines: Power BI’s Next Evolution</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/from-dashboards-to-ai-pipelines-power-bis-next-evolution/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>AI Tariff Intelligence Platform</title>
+		<link>https://www.quadranttechnologies.com/ai-tariff-intelligence-platform/</link>
+					<comments>https://www.quadranttechnologies.com/ai-tariff-intelligence-platform/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Tue, 24 Feb 2026 09:13:37 +0000</pubDate>
+				<category><![CDATA[Fabcon]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3463</guid>
+
+					<description><![CDATA[<p>Summary This document describes the design and implementation of an Intelligent Tariff Processing System built using Microsoft Fabric, Azure AI, and OpenAI services. The proposed solution automates the extraction, validation, and management of tariff elements to form regulatory documents, supporting supervised learning workflows, and preparing high-quality, simulation-ready data. Problem Statement The tariff and regulatory documents [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/ai-tariff-intelligence-platform/">AI Tariff Intelligence Platform</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/ai-tariff-intelligence-platform/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Journey to LLMs</title>
+		<link>https://www.quadranttechnologies.com/journey-to-llms/</link>
+					<comments>https://www.quadranttechnologies.com/journey-to-llms/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Tue, 10 Feb 2026 20:30:48 +0000</pubDate>
+				<category><![CDATA[Agentic AI]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3429</guid>
+
+					<description><![CDATA[<p>The Math That Started It All Before we jump into LLMs, let’s rewind to where it all began: Machine Learning. At its core, ML is surprisingly simple—you give a model data, the model does a lot of math (mostly matrix multiplication), and it outputs predictions. But the real magic isn’t intelligence. It’s this: A model [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/journey-to-llms/">Journey to LLMs</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/journey-to-llms/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Production-Ready AI Agents Faster: Leveraging Google Antigravity + Gemini 3 (Pro &#038; Flash Thinking)</title>
+		<link>https://www.quadranttechnologies.com/production-ready-ai-agents-faster-leveraging-google-antigravity-gemini-3-pro-flash-thinking/</link>
+					<comments>https://www.quadranttechnologies.com/production-ready-ai-agents-faster-leveraging-google-antigravity-gemini-3-pro-flash-thinking/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Tue, 27 Jan 2026 10:38:24 +0000</pubDate>
+				<category><![CDATA[Uncategorized]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3333</guid>
+
+					<description><![CDATA[<p>Overview In the rapidly changing world of AI development things need to move in a faster and more efficient way possible.Google Antigravity together with Gemini 3 Pro represents a paradigm shift in how software developers used to build intelligent agent systems.This detailed visual and step-by-step guide takes you through the entire agent development lifecycle process [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/production-ready-ai-agents-faster-leveraging-google-antigravity-gemini-3-pro-flash-thinking/">Production-Ready AI Agents Faster: Leveraging Google Antigravity + Gemini 3 (Pro &#038; Flash Thinking)</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/production-ready-ai-agents-faster-leveraging-google-antigravity-gemini-3-pro-flash-thinking/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Enabling Proactive Care Management Through 30-Day Readmission Risk Prediction</title>
+		<link>https://www.quadranttechnologies.com/enabling-proactive-care-management-through-30-day-readmission-risk-prediction/</link>
+					<comments>https://www.quadranttechnologies.com/enabling-proactive-care-management-through-30-day-readmission-risk-prediction/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Mon, 19 Jan 2026 04:47:42 +0000</pubDate>
+				<category><![CDATA[fabric]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3312</guid>
+
+					<description><![CDATA[<p>Thirty-day readmissions remain one of the most persistent and costly challenges in healthcare delivery, affecting both financial performance and patient outcomes. Many of these readmissions are preventable, but only if risk is identified at the moment of discharge, when care plans are finalized and follow-up decisions are still actionable. Predicting readmission risk at discharge shifts [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/enabling-proactive-care-management-through-30-day-readmission-risk-prediction/">Enabling Proactive Care Management Through 30-Day Readmission Risk Prediction</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/enabling-proactive-care-management-through-30-day-readmission-risk-prediction/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Real-Time Operational Intelligence in Microsoft Fabric: Deep Dive into RTI Capabilities, Anomaly Detection &#038; Activator Alerting</title>
+		<link>https://www.quadranttechnologies.com/microsoft-fabric-real-time-intelligence/</link>
+					<comments>https://www.quadranttechnologies.com/microsoft-fabric-real-time-intelligence/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Wed, 10 Dec 2025 18:20:18 +0000</pubDate>
+				<category><![CDATA[fabric]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3257</guid>
+
+					<description><![CDATA[<p>Summary This blog explores how Microsoft Fabric enables true real-time operational intelligence by combining high-throughput event ingestion, streaming analytics, anomaly detection, and automated alerting into a unified SAAS platform. Using Fabric’s Real-Time Intelligence (RTI) stack—including Event stream, Event house/KQL, anomaly detection functions, and Activator—organizations can detect unusual patterns as they occur and immediately trigger automated [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/microsoft-fabric-real-time-intelligence/">Real-Time Operational Intelligence in Microsoft Fabric: Deep Dive into RTI Capabilities, Anomaly Detection &#038; Activator Alerting</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/microsoft-fabric-real-time-intelligence/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Power BI Semantic Models: The Foundation of AI-Ready Analytics</title>
+		<link>https://www.quadranttechnologies.com/power-bi-semantic-models/</link>
+					<comments>https://www.quadranttechnologies.com/power-bi-semantic-models/#respond</comments>
+		
+		<dc:creator><![CDATA[varshini]]></dc:creator>
+		<pubDate>Tue, 25 Nov 2025 10:56:12 +0000</pubDate>
+				<category><![CDATA[microsoft fabric]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3229</guid>
+
+					<description><![CDATA[<p>As organizations generate data at unprecedented speed and volume, the ability to derive meaningful, AI-powered insights from that data has become mission-critical. Enterprises need analytical systems that can scale to petabytes, provide tight governance, and remain accessible to everyday business users not just technical experts. Power BI semantic models, built on Microsoft Fabric, have emerged [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/power-bi-semantic-models/">Power BI Semantic Models: The Foundation of AI-Ready Analytics</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/power-bi-semantic-models/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Exploring Gemini CLI for AlloyDB: Command-Line Power for AI-Driven DataOps</title>
+		<link>https://www.quadranttechnologies.com/gemini-cli-alloydb-ai-dataops/</link>
+					<comments>https://www.quadranttechnologies.com/gemini-cli-alloydb-ai-dataops/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Fri, 14 Nov 2025 12:21:44 +0000</pubDate>
+				<category><![CDATA[Agentic AI]]></category>
+		<category><![CDATA[AI Engineering]]></category>
+		<category><![CDATA[Cloud Databases]]></category>
+		<category><![CDATA[DataOps]]></category>
+		<category><![CDATA[Google Cloud]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3201</guid>
+
+					<description><![CDATA[<p>Overivew In the evolving world of cloud-native databases, Google Cloud’s AlloyDB for PostgreSQL continues to redefine enterprise-grade performance and scalability. Now, with the introduction of Gemini CLI extensions for AlloyDB, database management takes a leap forward—combining AI-powered reasoning with the simplicity of command-line automation. At Quadrant Technologies, we’re continuously exploring tools that bridge AI, data, [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/gemini-cli-alloydb-ai-dataops/">Exploring Gemini CLI for AlloyDB: Command-Line Power for AI-Driven DataOps</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/gemini-cli-alloydb-ai-dataops/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Event Management Automation with Power Platform and Copilot Studio</title>
+		<link>https://www.quadranttechnologies.com/event-management-automation-with-power-platform-and-copilot-studio/</link>
+					<comments>https://www.quadranttechnologies.com/event-management-automation-with-power-platform-and-copilot-studio/#respond</comments>
+		
+		<dc:creator><![CDATA[Quadrant Internal Marketing]]></dc:creator>
+		<pubDate>Wed, 22 Oct 2025 12:34:55 +0000</pubDate>
+				<category><![CDATA[microsoft power platform]]></category>
+		<guid isPermaLink="false">https://www.quadranttechnologies.com/?p=3154</guid>
+
+					<description><![CDATA[<p>Overview We designed an Event Management Copilot using Power Apps, Copilot Studio, and Power Automate to streamline event registrations, reminders, and post-event analytics. Business Problem Our internal events team managed multiple corporate events manually by tracking attendee lists, registration forms, and post-event feedback — often using disconnected Excel sheets. Solution Implementation We built: Power App [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://www.quadranttechnologies.com/event-management-automation-with-power-platform-and-copilot-studio/">Event Management Automation with Power Platform and Copilot Studio</a> appeared first on <a rel="nofollow" href="https://www.quadranttechnologies.com">Quadrant Technologies</a>.</p>
+]]></description>
+		
+					<wfw:commentRss>https://www.quadranttechnologies.com/event-management-automation-with-power-platform-and-copilot-studio/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>

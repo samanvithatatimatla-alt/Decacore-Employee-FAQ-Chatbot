@@ -1,6 +1,10 @@
 # DecaCore Frontend Integration Handoff
 
-> **Update:** A working no-build frontend is now included in `frontend/` and served directly by FastAPI at `http://localhost:8000/`. The integration notes below remain useful as the API contract and for any future React/Angular replacement. Because the bundled frontend is same-origin with FastAPI, it does not need a separate local frontend server or CORS configuration.
+> **Status:** the integration described here is done. The frontend is a Vite + React +
+> TypeScript app in the repo's top-level `frontend/`, deployed separately to Azure Static
+> Web Apps — FastAPI is API-only and does not serve it, so CORS is required and
+> `CORS_ORIGINS` must list the frontend origin. This document is kept as the API contract
+> and for the SSE example; `frontend/README.md` describes the client as it now stands.
 
 This document is the quickest path for connecting the DecaCore frontend to the FastAPI backend.
 

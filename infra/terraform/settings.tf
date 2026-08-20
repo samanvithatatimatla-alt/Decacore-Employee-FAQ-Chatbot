@@ -85,6 +85,27 @@ locals {
     LOCAL_SEARCH_TOP_K = "5"
     LOCAL_MIN_SCORE    = "0.08"
 
+    # Tuned to 0.04 against real traffic and set by hand in the portal, which left it
+    # undeclared here — the next apply would have deleted it and snapped the relevance
+    # floor back to the code default of 0.08, sending noticeably more answerable
+    # questions to HR instead. Declared so that cannot happen again. Every chat logs
+    # its relevance score, so change this from the log stream, then change it here.
+    AZURE_MIN_SCORE = "0.04"
+
+    # Company news ticker. Quadrant's public WordPress feed — the LinkedIn company
+    # page cannot be read without Community Management API approval from a super
+    # admin of that page. See backend/app/services/news_feed.py.
+    NEWS_FEED_URL       = "https://www.quadranttechnologies.com/blog/feed"
+    NEWS_FEED_SOURCE    = "blog"
+    NEWS_FEED_MAX_ITEMS = "6"
+
+    # Presented by the nightly GitHub Actions job, which has no user identity to
+    # authenticate as. If this reference fails to resolve, App Service passes the
+    # literal "@Microsoft.KeyVault(...)" string through — which is public in this
+    # repo, so the backend explicitly refuses to accept an unresolved reference as
+    # a valid secret rather than trusting whatever it is handed.
+    NEWS_REFRESH_TOKEN = "@Microsoft.KeyVault(SecretUri=${local.kv_secret_uri.news_refresh})"
+
     # Makes App Service install requirements.txt on deploy.
     SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
   }

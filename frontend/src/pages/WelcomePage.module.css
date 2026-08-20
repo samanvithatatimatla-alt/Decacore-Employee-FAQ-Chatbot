@@ -114,6 +114,13 @@
   box-shadow: 0 12px 34px rgba(124, 77, 255, 0.42);
 }
 
+/* Sits clear of the CTA and fades in after it, so it settles last. The parent's
+   14px gap plus this reads as a separate footing rather than part of the stack. */
+.poweredBy {
+  margin-top: 20px;
+  animation: riseIn 0.5s ease 0.55s both;
+}
+
 @keyframes riseIn {
   from {
     opacity: 0;

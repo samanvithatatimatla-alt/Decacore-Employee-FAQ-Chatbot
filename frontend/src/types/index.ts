@@ -141,6 +141,8 @@ export interface Announcement {
   date: string;
   headline: string;
   detail: string;
+  /** Present on items ingested from the company news feed, absent on HR banners. */
+  url?: string;
 }
 
 export interface TopQuestion {

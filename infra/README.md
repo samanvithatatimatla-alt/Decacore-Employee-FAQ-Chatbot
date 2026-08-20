@@ -86,6 +86,12 @@ AZURE_OPENAI_API_KEY = @Microsoft.KeyVault(SecretUri=https://qthr-decacore-kv.va
 | `azure-openai-api-key` | Team 8's key, copied from the manager's `group7-8` vault |
 | `azure-search-api-key` | Copied from `group7-8` |
 | `database-url` | Full SQLAlchemy URL, password URL-encoded |
+| `news-refresh-token` | Shared secret for the nightly news ingest; same value in the `NEWS_REFRESH_TOKEN` GitHub Actions secret |
+
+Create the news one with `openssl rand -hex 32`. If that reference ever fails to
+resolve, App Service passes the literal `@Microsoft.KeyVault(...)` string to the app —
+and that string is committed here, so the backend explicitly refuses to treat an
+unresolved reference as a valid secret rather than trusting what it is handed.
 
 **Why references and not literal values:** a literal secret in `app_settings` lands in
 Terraform state even with `lifecycle { ignore_changes }` — that setting stops Terraform
@@ -121,9 +127,9 @@ and is promoted only once its dependency is verified:
 
 | Switch | Now | Promote when |
 |---|---|---|
-| `AUTH_MODE` | `dev` | Entra app roles + "Expose an API" are configured |
+| `AUTH_MODE` | `entra` | — on since 2026-08-18; local dev still defaults to `dev` |
 | `STORAGE_BACKEND` | `azure` | — already on |
-| `SEARCH_BACKEND` | `azure` | — index created, 175 chunks loaded |
+| `SEARCH_BACKEND` | `azure` | — index created, v3 corpus loaded |
 | `LLM_BACKEND` | `azure` | — verified against `gpt-5` |
 | `NOTIFICATION_BACKEND` | `log` | Graph `Mail.Send` admin consent lands |
 
@@ -168,14 +174,9 @@ resource exists despite the error — verify with `az resource list` rather than
 
 ## Open items
 
-- Entra: app roles (`Employee`, `Manager`, `Executive`, `HRAdmin`), "Expose an API"
-  application ID URI, and redirect URIs — all still unset on `DecaCore-HR-Chatbot`.
-  The application code is finished and shipped behind a flag; only the registration
-  work is left, and it needs an owner of that registration plus a tenant admin for
-  role assignment. Step-by-step in `docs/ENTRA_SETUP.md`.
-  **Until this lands, `AUTH_MODE=dev` is live on a public URL, which means any caller
-  can act as HR Admin by sending an `X-Dev-User-Email` header.**
-- Graph `Mail.Send` admin consent — needs a tenant admin.
+- Graph `Mail.Send` admin consent — needs a tenant admin. This is the last adapter
+  still in local mode: HR replies and escalation notices are written to
+  `notification_log` instead of being emailed.
 - Azure DevOps parallel jobs grant, if it reads 0.
 - Rotate the SQL password before handover.
 
@@ -189,6 +190,14 @@ Two pipelines, split by what they deploy:
 | `frontend/` | GitHub Actions — `.github/workflows/frontend.yml` | Static Web App |
 
 Both filter on paths, so a frontend push doesn't trigger a backend deploy.
+
+There is also `.github/workflows/news-refresh.yml`, which deploys nothing: it runs
+nightly at 06:00 UTC and POSTs to `/api/admin/news/refresh` so the ticker picks up new
+Quadrant blog posts. It needs the `NEWS_REFRESH_TOKEN` repository secret, and can be
+run on demand from the Actions tab. An Azure Function timer would have been the
+conventional home for this, but no Function App is deployed — the purge timer in
+`backend/functions/` has never been provisioned — and standing one up for a single
+nightly HTTP call was more infrastructure than it warranted.
 
 **CI deploys straight to production.** The dev slot and swap step were removed — with
 one team and one environment the extra hop only meant every change needed a manual
@@ -236,6 +245,8 @@ az staticwebapp secrets list --name qthr-faq-web -g DecaCore --query "properties
 
 Add it under **Settings → Secrets and variables → Actions**.
 
-`frontend/config.js` is generated at deploy time from the workflow's `API_BASE` and is
-gitignored — the same source can target the dev slot or production without a code change.
-Locally, `app.js` falls back to `http://localhost:8000` when `config.js` is absent.
+`frontend/public/config.js` is overwritten at deploy time from the workflow's `API_BASE`
+and the three `ENTRA_*` values, so the same source can target a different backend without
+a code change. The copy in the repo holds only the localhost default; `src/api/client.ts`
+falls back to `http://localhost:8000` if `APP_CONFIG` is missing entirely, and
+`entraEnabled()` treats a half-filled `entra` block as off.

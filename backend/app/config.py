@@ -50,6 +50,18 @@ class Settings(BaseSettings):
     graph_sender_user: str = ""
     hr_notification_email: str = ""
 
+    # Company news ticker. The source is Quadrant's public WordPress feed; see
+    # services/news_feed.py for why it is not the LinkedIn page that was asked for.
+    news_feed_url: str = "https://www.quadranttechnologies.com/blog/feed"
+    # Marks the rows this ingest owns. Rows written by HR in the admin UI are "hr" and
+    # are never touched by a refresh.
+    news_feed_source: str = "blog"
+    # How many of the newest posts stay on the ticker. The feed carries ten.
+    news_feed_max_items: int = 6
+    # Shared secret for the unattended nightly refresh. Empty disables that path, and
+    # HRAdmin can still trigger a refresh with a normal access token.
+    news_refresh_token: str = ""
+
     local_search_top_k: int = 5
     local_min_score: float = 0.08
 

@@ -15,9 +15,9 @@ step, so it is answerable straight away.
 | Path | What it is |
 |---|---|
 | `backend/` | FastAPI service — the API, RAG pipeline, and all business logic |
-| `frontend/` | QBot web client — plain ES modules, no build step |
+| `frontend/` | QBot web client — Vite + React + TypeScript, deployed to Static Web Apps |
 | `infra/` | Terraform for App Service, SQL, Key Vault, and the static site |
-| `.github/workflows/` | GitHub checks: backend lint/test, frontend deploy |
+| `.github/workflows/` | GitHub checks: backend lint/test, frontend deploy, nightly news refresh |
 | `azure-pipelines.yml` | Azure DevOps: backend test and deploy to production |
 
 ## Running it
@@ -56,13 +56,13 @@ service at a time.
 `GET /health` reports which mode each adapter is in — the quickest way to tell
 what a running instance is actually doing.
 
-Values still needed to go live are listed in `backend/AZURE_TODO.md`.
+The deployed app runs every adapter on Azure except notifications; `backend/AZURE_TODO.md` records the settled configuration and the one item left.
 
 ## Development
 
 ```bash
 cd backend
-python -m pytest        # 12 tests, no network or credentials needed
+python -m pytest        # 128 tests, no network or credentials needed
 ruff check .            # lint, config in pyproject.toml
 ```
 
@@ -73,6 +73,6 @@ your shell fails the suite rather than writing to shared Azure resources.
 
 - `backend/README.md` — implemented features, endpoints, setup detail
 - `backend/FRONTEND_HANDOFF.md` — API integration flow and SSE example
-- `backend/AZURE_TODO.md` — remaining Azure configuration
+- `backend/AZURE_TODO.md` — Azure configuration, settled and outstanding
 - `infra/README.md` — provisioning and pipeline setup
 - `backend/openapi.json` — generated API contract

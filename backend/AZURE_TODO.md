@@ -1,55 +1,60 @@
-# Azure values still needed to turn local mode into live Azure mode
+# Azure configuration
 
-The backend is runnable without these values. Fill them when the resources are ready.
+Every adapter except notifications is live in Azure. `GET /health` on the deployed app
+reports the current mode of each one, and is the authority if this file drifts.
 
-## Azure OpenAI / Microsoft Foundry
+| Adapter | Deployed mode |
+|---|---|
+| `AUTH_MODE` | `entra` |
+| `STORAGE_BACKEND` | `azure` |
+| `SEARCH_BACKEND` | `azure` |
+| `LLM_BACKEND` | `azure` |
+| `NOTIFICATION_BACKEND` | `log` — the one item outstanding |
 
-- `AZURE_OPENAI_ENDPOINT`
-- `AZURE_OPENAI_CHAT_DEPLOYMENT`
-- `AZURE_OPENAI_EMBEDDING_DEPLOYMENT`
-- Confirm embedding dimensions (`1536` is the current project default)
-- Prefer managed identity in App Service; otherwise provide an API key through Key Vault/App Service settings
+Local development leaves all of them in local mode and needs no Azure values at all.
 
-## Azure AI Search
+## Outstanding: Microsoft Graph
 
-- `AZURE_SEARCH_ENDPOINT`
-- Search service must permit the App Service managed identity (or temporarily use an admin/query key locally)
-- Index name can stay `decacore-hr-policies`
+`Mail.Send` application permission still needs **admin consent from a tenant admin**.
+Until it lands, HR replies and escalation notices are written to the `notification_log`
+table instead of being emailed — submission and approval never fail on a notification
+error, so the app works, it just does not send mail.
 
-Run:
+When consent is granted, set:
 
-```powershell
+```env
+NOTIFICATION_BACKEND=graph
+GRAPH_SENDER_USER=          # an HR or shared mailbox
+HR_NOTIFICATION_EMAIL=
+```
+
+Prefer managed identity / app-only auth in App Service. If testing app-only locally, use
+`GRAPH_CLIENT_SECRET` only in `.env` or Key Vault, and never commit it.
+
+## Settled values, for reference
+
+Everything below is configured on the deployed app. Terraform holds it in
+`infra/terraform/settings.tf`; secrets are Key Vault references, never literals.
+
+**Azure OpenAI** — the endpoint is the *base* URL, not the `/openai/v1/responses` path.
+Deployment names are `gpt-5` (chat) and `text-embedding-3-large` (embeddings).
+`AZURE_OPENAI_EMBEDDING_DIMENSIONS=1536`: `3-large` natively produces 3072 but supports a
+shorter vector, which keeps the index schema valid without a second deployment.
+
+**Azure AI Search** — index `decacore-hr-policies`. Changing the embedding model or
+dimensions means rebuilding the index; documents and queries must use the same model.
+
+```bash
 python scripts/create_search_index.py
 python scripts/reindex_approved.py
 ```
 
-## Blob Storage
+**Blob Storage** — account `qthrpolicypdfs`, containers `documents` and `receipts`. The
+App Service managed identity holds Blob Data Contributor (not Reader — the upload
+endpoints write).
 
-- `AZURE_STORAGE_ACCOUNT_URL`
-- Grant the backend identity Blob Data Contributor access
-- Containers: `documents` and `receipts`
+**Entra** — done and live; see `docs/ENTRA_SETUP.md` for the registration detail and the
+rollback path.
 
-## Microsoft Graph
-
-- Confirm `Mail.Send` admin consent
-- `GRAPH_SENDER_USER`, e.g. an HR/shared mailbox
-- `HR_NOTIFICATION_EMAIL`
-- Prefer managed identity/app-only auth in Azure. If testing app-only locally, use `GRAPH_CLIENT_SECRET` only in `.env`/Key Vault and never commit it.
-
-## Entra authentication
-
-Current IDs are already in `.env.example`.
-
-Need to confirm in the portal:
-
-- Application ID URI under **Expose an API**, normally `api://efccb481-74ba-45b8-940a-fed5dfbec74e`
-- App-role values exactly: `Employee`, `Manager`, `Executive`, `HRAdmin`
-- Test users assigned to roles
-- Frontend redirect URIs configured
-- Frontend requests an access token for this API, not a Microsoft Graph token
-
-## Azure SQL / App Service
-
-- SQL server/database name or final `DATABASE_URL`
-- App Service URL, needed for the final CORS origin
-- Decide whether the team will use SQL credentials for the demo or managed identity for Azure SQL
+**Azure SQL** — `decacore-db`, reached through `pymssql`. The full URL lives in the
+`database-url` Key Vault secret. The SQL password should be rotated before handover.

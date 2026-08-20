@@ -1,33 +1,29 @@
 # Turning on Microsoft Entra sign-in
 
-The app registration is fully configured and users are assigned to roles (steps 1–4).
-The **backend** validates Entra tokens correctly and was verified on 2026-08-15.
+**Entra sign-in is on.** All six steps below are complete and the deployed app runs on
+real tokens — `GET /health` reports `"auth_mode":"entra"`. This document is now a record
+of what was done and how to rebuild or roll it back, not a to-do list.
 
-> ## ⚠️ The frontend Entra integration no longer exists
->
-> It was shipped in commit `c9e9ec3` against the old vanilla-JS frontend, and **lost
-> when the frontend was rewritten as Vite + React**. As of 2026-08-15:
->
-> - `@azure/msal-browser` is **not** in `frontend/package.json` and not installed;
->   the vendored `frontend/vendor/msal-browser.min.js` was deleted with the old tree
-> - `src/api/client.ts` declares `APP_CONFIG` as `{ apiBase?: string }` — the `entra`
->   block is not read, so `config.js` entra values are silently ignored
-> - `authHeaders()` in `src/api/client.ts` unconditionally sets `X-Dev-User-Email`;
->   nothing anywhere sets `Authorization: Bearer`
-> - "Sign in with Microsoft" on `src/pages/SignInPage.tsx` is **cosmetic** — it calls
->   the same dev-header path as the email form
->
-> So flipping `AUTH_MODE=entra` today locks everyone out: the backend correctly
-> rejects the dev header and the frontend has no token to send. Step 6 is blocked on
-> rebuilding the client-side flow, not on anything in Entra.
+| | |
+|---|---|
+| Registration (steps 1–4) | done 2026-08-15 |
+| Backend token validation verified | 2026-08-15 |
+| Frontend MSAL flow rebuilt on React | commit `9e4adc9` |
+| `AUTH_MODE=entra` live in production | 2026-08-18 |
 
-**Do not flip `AUTH_MODE` until step 5 has passed.** The backend rejects any token
-whose audience does not match `ENTRA_AUDIENCE`, and there is no staging slot to catch
-a mistake, so turning it on early locks every user out of the deployed app.
+The frontend integration was written for the old vanilla-JS client in commit `c9e9ec3`
+and lost when the frontend became Vite + React. It was rebuilt in `9e4adc9`:
+`@azure/msal-browser` is a dependency, `src/auth/entra.ts` owns the flow, and
+`authHeaders()` in `src/api/client.ts` sends `Authorization: Bearer` whenever
+`config.js` supplies all three `entra` values. With them absent it falls back to
+`X-Dev-User-Email`, which is what keeps local development on `AUTH_MODE=dev` working.
 
-## Where things stand
+If you are rebuilding this from scratch, the ordering constraint still holds: **do not
+flip `AUTH_MODE` until step 5 has passed.** The backend rejects any token whose audience
+does not match `ENTRA_AUDIENCE`, and there is no staging slot to catch a mistake, so
+turning it on early locks every user out of the deployed app.
 
-**Steps 1–4 were completed on 2026-08-15.** Only step 5 (verification) and step 6 (the switch) remain.
+## The registration
 
 | | |
 |---|---|
@@ -152,7 +148,7 @@ az rest --method POST --uri "https://graph.microsoft.com/v1.0/servicePrincipals/
   --body '{"principalId":"<user object id>","resourceId":"'"$SP"'","appRoleId":"ada12aa4-ddda-4746-aba2-23dddf53430c"}'
 ```
 
-## 5. Verify before switching over
+## 5. Verify before switching over — done 2026-08-15
 
 Confirm the registration looks right:
 
@@ -163,9 +159,9 @@ az ad app show --id efccb481-74ba-45b8-940a-fed5dfbec74e \
 
 You should see the `api://` URI, all four role values, and both redirect URIs.
 
-## 6. Switch it on
+## 6. Switch it on — done 2026-08-18
 
-Two changes, made together:
+Two changes, made together. Both are already applied; this records what they were.
 
 **Frontend** — in `.github/workflows/frontend.yml`, fill the three env vars:
 
@@ -190,25 +186,29 @@ Two changes, made together:
 > # backend, against the real tenant
 > cd backend && AUTH_MODE=entra uvicorn app.main:app --reload
 >
-> # frontend, in another shell — serve on the registered port, not a random one
-> cd frontend && python -m http.server 5173
+> # frontend, in another shell — Vite's default port is 5173, which is the
+> # registered redirect URI, so do not let it fall back to a free one
+> cd frontend && npm run dev -- --strictPort
 > ```
 >
-> Write a `frontend/config.js` by hand with the three `entra` values and `apiBase`
-> pointed at `http://localhost:8000`. Sign in, confirm you land with the right role,
-> and confirm an HR-only page loads for an `HRAdmin` and 403s for an `Employee`.
+> Edit `frontend/public/config.js` to add the three `entra` values and point
+> `apiBase` at `http://localhost:8000`. The committed copy holds only the localhost
+> default; CI overwrites the whole file at deploy time, so local edits never reach
+> production — but do not commit them either. Sign in, confirm you land with the
+> right role, and confirm an HR-only page loads for an `HRAdmin` and 403s for an
+> `Employee`.
 > Only then change `AUTH_MODE` on the deployed app.
 
-## What changes when it is on
+## What the switch changed
 
 - "Sign in with Microsoft" opens a real Entra popup and acquires an access token;
   every API request carries `Authorization: Bearer`.
 - The **"Dev only" role switch disappears**, along with the email/password form on
   the sign-in screen. Both are dev-mode affordances — under Entra the role comes
   from the token's `roles` claim, so a client-side switch would be misleading.
-- `X-Dev-User-Email` stops being honoured by the backend. Today, with
-  `AUTH_MODE=dev` on a public URL, that header lets any caller act as HR Admin;
-  this is what closes that hole.
+- `X-Dev-User-Email` stops being honoured by the backend. Before this landed,
+  `AUTH_MODE=dev` on a public URL let any caller act as HR Admin by sending that
+  header; the switch is what closed the hole.
 - A user signing in for the first time is created in the `users` table from their
   token claims, with the role from `roles`. Existing seeded users are matched by
   email and back-filled with their `entra_object_id`.

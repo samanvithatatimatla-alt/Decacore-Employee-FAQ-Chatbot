@@ -2,15 +2,18 @@
 
 Internal AI HR assistant with two experiences behind one shell:
 
-- **Employee portal** — chat with citations to source policy documents, chat history, a Resources library (policies, forms, favorites, "what changed" summaries), and a Connect to HR page.
-- **HR admin portal** — a dashboard of assistant usage and a Document Management area (upload, version history, upload new version, document viewer).
+- **Employee portal** — chat with citations to source policy documents, chat history, a Resources library (policies, forms, favorites, "what changed" summaries), a My Questions page for HR replies, and a Connect to HR page.
+- **HR admin portal** — a dashboard of assistant usage, an inbox of escalated questions, and a Document Management area (upload, version history, upload new version, document viewer).
 
-This is a **frontend-only build**. There is no backend yet — auth, chat responses, and document storage are all mocked with in-memory demo data (see [What's mocked](#whats-mocked--what-the-backend-needs-to-provide) below). That's the main thing backend/deployment folks need to know going in.
+It talks to the FastAPI backend in `../backend`. Nothing is mocked: chat is a real
+streamed RAG answer, documents are real uploads to Blob Storage, and sign-in is real
+Microsoft Entra ID.
 
 ## Tech stack
 
 - **Vite + React 18 + TypeScript**
 - **react-router-dom** for routing
+- **@azure/msal-browser** for Entra sign-in
 - **lucide-react** for icons
 - Plain **CSS Modules** per component (no Tailwind/UI kit) — colors, spacing, and type are all driven by CSS variables in `src/index.css`
 
@@ -21,7 +24,9 @@ npm install
 npm run dev
 ```
 
-Prints a local URL (e.g. `http://localhost:5173`) — open it in a browser.
+Prints a local URL (e.g. `http://localhost:5173`) — open it in a browser. Start the
+backend too (`cd ../backend && ./run-local.sh`); `public/config.js` points at
+`http://localhost:8000` by default.
 
 Other scripts:
 
@@ -30,31 +35,55 @@ npm run build     # type-check (tsc -b) + production build to dist/
 npm run preview   # serve the production build locally
 ```
 
-**Demo sign-in** (no real auth yet): the "Sign in with Microsoft" button and the email/password form both work, but they're fake. On the email/password path, any email containing the word "admin" signs you in as the HR admin persona; anything else signs you in as the employee persona. Nothing is validated server-side — see the auth section below for what needs to replace this.
+### Which identity you get
+
+`public/config.js` decides. It holds only an `apiBase` by default, so `entraEnabled()`
+is false and the app uses the dev-header path — the email/password form and the "Dev
+only" role switch pick which seeded backend user you are, and every request carries
+`X-Dev-User-Email`. That matches a backend running `AUTH_MODE=dev`.
+
+Add an `entra` block with `clientId`, `tenantId` and `scope` and the app switches to
+real MSAL sign-in, sending `Authorization: Bearer` instead. All three must be present;
+a half-filled block is treated as off. Deploys always get the full block — the workflow
+overwrites `config.js` — so **production is Entra**, and so is the backend.
+
+To test the Entra path locally, edit `public/config.js` and run on port 5173, which is
+the registered redirect URI. See `../docs/ENTRA_SETUP.md`.
 
 ## Project structure
 
 ```
 src/
   pages/            One file per route (WelcomePage, SignInPage, ChatPage, ChatHistoryPage,
-                     ResourcesPage, ContactPage, DashboardPage, DocumentsPage, DocumentViewerPage)
+                     MyQuestionsPage, ResourcesPage, ContactPage, DashboardPage,
+                     DocumentsPage, DocumentViewerPage, InboxPage)
   components/
     layout/          AppShell, TopNav, Sidebar, NewsTicker
     chat/             Composer, message bubbles/cards, typing indicator
     resources/        Document viewer/compare modal
-    admin/             Upload / version history / new-version modals, file drop field
-    common/            Avatar, shared panel styles
+    admin/            Upload / version history / new-version / escalation modals, file drop
+    common/           Avatar, shared panel styles
+  api/
+    client.ts        Typed wrapper over the backend; owns auth headers, timeouts, and
+                      the SSE reader for streamed chat
+    map.ts           Translates API payloads into the shapes the components expect
+  auth/entra.ts      MSAL sign-in, inert until config.js supplies the entra block
   context/
-    AuthContext.tsx        Current user + role (in-memory only, see below)
+    AuthContext.tsx        Current user + role, from /api/me
     AppStateContext.tsx    Single reducer holding chat, history, resources, admin docs,
-                            announcements, and UI state — this is the seam where real
-                            API calls should replace the mocked actions
-  data/seed.ts        All demo/seed data + the keyword-matching fake chat responses
-  types/index.ts      The shared TypeScript data model
+                            announcements, and UI state; its actions call the API
+    typewriter.ts          Paces streamed text onto the screen at a steady rate
   routes/             Route guards (must be signed in / must be hr_admin)
+  types/index.ts      The shared TypeScript data model
 ```
 
-Everything funnels through `AppStateContext`'s reducer — if/when there's a real backend, the natural approach is to keep the action names (`SEND_MESSAGE`, `UPLOAD_NEW_VERSION`, etc.) but swap the bodies of the actions/dispatches for real `fetch`/API calls, rather than restructuring the components.
+`AppStateContext` is still the single seam between UI and data — components dispatch
+actions, and the action bodies call `api`/`streamChat` rather than mutating local seed
+arrays. The old `data/seed.ts` is gone.
+
+Note the UI was written against numeric ids while the API uses UUID strings, so
+`map.ts` gives each record a numeric `id` for React keys and carries the real `apiId`
+alongside. Anything that calls the API uses `apiId`.
 
 ## Routes
 
@@ -64,39 +93,33 @@ Everything funnels through `AppStateContext`'s reducer — if/when there's a rea
 | `/signin` | Sign in | public |
 | `/chat` | Chat (home + thread) | signed in |
 | `/history` | Chat History | signed in |
+| `/my-questions` | HR replies to escalated questions | signed in |
 | `/resources` | Resources | signed in |
 | `/contact` | Connect to HR | signed in |
 | `/admin` | Dashboard | hr_admin only |
+| `/admin/inbox` | Escalation inbox | hr_admin only |
 | `/admin/documents` | Document Management | hr_admin only |
 | `/admin/documents/:id` | Document viewer | hr_admin only |
 
-Route guards live in `src/routes/ProtectedRoute.tsx`.
+Route guards live in `src/routes/ProtectedRoute.tsx`. After an Entra redirect the app
+lands on the role's home page rather than the welcome splash — see `useLandAfterSignIn`
+in `App.tsx`.
 
-## What's mocked / what the backend needs to provide
+Note the backend has four roles (`Employee`, `Manager`, `Executive`, `HRAdmin`) but this
+UI only distinguishes the HR admin experience from everyone else. Manager and Executive
+are real backend roles with their own document visibility; they simply see the employee
+screens.
 
-This is the important section for backend and deployment — everything below is currently faked client-side and needs a real implementation behind it.
+## Deployment
 
-### Auth
-- `src/context/AuthContext.tsx` holds the signed-in user in a React state variable only — nothing is persisted, nothing survives a page refresh, no tokens, no server calls.
-- Needs: real Microsoft Entra ID / MSAL integration for "Sign in with Microsoft"; a real session (cookie or token) that survives reloads; the employee vs. hr_admin role should come from the authenticated user's actual role, not from sniffing the word "admin" in an email string.
-
-### Chat
-- `src/data/seed.ts` → `genBotResponse()` — replies are picked by dumb keyword matching against a handful of hardcoded strings (e.g. contains "home" or "remote" → canned remote-work answer). There is no LLM, no retrieval, no real citations.
-- The ~1.1s "typing" delay is a `setTimeout`, not a real streaming response.
-- Needs: a real assistant API (ideally streaming) that returns `{ kind: 'answer' | 'warn' | 'refuse', body, tags (citations), steps?, followUps? }` — see the `ChatMessage` type in `src/types/index.ts` for the exact shape the UI already renders.
-
-### Documents
-- Admin document upload/version history (`src/context/AppStateContext.tsx`, `ADD_ADMIN_DOC` / `UPLOAD_NEW_VERSION` actions) only reads the picked file's name and size client-side — **no file is actually uploaded anywhere.** The "content" shown in the document viewer is a hardcoded placeholder string per document.
-- Needs: real file upload (to blob storage / a document service), real PDF text extraction for the viewer, and a real diff/summary step for "what changed" between versions (currently that summary is just whatever text the HR admin manually typed into the upload modal).
-
-### Everything else in `data/seed.ts`
-Chat history, resources/policies/forms, announcements (news ticker), the admin dashboard's usage numbers ("Common Employee Questions", "Most Referenced Documents") — all hardcoded seed arrays held in memory for the session. None of it is persisted or shared between users/devices. In production these should come from real endpoints (chat history per user, documents from a document service, dashboard numbers server-aggregated).
-
-### Not implemented at all
-- The "Request Context" escalation/inbox flow (HR reviewing an employee's flagged question) — the data model exists in the original design spec but there's no screen for it in this build. Flag if you want it built.
-- Real download links for forms ("Download ↓" buttons are inert).
-- Persisting sidebar/favorites/state across sessions.
+GitHub Actions → Azure Static Web Apps, on any push to `main` touching `frontend/`.
+The workflow generates `public/config.js` from its own env vars before building, so the
+API base and Entra settings are deploy-time config rather than compiled in. See
+`.github/workflows/frontend.yml` and `../infra/README.md`.
 
 ## Design reference
 
-This was built from a design handoff (Figma-style prototype + screenshots), matched for high fidelity — colors, spacing, type, and copy should closely match the original design. If anything looks off compared to the design files, that's a bug, not an intentional deviation (aside from the explicit differences noted in this README, like the fake auth).
+This was built from a design handoff (Figma-style prototype + screenshots), matched for
+high fidelity — colors, spacing, type, and copy should closely match the original
+design. If anything looks off compared to the design files, that's a bug, not an
+intentional deviation.
