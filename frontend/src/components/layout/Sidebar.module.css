@@ -120,7 +120,10 @@
   outline-offset: 2px;
 }
 .btnPrimary:active {
-  scale: 0.99;
+  /* Presses rather than shrinking. Scaling a button with a sliding tile inside it made
+     the tile drift mid-animation; a translate moves the whole thing as one object. */
+  transform: translateY(2px);
+  scale: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -264,12 +267,22 @@
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+.sideNavItem:active {
+  /* Just the travel. A stack of rows each carrying its own drop shadow reads as
+     clutter, but they should still feel pressable. */
+  transform: translateY(1px);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sideNavItem,
   .sideNavItem::before,
   .sideNavItem::after {
     transition-duration: 1ms;
+  }
+  .sideNavItem:active,
+  .connectHrItem:active,
+  .btnPrimary:active {
+    transform: none;
   }
 }
 .sideNavItem.active {
@@ -390,6 +403,30 @@
     inset 0 1px 0 var(--glass-edge-top);
   border-radius: 12px;
   transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+/*
+ * The press mechanic from the comic button (uiverse "comic-button"), without its skin.
+ *
+ * Its hard 5px black offset and 2px black outline belong to a flat, opaque,
+ * high-contrast style; dropped onto a translucent pill inside a frosted floating panel
+ * they read as a different app pasted in. What is worth keeping is the *feel*: the
+ * shadow is the gap under the button, and pressing closes it — the button travels the
+ * exact distance the shadow occupied, so it lands on the surface.
+ *
+ * So the offset is here, in accent rather than black and soft rather than hard.
+ */
+.connectHrItem {
+  transform: translateY(0);
+  transition:
+    background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    transform 120ms var(--ease),
+    box-shadow 120ms var(--ease);
+}
+.connectHrItem:active {
+  /* Travels exactly the 3px the shadow held open, then sits flush. */
+  transform: translateY(3px);
+  box-shadow: inset 0 0 0 1px rgba(154, 115, 255, 0.3);
 }
 .connectHrItem:hover {
   background: rgba(124, 77, 255, 0.24);

@@ -15,7 +15,12 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* `none`, not `translateY(0)`. The animation is filled `both`, so whatever the
+       last keyframe says stays applied forever — and *any* transform other than
+       `none` makes this element the containing block for `position: fixed`
+       descendants. That is why the document modal centred itself inside this 1441px
+       page panel instead of the 677px viewport, landing below the fold. */
+    transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

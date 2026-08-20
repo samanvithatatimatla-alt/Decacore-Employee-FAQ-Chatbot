@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ExternalLink, Star, X } from 'lucide-react';
 import { useAppState } from '../../context/AppStateContext';
 import { files } from '../../api/client';
@@ -75,7 +76,14 @@ export default function DocumentModal({ policyId, initialCompare, onClose }: Pro
 
   const showingPrevious = compareMode && version === 'prev';
 
-  return (
+  /*
+   * Rendered into <body>, not in place. A dialog positioned relative to whatever
+   * happens to be above it in the tree is a standing trap: any ancestor that picks up
+   * a transform, filter or backdrop-filter silently becomes the containing block for
+   * `position: fixed` and the dialog stops being anchored to the viewport. That is
+   * exactly what a leftover `translateY(0)` on the page panel did here.
+   */
+  return createPortal(
     <div className={styles.backdrop} onClick={onClose}>
       <div
         className={styles.card}
@@ -159,6 +167,7 @@ export default function DocumentModal({ policyId, initialCompare, onClose }: Pro
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
