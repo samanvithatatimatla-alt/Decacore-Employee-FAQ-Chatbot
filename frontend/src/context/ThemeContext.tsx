@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
 export type Theme = 'light' | 'dark';
 
@@ -13,6 +21,21 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+/**
+ * Write the theme to <html>.
+ *
+ * Called the moment the theme is decided rather than only from an effect, because
+ * effects flush children-first: a descendant reading `getComputedStyle` in its own
+ * effect would otherwise run *before* the provider updated the attribute and see the
+ * previous theme's values. AmbientBackground does exactly that to colour its canvas,
+ * and the result was a background that vanished on every switch — it picked up the
+ * outgoing theme's dot colour, which is by definition invisible against the incoming
+ * theme's background.
+ */
+function applyTheme(theme: Theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+}
 
 function systemTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -44,31 +67,41 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
   const [followingSystem, setFollowingSystem] = useState(() => storedTheme() === null);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+  // Layout effect, not passive: it still has to cover the first mount and any path
+  // that sets the theme without going through `toggle`, and layout effects flush
+  // before passive ones, so a child reading computed style is never a step behind.
+  useLayoutEffect(() => {
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
     if (!followingSystem) return;
     const query = window.matchMedia?.('(prefers-color-scheme: light)');
     if (!query) return;
-    const onChange = () => setTheme(systemTheme());
+    const onChange = () => {
+      const next = systemTheme();
+      applyTheme(next);
+      setTheme(next);
+    };
     query.addEventListener('change', onChange);
     return () => query.removeEventListener('change', onChange);
   }, [followingSystem]);
 
   const toggle = useCallback(() => {
-    setTheme((current) => {
-      const next: Theme = current === 'dark' ? 'light' : 'dark';
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, next);
-      } catch {
-        // Choice does not survive the session, but the app still switches.
-      }
-      return next;
-    });
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    // Applied synchronously, before React re-renders, so the DOM is already correct
+    // by the time any child effect reads from it. Deliberately outside the setTheme
+    // updater — StrictMode invokes updaters twice, and side effects do not belong
+    // somewhere that is expected to be pure.
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Choice does not survive the session, but the app still switches.
+    }
+    setTheme(next);
     setFollowingSystem(false);
-  }, []);
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggle, followingSystem }}>{children}</ThemeContext.Provider>
