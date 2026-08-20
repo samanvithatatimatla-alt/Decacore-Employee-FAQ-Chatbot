@@ -25,6 +25,14 @@
 .themeToggle {
   margin-left: auto;
 }
+/*
+ * Collapse toggle. Three bars that fan apart on hover and fold into a chevron when
+ * the sidebar is shut.
+ *
+ * The bars are absolutely positioned rather than laid out with a flex gap: gap can
+ * only push them apart, while the fan and the chevron both need each bar to move,
+ * rotate and change length independently from a shared centre.
+ */
 .burger {
   width: 32px;
   height: 32px;
@@ -32,21 +40,89 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+  position: relative;
+  flex: none;
   transition: background var(--duration-fast) var(--ease);
 }
-.burger:hover {
+.burger:hover,
+.burger:focus-visible {
   background: rgba(var(--overlay-rgb), 0.08);
 }
+.burger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .burger span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 16px;
   height: 2px;
   background: var(--text);
   border-radius: 1px;
+  /* Every bar shares one origin; translate does the spacing, so the fan and the
+     chevron are both just different translate/rotate values. */
+  transition:
+    translate 260ms cubic-bezier(0.76, 0, 0.24, 1),
+    rotate 260ms cubic-bezier(0.76, 0, 0.24, 1),
+    width 260ms cubic-bezier(0.76, 0, 0.24, 1),
+    opacity 180ms var(--ease);
+}
+.burger span:nth-child(1) {
+  translate: -50% calc(-50% - 5px);
+}
+.burger span:nth-child(2) {
+  translate: -50% -50%;
+}
+.burger span:nth-child(3) {
+  translate: -50% calc(-50% + 5px);
+}
+
+/* Fan: the outer bars push further out and the middle one shortens, so the stack
+   opens up rather than just drifting apart. */
+.burger:hover span:nth-child(1),
+.burger:focus-visible span:nth-child(1) {
+  translate: -50% calc(-50% - 8px);
+}
+.burger:hover span:nth-child(3),
+.burger:focus-visible span:nth-child(3) {
+  translate: -50% calc(-50% + 8px);
+}
+.burger:hover span:nth-child(2),
+.burger:focus-visible span:nth-child(2) {
+  width: 11px;
+}
+
+/* Collapsed: fold into a chevron pointing the way the sidebar will go. */
+.burger.collapsed span:nth-child(1) {
+  width: 11px;
+  translate: -50% calc(-50% - 3px);
+  rotate: -45deg;
+}
+.burger.collapsed span:nth-child(2) {
+  /* The shaft would sit across the arrowhead, so it steps aside. */
+  opacity: 0;
+  width: 6px;
+}
+.burger.collapsed span:nth-child(3) {
+  width: 11px;
+  translate: -50% calc(-50% + 3px);
+  rotate: 45deg;
+}
+/* Hovering the chevron nudges it toward the direction it will open. */
+.burger.collapsed:hover span:nth-child(1),
+.burger.collapsed:hover span:nth-child(3) {
+  translate: calc(-50% + 2px) calc(-50% - 3px);
+}
+.burger.collapsed:hover span:nth-child(3) {
+  translate: calc(-50% + 2px) calc(-50% + 3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burger span {
+    transition-duration: 1ms;
+  }
 }
 .brand {
   font-family: var(--font-heading);
