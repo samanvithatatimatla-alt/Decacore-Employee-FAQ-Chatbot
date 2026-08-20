@@ -282,6 +282,35 @@ ADMITS_GAP = re.compile(
 )
 
 
+# The answer says the thing asked for is not allowed, rather than explaining how to do
+# it. Distinct from admitting a gap: the documents cover this perfectly well, and the
+# answer is no.
+REFUSES_REQUEST = re.compile(
+    r"\bnot\s+(?:reimbursable|eligible|covered\s+by|permitted|allowed|approved|available)\b"
+    r"|\bis\s+not\s+a\s+(?:reimbursable|covered|qualifying)\b"
+    r"|\bcannot\s+be\s+(?:reimbursed|claimed|used|carried)\b"
+    r"|\bdoes\s+not\s+(?:qualify|offer|provide|reimburse)\b"
+    r"|\bdo\s+not\s+qualify\b|\bnon-?reimbursable\b|\bare\s+excluded\b",
+    re.I,
+)
+
+
+def answer_refuses_request(answer: str) -> bool:
+    """Did the answer say no?
+
+    A form is an offer to go and do the thing. Offering one under "personal meals are
+    not reimbursable" invites the employee to file a claim the policy has just refused,
+    which is worse than offering nothing.
+
+    Only the opening sentence counts, because the answer leads with the verdict and
+    then qualifies it. A yes that goes on to name an exclusion — "yes, if it had a
+    business purpose … alcohol is not reimbursable" — is still a yes, and reading the
+    whole answer withdrew the form from it.
+    """
+    opening = re.split(r"(?<=[.!?])\s+", answer.strip(), maxsplit=1)[0] if answer.strip() else ""
+    return bool(REFUSES_REQUEST.search(opening))
+
+
 def answer_admits_gap(answer: str) -> bool:
     """Did the model itself say the documents do not cover this?
 

@@ -17,7 +17,7 @@ from ..models import Conversation, EmployeeRequest, Message, User
 from ..schemas import ChatIn, EscalationIn
 from ..services.cache import dashboard_cache
 from ..services.form_hints import form_payload
-from ..services.guardrails import UserProfile, answer_admits_gap
+from ..services.guardrails import UserProfile, answer_admits_gap, answer_refuses_request
 from ..services.notifications import notification_service
 from ..services.rag import rag_service, verified_citations
 from ..services.rate_limit import chat_rate_limiter
@@ -121,6 +121,10 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
             # service because it depends on the finished answer, which does not exist
             # until the stream has run.
             admits_gap = answer_admits_gap(answer_text)
+            # No form and no system link when the answer is a refusal — there is
+            # nothing to submit.
+            refused = answer_refuses_request(answer_text)
+            offered_form = None if refused else prepared.form
             escalation_offered = prepared.should_escalate or admits_gap
             # ... and drop the citations with it. Retrieval always returns its top
             # results, so "who is archit" came back with the L&D and parental leave
@@ -168,10 +172,10 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "escalation_offered": escalation_offered,
                 "no_policy_match": prepared.no_policy_match,
                 # Separate from citations on purpose: a blank form is not a source.
-                "form": form_payload(prepared.form),
+                "form": form_payload(offered_form),
                 # Where to submit it. Only appears alongside a form, so the answer
                 # never points at a system without saying what to file there.
-                "tool": suggest_tool(prepared.form, question, user_role),
+                "tool": suggest_tool(offered_form, question, user_role),
                 "timings": timings,
             })
 
