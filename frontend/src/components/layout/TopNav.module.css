@@ -5,6 +5,19 @@
   padding: 14px 20px;
   border-bottom: 1px solid var(--border-hairline);
   flex: none;
+
+  /* Same material as the sidebar, so the chrome reads as one continuous pane rather
+     than a frosted panel next to a transparent strip. */
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-edge-top);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav {
+    background: var(--bg-chrome);
+  }
 }
 /* Sits hard right, opposite the burger and brand. */
 .themeToggle {

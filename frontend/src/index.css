@@ -39,6 +39,20 @@
   --paper-text: #1b1b1b;
   --paper-text-muted: #4a4a4a;
 
+  /*
+   * Frosted chrome. Translucent fill + blur, with a bright top edge and a dark bottom
+   * edge — the pair is what reads as a pane of glass rather than as a flat tint; the
+   * light catches the lip and the far side falls into shadow.
+   *
+   * These only look like glass because AmbientBackground sits fixed behind the whole
+   * app: the blur needs a moving, textured backdrop to refract. Over a flat colour it
+   * would be indistinguishable from a solid fill.
+   */
+  --glass-bg: rgba(26, 22, 36, 0.55);
+  --glass-edge-top: rgba(255, 255, 255, 0.1);
+  --glass-edge-bottom: rgba(0, 0, 0, 0.25);
+  --glass-blur: blur(22px) saturate(160%);
+
   /* The news strip and the darker inset panels, which sit a shade off the surrounding
      chrome rather than matching it. */
   --bg-rail: #1a1622;
@@ -116,6 +130,12 @@
   --warn: #9a6410;
 
   --accent-text-strong: #3d1ea8;
+
+  /* More opaque than the dark theme: white glass over a pale backdrop has far less
+     contrast to work with, and at 0.55 the text behind it showed through as smudge. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-edge-top: rgba(255, 255, 255, 0.85);
+  --glass-edge-bottom: rgba(17, 13, 26, 0.08);
 
   /* The news strip follows the theme rather than staying dark. Left dark it read as a
      stray black bar pinned above a white app, not as branded chrome. */
