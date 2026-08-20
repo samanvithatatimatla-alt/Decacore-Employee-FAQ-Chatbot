@@ -103,8 +103,15 @@ def support_score(answer_tokens: Counter, text: str, weights: dict[str, float]) 
     candidate excerpts contain it leaves the distinctive terms ("classification",
     "timekeeping") deciding the match, which is what actually identifies the source.
     """
-    shared = set(tokens(text)) & set(answer_tokens)
-    if not shared:
+    # Words present in nearly every excerpt say nothing about which one was used.
+    # "Quadrant Technologies." shares only "technologies" with the staff directory —
+    # a word in all 31 documents — and that was enough to footnote a two-word answer
+    # about the asker with an unrelated document.
+    shared = {t for t in set(tokens(text)) & set(answer_tokens) if weights.get(t, 1.0) >= COMMON_WORD_WEIGHT}
+    # One word in common is a coincidence, not a source. "Quadrant Technologies." shares
+    # exactly "technologies" with half the corpus, and on a two-word answer that single
+    # word was 41% of it — enough to cite a document the answer never came from.
+    if len(shared) < MIN_SHARED_TERMS:
         return 0.0
     total = sum(weights.get(t, 1.0) for t in answer_tokens)
     return sum(weights.get(t, 1.0) for t in shared) / total if total else 0.0
@@ -125,6 +132,13 @@ def rarity_weights(texts: list[str]) -> dict[str, float]:
 # to 0.34 against it, while an answer taken from the employee record scores at most
 # 0.15 against whatever search returned alongside it.
 CITATION_SUPPORT_MIN = 0.20
+
+# Rarity below which a shared word is treated as furniture rather than evidence.
+# A word in every candidate excerpt scores about 0.39 on this scale.
+COMMON_WORD_WEIGHT = 0.5
+
+# Distinct meaningful words an excerpt and the answer must have in common at all.
+MIN_SHARED_TERMS = 2
 
 # How much of the answer a further citation has to explain that earlier ones did not.
 CITATION_MARGINAL_MIN = 0.12

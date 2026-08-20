@@ -63,6 +63,40 @@ QUERY_EXPANSIONS = {
 }
 
 
+# "What is BluePeak", "what does the company do" — a question about the employer
+# itself rather than about a policy.
+COMPANY_QUESTION = re.compile(
+    r"^\s*(?:hi|hey|hello)?[,\s]*"
+    r"(?:what(?:'s| is| are| does| do)?|who(?:'s| is)?|tell me about|describe|explain)\s+"
+    r"(?:the\s+)?(?:bluepeak|bluepeak technologies|company|organisation|organization|firm|employer)"
+    r"(?:\s+technologies)?(?:\s+(?:do|does|is|are|about))?\s*\??\s*$",
+    re.I,
+)
+
+# What such a question is really asking for. Added to the search terms only, never to
+# the question the model answers.
+# Wording taken from the section that answers this — the handbook's "Welcome to
+# BluePeak" — rather than invented. Generic terms like "overview" and "leadership"
+# pulled the directory instead, which lists who runs the company but never says what
+# it makes.
+COMPANY_TERMS = (
+    "develops products platform software what the company does "
+    "cloud based workflow automation integration operational analytics "
+    "welcome mission values founded headquarters offices"
+)
+
+
+def search_text_for(query: str) -> str:
+    """The text to search on, which is not always the text that was typed.
+
+    "What is BluePeak" is the worst possible query against this corpus: the name sits
+    in the header and footer of all 31 documents, so it matches everything equally and
+    ranks the company overview nowhere. Naming what the question is actually after
+    gives the search something to discriminate on.
+    """
+    return f"{query} {COMPANY_TERMS}" if COMPANY_QUESTION.match(query or "") else query
+
+
 def tokens(text: str) -> list[str]:
     return [x for x in re.findall(r"[a-z0-9]+", text.lower()) if x not in STOP and len(x) > 1]
 
@@ -301,11 +335,14 @@ class SearchService:
         # embed_query, not embed: repeat questions reuse the vector instead of paying a
         # round trip to Azure OpenAI. The FAQ list on the home screen makes this common —
         # those questions are clicked, so they arrive byte-identical every time.
-        vector = llm_service.embed_query(query)
+        # Both halves of the hybrid search see the same enriched text, or the vector
+        # half would keep pulling in whatever the bare question matched.
+        search_query = search_text_for(query)
+        vector = llm_service.embed_query(search_query)
         vector_query = VectorizedQuery(vector=vector, k_nearest_neighbors=top_k, fields="content_vector")
         filter_expr = None if role == "HRAdmin" else f"allowed_roles/any(r: r eq '{role.replace("'", "''")}')"
         results = self._azure_client().search(
-            search_text=query,
+            search_text=search_query,
             vector_queries=[vector_query],
             filter=filter_expr,
             vector_filter_mode="preFilter",
