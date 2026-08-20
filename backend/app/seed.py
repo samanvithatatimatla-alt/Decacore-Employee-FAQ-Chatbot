@@ -94,11 +94,19 @@ def seed_documents(db: Session, force_reindex: bool = False) -> int:
 
 
 def seed_announcements(db: Session) -> int:
-    """Company news for the ticker.
+    """Invented BluePeak headlines, for local demos only.
 
     Dates are relative to first boot rather than fixed, so a demo run months from
     now does not open on stale headlines.
+
+    Skipped in production, where the ticker carries real company news pulled from the
+    feed by services/news_feed.py. Seeding both put three fictional BluePeak headlines
+    in front of the genuine Quadrant ones — and because these are dated from first boot
+    while real posts carry their own publication dates, the fake ones sorted to the
+    front and were all anyone saw.
     """
+    if settings.env == "prod":
+        return 0
     if (db.scalar(select(func.count(NewsAnnouncement.id))) or 0) > 0:
         return 0
     admin = db.scalar(select(User).where(User.email == "hr.admin@bluepeak.example"))

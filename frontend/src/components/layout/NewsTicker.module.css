@@ -43,7 +43,16 @@
   display: flex;
   align-items: center;
   width: max-content;
-  animation: tickerScroll 70s linear infinite;
+  /* Duration is set inline from the measured width — see SCROLL_PX_PER_SECOND in
+     NewsTicker.tsx. This value is only the fallback before the first measurement. */
+  animation: tickerScroll 200s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* A constantly moving strip of text is exactly what this setting is for. The items
+     stay readable from the start of the track rather than being hidden. */
+  .track {
+    animation: none;
+  }
 }
 .ticker:hover .track {
   animation-play-state: paused;

@@ -216,6 +216,26 @@ def test_refresh_never_touches_hr_written_items(db):
     assert survivor.source == "hr"
 
 
+# --- demo seed ---------------------------------------------------------------
+
+
+def test_demo_headlines_are_not_seeded_in_production(db, monkeypatch):
+    """The invented BluePeak headlines are a local-demo affordance.
+
+    They are dated from first boot, so on a real deployment they sort ahead of genuine
+    posts carrying their own publication dates — which is how three fictional headlines
+    ended up being the only news anyone saw.
+    """
+    from app import seed
+
+    monkeypatch.setattr(settings, "env", "prod")
+    assert seed.seed_announcements(db) == 0
+    assert db.query(NewsAnnouncement).count() == 0
+
+    monkeypatch.setattr(settings, "env", "dev")
+    assert seed.seed_announcements(db) == 3
+
+
 # --- endpoint --------------------------------------------------------------
 
 
