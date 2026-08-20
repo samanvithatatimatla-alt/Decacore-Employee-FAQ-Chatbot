@@ -48,10 +48,26 @@
    * app: the blur needs a moving, textured backdrop to refract. Over a flat colour it
    * would be indistinguishable from a solid fill.
    */
-  --glass-bg: rgba(26, 22, 36, 0.55);
-  --glass-edge-top: rgba(255, 255, 255, 0.1);
-  --glass-edge-bottom: rgba(0, 0, 0, 0.25);
-  --glass-blur: blur(22px) saturate(160%);
+  --glass-bg: rgba(30, 25, 44, 0.34);
+  --glass-edge-top: rgba(255, 255, 255, 0.22);
+  --glass-edge-bottom: rgba(0, 0, 0, 0.3);
+  --glass-blur: blur(26px) saturate(180%);
+  /*
+   * The specular sheen, and the part that actually sells it.
+   *
+   * Blur alone did nothing here: the ambient blobs sit at 0.11-0.16 opacity under an
+   * 80px blur over a near-black page, so the backdrop behind the sidebar is close to
+   * flat — and frosting a flat surface is indistinguishable from a solid fill. iOS
+   * glass reads the way it does because light rakes across the pane and catches its
+   * edges, so that highlight is painted explicitly rather than hoped for.
+   */
+  --glass-sheen: linear-gradient(
+    152deg,
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0.05) 22%,
+    rgba(255, 255, 255, 0) 48%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
 
   /* The news strip and the darker inset panels, which sit a shade off the surrounding
      chrome rather than matching it. */
@@ -133,9 +149,18 @@
 
   /* More opaque than the dark theme: white glass over a pale backdrop has far less
      contrast to work with, and at 0.55 the text behind it showed through as smudge. */
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-edge-top: rgba(255, 255, 255, 0.85);
-  --glass-edge-bottom: rgba(17, 13, 26, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-edge-top: rgba(255, 255, 255, 0.95);
+  --glass-edge-bottom: rgba(17, 13, 26, 0.1);
+  /* Light glass catches a cooler, tighter highlight; the same white ramp as the dark
+     theme just washes out to nothing against a pale page. */
+  --glass-sheen: linear-gradient(
+    152deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.25) 20%,
+    rgba(124, 77, 255, 0.04) 55%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
 
   /* The news strip follows the theme rather than staying dark. Left dark it read as a
      stray black bar pinned above a white app, not as branded chrome. */
