@@ -11,7 +11,26 @@ wrong system, which is worse than showing nothing.
 
 from __future__ import annotations
 
+import re
+
 from ..models import HRForm
+
+POLICY_GENERATOR = {
+    "name": "the AI Policy Generator",
+    "url": "https://gray-sky-0be5fb50f.7.azurestaticapps.net/",
+    "blurb": "draft it",
+}
+
+# Writing or revising a policy, rather than asking what one says. Restricted to HR
+# admins: an employee asking "what is the leave policy" wants the answer, and pointing
+# them at a tool for authoring policies would be nonsense.
+DRAFTING_A_POLICY = re.compile(
+    r"\b(?:write|draft|create|author|generate|update|revise|amend|rewrite)\b[^.?]{0,40}"
+    r"\b(?:policy|policies|handbook|guideline|guidelines|procedure)\b"
+    r"|\b(?:new|another) (?:policy|handbook|guideline|procedure)\b"
+    r"|\bpolicy (?:template|draft|generator)\b",
+    re.I,
+)
 
 TICKETGENIE = {
     "name": "TicketGenie",
@@ -34,14 +53,22 @@ TICKETED_FORMS = {
 }
 
 
-def suggest_tool(form: HRForm | None) -> dict | None:
-    """The system to submit through, when the answer already points at a form.
+def suggest_tool(form: HRForm | None, question: str = "", role: str = "") -> dict | None:
+    """The one system this answer should point at, if any.
 
-    Tied to the form suggestion rather than matched separately: a form is offered only
-    when the question is asking to *do* something, which is exactly when a link to the
-    submission system helps. It also means the two never disagree — no answer offers a
-    form for one task and a system for another.
+    Submitting comes first and is tied to the form suggestion rather than matched
+    separately: a form is offered only when the question is asking to *do* something,
+    which is exactly when a link to the submission system helps, and tying them means
+    the two can never disagree.
+
+    Authoring is the HR-side counterpart and only applies when nothing is being
+    submitted — an answer should point at one place to go, not two.
     """
-    if form is None or form.filename not in TICKETED_FORMS:
-        return None
-    return {"name": TICKETGENIE["name"], "url": TICKETGENIE["url"], "blurb": TICKETGENIE["blurb"]}
+    # Authoring is checked first. "How do I write a new remote work policy" suggests the
+    # work-away request form on the strength of the words in it, which would have sent
+    # an HR admin drafting a policy to the form an employee files to work elsewhere.
+    if role == "HRAdmin" and DRAFTING_A_POLICY.search(question or ""):
+        return dict(POLICY_GENERATOR)
+    if form is not None and form.filename in TICKETED_FORMS:
+        return dict(TICKETGENIE)
+    return None

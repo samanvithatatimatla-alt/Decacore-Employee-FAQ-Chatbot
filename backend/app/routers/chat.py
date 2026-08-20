@@ -171,7 +171,7 @@ def chat(payload: ChatIn, db: Session = Depends(get_db), user: User = Depends(ge
                 "form": form_payload(prepared.form),
                 # Where to submit it. Only appears alongside a form, so the answer
                 # never points at a system without saying what to file there.
-                "tool": suggest_tool(prepared.form),
+                "tool": suggest_tool(prepared.form, question, user_role),
                 "timings": timings,
             })
 

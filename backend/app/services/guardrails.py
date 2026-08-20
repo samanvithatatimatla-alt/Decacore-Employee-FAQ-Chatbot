@@ -184,12 +184,26 @@ def mentions_self(message: str) -> bool:
     return bool(_FIRST_PERSON.search(norm) and _PROFILE_NOUNS.search(norm))
 
 
+def organisation(display_name: str) -> str | None:
+    """The organisation the sign-in directory records for this person.
+
+    Entra returns "Archit Jaiswal (Quadrant Technologies)". That parenthesis is the
+    only statement of an employer the app actually holds, so it is passed on as one
+    rather than left for the model to infer from an email domain — which it would not
+    do, leaving "who is my employer" answered with a shrug.
+    """
+    match = re.search(r"\(([^)]+)\)\s*$", display_name or "")
+    return match.group(1).strip() or None if match else None
+
+
 def profile_context(profile: UserProfile | None) -> str | None:
     """The asker's own record, formatted for the model's prompt."""
     if profile is None:
         return None
+    org = organisation(profile.display_name)
     facts = [
         f"Name: {profile.display_name}",
+        *([f"Organisation on their sign-in record: {org}"] if org else []),
         f"Role: {ROLE_LABELS.get(profile.role, profile.role)}",
         f"Email: {profile.email}",
     ]
