@@ -1,91 +1,371 @@
-.screen {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+.page {
+  --lp-bg: #161826;
+  --lp-surface: #232532;
+  --lp-text: #e9e9ed;
+  --lp-muted: #9a9aa6;
+  --lp-hairline: rgba(233, 233, 237, 0.1);
+  --lp-dot: rgba(233, 233, 237, 0.13);
+  --lp-purple: #8455f5;
+  --lp-purple-text: #a78bfa;
+  --lp-purple-icon: #9370f7;
+  --lp-purple-border: rgba(132, 85, 245, 0.3);
+  --lp-purple-border-strong: rgba(132, 85, 245, 0.55);
+  --mx: 50%;
+  --my: 30%;
+
   position: relative;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--bg-page);
+  isolation: isolate;
+  min-height: 100vh;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
 }
 
-.sceneWrap {
+:global(html[data-theme='light']) .page {
+  --lp-bg: #f4f3fa;
+  --lp-surface: #ffffff;
+  --lp-text: #22232e;
+  --lp-muted: #6b6b78;
+  --lp-hairline: rgba(34, 35, 46, 0.12);
+  --lp-dot: rgba(34, 35, 46, 0.14);
+  --lp-purple: #7c3aed;
+  --lp-purple-text: #6d33d6;
+  --lp-purple-icon: #7c3aed;
+  --lp-purple-border: rgba(124, 58, 237, 0.28);
+  --lp-purple-border-strong: rgba(124, 58, 237, 0.55);
+}
+
+.bgDots,
+.bgGlow {
   position: absolute;
   inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.bgDots {
+  background-image: radial-gradient(var(--lp-dot) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.bgGlow {
+  background: radial-gradient(420px circle at var(--mx) var(--my), color-mix(in srgb, var(--lp-purple) 22%, transparent), transparent 70%);
 }
 
-/* @splinetool/react-spline renders its own <canvas>; force it to fill this
-   wrapper so the scene tracks the viewport on both mobile and desktop
-   instead of being clipped to Spline's authored canvas size. */
-.sceneWrap :global(canvas) {
+/* Header */
+.header {
+  border-bottom: 1px solid var(--lp-hairline);
+}
+.headerInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brandGroup {
+  display: flex;
+  align-items: center;
+}
+.wordmark {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--lp-text);
+}
+.tagline {
+  font-size: 11px;
+  color: var(--lp-muted);
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--lp-hairline);
+}
+.themeBtn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--lp-hairline);
+  background: transparent;
+  color: var(--lp-text);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 180ms ease, color 180ms ease;
+}
+.themeBtn:hover {
+  border-color: var(--lp-purple-border-strong);
+  color: var(--lp-purple-icon);
+}
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 56px;
+  align-items: center;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 64px 40px 0;
+  box-sizing: border-box;
+}
+.heroLeft {
+  min-width: 0;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--lp-purple-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-purple-text);
+}
+.pill i {
+  color: var(--lp-purple-icon);
+  font-size: 12px;
+}
+.h1 {
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.03em;
+  margin: 20px 0 0;
+  color: var(--lp-text);
+}
+.sub {
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--lp-muted);
+  max-width: 46ch;
+  text-wrap: pretty;
+  margin: 20px 0 0;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 34px;
+  border: 1px solid var(--lp-purple);
+  background: transparent;
+  color: var(--lp-purple-text);
+  border-radius: 8px;
+  padding: 13px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+.cta:hover {
+  background: color-mix(in srgb, var(--lp-purple) 18%, transparent);
+}
+.cta i {
+  font-size: 15px;
+}
+
+/* Hero orb */
+.heroRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.orbWrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1;
+  animation: floatY 7s ease-in-out infinite;
+}
+.ringOuter {
+  position: absolute;
+  inset: 6%;
+  border-radius: 999px;
+  border: 1px solid var(--lp-purple-border);
+  animation: spin 26s linear infinite;
+}
+.ringDot {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lp-purple);
+}
+.ringInner {
+  position: absolute;
+  inset: 20%;
+  border-radius: 999px;
+  border: 1px dashed var(--lp-purple-border);
+  animation: spinReverse 40s linear infinite;
+}
+.glow {
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lp-purple) 55%, transparent) 0%, transparent 72%);
+  filter: blur(20px);
+  animation: breathe 4.5s ease-in-out infinite;
+}
+.slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 54%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--lp-purple-border-strong);
+  background: color-mix(in srgb, var(--lp-surface) 70%, transparent);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.slot :global(canvas) {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
-
-.overlay {
+.floatDot1,
+.floatDot2,
+.floatDot3 {
   position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-bottom: max(48px, env(safe-area-inset-bottom, 0px) + 32px);
-  /* Let clicks/drags pass through to the Spline canvas everywhere except
-     the button itself, so the 3D scene stays fully interactive. */
-  pointer-events: none;
+  border-radius: 50%;
+  background: var(--lp-purple);
+}
+.floatDot1 {
+  top: 12%;
+  left: 8%;
+  width: 8px;
+  height: 8px;
+  animation: dotBreathe 3.2s ease-in-out infinite;
+}
+.floatDot2 {
+  bottom: 16%;
+  right: 10%;
+  width: 5px;
+  height: 5px;
+  animation: dotBreathe 4.1s ease-in-out infinite;
+}
+.floatDot3 {
+  bottom: 8%;
+  left: 26%;
+  width: 3px;
+  height: 3px;
+  animation: dotBreathe 5s ease-in-out infinite;
 }
 
-.cta {
-  pointer-events: auto;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 16px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 15px 42px;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(124, 77, 255, 0.4);
-  animation: riseIn 0.5s ease 0.2s both;
-  transition: background var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
-}
-
-.cta:hover {
-  background: var(--accent-hover);
-  box-shadow: 0 12px 34px rgba(124, 77, 255, 0.5);
-}
-
-/* Fades in after the CTA so it settles last, reading as a footing rather than
-   part of the button stack. */
-.poweredBy {
-  animation: riseIn 0.5s ease 0.4s both;
-}
-
-@media (max-width: 640px) {
-  .overlay {
-    padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 20px);
-  }
-  .cta {
-    font-size: 15px;
-    padding: 14px 34px;
-  }
-}
-
-@keyframes riseIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
+@keyframes floatY {
+  0%,
+  100% {
     transform: translateY(0);
   }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spinReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.9;
+  }
+}
+@keyframes dotBreathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbWrap,
+  .ringOuter,
+  .ringInner,
+  .glow,
+  .floatDot1,
+  .floatDot2,
+  .floatDot3 {
+    animation: none;
+  }
 }
 
-/* Pinned, not in flow: sits above the Spline canvas regardless of DOM order. */
-.themeToggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 1;
+/* Feature cards */
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 40px 56px;
+  box-sizing: border-box;
+}
+.card {
+  border: 1px solid var(--lp-hairline);
+  border-radius: 12px;
+  padding: 20px;
+  background: color-mix(in srgb, var(--lp-surface) 60%, transparent);
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+.card:hover {
+  border-color: var(--lp-purple-border-strong);
+  transform: translateY(-3px);
+}
+.cardIcon {
+  display: block;
+  font-size: 19px;
+  color: var(--lp-purple-icon);
+}
+.cardTitle {
+  font-size: 15.5px;
+  font-weight: 500;
+  margin: 12px 0 0;
+  color: var(--lp-text);
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--lp-hairline);
+}
+.footerInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 40px;
+  box-sizing: border-box;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lp-muted);
+}
+.footerName {
+  color: var(--lp-text);
+  font-weight: 500;
 }
