@@ -8,7 +8,11 @@
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
-  background: var(--bg-chrome);
+  /* Transparent, not var(--bg-chrome): AmbientBackground is fixed behind the
+     whole app (z-index:-1) and needs an unobstructed path to the surface —
+     an opaque background here would paint over it. Sidebar keeps its own
+     solid fill, so the effect only shows through the top nav and .main. */
+  background: transparent;
 }
 .bodyRow {
   display: flex;
@@ -22,32 +26,5 @@
   min-width: 0;
   box-sizing: border-box;
   overflow: auto;
-  background: var(--bg-page);
-  position: relative;
-  isolation: isolate;
-}
-/* Decorative only: the pane behind every authenticated page was a flat fill.
-   inset:0 sizes to .main's own box (its viewport-height pane, not scrolled
-   content), so this stays put as content scrolls rather than scrolling with it. */
-.main::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(var(--text-rgb), 0.05) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 0%, transparent 75%);
-}
-.main::after {
-  content: '';
-  position: absolute;
-  top: -12%;
-  right: -12%;
-  width: 55%;
-  height: 60%;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(124, 77, 255, 0.1) 0%, rgba(124, 77, 255, 0.04) 45%, transparent 75%);
+  background: transparent;
 }

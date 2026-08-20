@@ -45,6 +45,10 @@
   --bg-rail-2: #221d2e;
   --rail-text: #97a0c9;
 
+  /* Shared source of truth for AmbientBackground's dot grid, read at runtime via
+     getComputedStyle since a <canvas> can't consume a CSS custom property directly. */
+  --ambient-grid-dot: rgba(233, 233, 237, 0.13);
+
   color-scheme: dark;
 
   --font-heading: 'Instrument Sans', system-ui, sans-serif;
@@ -87,6 +91,8 @@
   --border-hairline: rgba(var(--overlay-rgb), 0.14);
   --border-subtle: rgba(var(--overlay-rgb), 0.1);
   --border-faint: rgba(var(--overlay-rgb), 0.07);
+
+  --ambient-grid-dot: rgba(34, 35, 46, 0.13);
 
   --text: #17131f;
   --text-muted: rgba(var(--text-rgb), 0.72);

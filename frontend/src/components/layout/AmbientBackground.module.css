@@ -1,0 +1,112 @@
+.root {
+  position: fixed;
+  inset: 0;
+  /* Negative, not 0: a positioned z-index:0 element paints above non-positioned
+     in-flow content regardless of DOM order, which would bury the whole app
+     under this. Negative is what actually keeps it behind everything. */
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.blob1 {
+  width: 820px;
+  height: 820px;
+  top: -12%;
+  left: -8%;
+  background: radial-gradient(circle, #8455f5 0%, transparent 70%);
+  opacity: calc(0.16 * var(--intensity));
+  animation: drift1 52s ease-in-out infinite alternate;
+}
+.blob2 {
+  width: 900px;
+  height: 900px;
+  top: 8%;
+  right: -14%;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+  opacity: calc(0.13 * var(--intensity));
+  animation: drift2 64s ease-in-out infinite alternate;
+  animation-delay: -18s;
+}
+.blob3 {
+  width: 760px;
+  height: 760px;
+  bottom: -16%;
+  left: 16%;
+  background: radial-gradient(circle, #6d33d6 0%, transparent 70%);
+  opacity: calc(0.14 * var(--intensity));
+  animation: drift3 45s ease-in-out infinite alternate;
+  animation-delay: -30s;
+}
+.blob4 {
+  width: 700px;
+  height: 700px;
+  bottom: 4%;
+  right: 10%;
+  background: radial-gradient(circle, #4c3ab8 0%, transparent 70%);
+  opacity: calc(0.11 * var(--intensity));
+  animation: drift4 70s ease-in-out infinite alternate;
+  animation-delay: -44s;
+}
+
+@keyframes drift1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(60px, 40px) scale(1.08);
+  }
+}
+@keyframes drift2 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-55px, 50px) scale(0.94);
+  }
+}
+@keyframes drift3 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(45px, -50px) scale(1.06);
+  }
+}
+@keyframes drift4 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-35px, -30px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob1,
+  .blob2,
+  .blob3,
+  .blob4 {
+    animation: none;
+  }
+}
