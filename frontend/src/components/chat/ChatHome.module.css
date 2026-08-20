@@ -65,18 +65,89 @@
   gap: 8px;
   width: 100%;
 }
+/*
+ * Adapted from uiverse.io/nikk7007/blue-mayfly-40 — an outlined button that two
+ * circles fill in from opposite corners on hover.
+ *
+ * Three changes from the original. Its 32px type and `border: size/6` (a 5px rule)
+ * are hero proportions; at the 13.5px these rows actually use, the border alone
+ * swallowed the text. Its timings are cut by roughly a third — the fill ran a full
+ * 1000ms, which is a long time to watch on a row you are trying to click. And the
+ * hovered label is white rather than the page background: knocking it out to the
+ * background works on the original's dark canvas but leaves near-white text on a
+ * light-mode surface, invisible until the fill arrives behind it.
+ */
 .chip {
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border-hairline);
-  color: var(--text-dim);
-  font-size: 13px;
-  padding: 10px 14px;
+  background: transparent;
+  /* Muted at rest and full accent on hover. Three stacked rows outlined in solid
+     --accent turned the suggestion list into three competing calls to action that
+     shouted over the Send button beside them; the fill is the reward for hovering,
+     not the resting state. */
+  border: 1px solid rgba(124, 77, 255, 0.32);
+  color: var(--text);
+  font-size: 13.5px;
+  padding: 11px 16px;
   border-radius: 10px;
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color 480ms cubic-bezier(0.83, 0, 0.17, 1), border-color 200ms var(--ease);
 }
-.chip:hover {
-  background: var(--surface-2);
-  color: var(--text);
+
+/* The two circles. They start collapsed at opposite corners and scale up to meet. */
+.chip::before,
+.chip::after {
+  content: '';
+  width: 150%;
+  aspect-ratio: 1 / 1;
+  scale: 0;
+  background-color: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  translate: -50% -50%;
+  z-index: -1;
+  transition: scale 700ms cubic-bezier(0.76, 0, 0.24, 1);
+}
+.chip::before {
+  top: 0;
+  left: 0;
+}
+.chip::after {
+  top: 100%;
+  left: 100%;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  /* White on --accent measures 4.81:1, which holds in both themes; the original's
+     "same colour as the page" trick does not. */
+  color: #fff;
+  border-color: var(--accent);
+}
+.chip:hover::before,
+.chip:hover::after,
+.chip:focus-visible::before,
+.chip:focus-visible::after {
+  scale: 1;
+}
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.chip:active {
+  scale: 0.985;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the state change, drop the travel: the circles appear already filled. */
+  .chip,
+  .chip::before,
+  .chip::after {
+    transition-duration: 1ms;
+  }
+  .chip:active {
+    scale: 1;
+  }
 }

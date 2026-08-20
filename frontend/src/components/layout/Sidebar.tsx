@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, FileText, Folder, Inbox, LayoutGrid, Mail } from 'lucide-react';
+import { Bell, FileText, Folder, Inbox, LayoutGrid, Mail, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppState } from '../../context/AppStateContext';
 import styles from './Sidebar.module.css';
@@ -48,7 +48,11 @@ export default function Sidebar() {
       {open ? (
         <>
           <button className={styles.btnPrimary} onClick={newChat}>
-            New chat
+            {/* The block slides across the button on hover — see .btnPrimaryIcon. */}
+            <span className={styles.btnPrimaryIcon} aria-hidden>
+              <Plus size={16} strokeWidth={2.5} />
+            </span>
+            <span className={styles.btnPrimaryLabel}>New chat</span>
           </button>
           <div className={styles.sideScroll}>
             {/*
